@@ -1,4 +1,8 @@
-use std::{fs::File, io};
+use std::{
+    fs::File,
+    io::{self, BufWriter},
+    time::Instant,
+};
 
 use num_traits::Zero;
 use ppm::Image;
@@ -11,6 +15,7 @@ mod trace;
 mod vec3;
 
 fn main() -> io::Result<()> {
+    let start = Instant::now();
     let aspect_ratio = 16.0 / 9.0;
     let width = 400;
     let height = ((width as f64 / aspect_ratio) as usize).max(1);
@@ -40,9 +45,15 @@ fn main() -> io::Result<()> {
             pixels.push(color);
         }
     }
+    let elapsed = start.elapsed();
+    println!("rendering took {elapsed:?}");
 
+    let start = Instant::now();
     let image = Image::new(pixels, width, height);
-    let mut file = File::create("image.ppm")?;
+    let mut file = BufWriter::new(File::create("image.ppm")?);
     image.write_to_ppm(&mut file)?;
+    let elapsed = start.elapsed();
+    println!("writing image took {elapsed:?}");
+
     Ok(())
 }
