@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use num_traits::{Float, One, Zero};
 
@@ -50,6 +50,18 @@ impl<T: Float> Vec3<T> {
             x: lerp(self.x, rhs.x, t),
             y: lerp(self.y, rhs.y, t),
             z: lerp(self.z, rhs.z, t),
+        }
+    }
+}
+
+impl<T: Float> Neg for Vec3<T> {
+    type Output = Vec3<T>;
+
+    fn neg(self) -> Self::Output {
+        Vec3 {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
         }
     }
 }
