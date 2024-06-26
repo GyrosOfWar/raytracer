@@ -30,6 +30,14 @@ pub struct Image {
 
 impl Image {
     pub fn new(pixels: Vec<Color>, width: usize, height: usize) -> Self {
+        if pixels.len() != (width * height) {
+            panic!(
+                "mismatching image dimensions: expected {width} * {height} = {} pixels, got {}",
+                (width * height),
+                pixels.len()
+            );
+        }
+
         Image {
             pixels,
             width,

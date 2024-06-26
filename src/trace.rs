@@ -1,11 +1,8 @@
-use enum_dispatch::enum_dispatch;
-use num_traits::One;
-
 use crate::{
-    ppm::Color,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
+use enum_dispatch::enum_dispatch;
 
 pub struct Range {
     pub min: f32,
@@ -13,8 +10,20 @@ pub struct Range {
 }
 
 impl Range {
+    pub fn new(min: f32, max: f32) -> Self {
+        Range { min, max }
+    }
+
     pub fn contains(&self, value: f32) -> bool {
-        value >= self.min && value <= self.max
+        self.min <= value && value <= self.max
+    }
+
+    pub fn surrounds(&self, value: f32) -> bool {
+        self.min < value && value < self.max
+    }
+
+    pub fn size(&self) -> f32 {
+        self.max - self.min
     }
 }
 
@@ -110,37 +119,15 @@ impl Hittable for Sphere {
         } else {
             let sqrtd = discriminant.sqrt();
             let mut root = (h - sqrtd) / a;
-            if !hit_range.contains(root) {
+            if !hit_range.surrounds(root) {
                 root = (h + sqrtd) / a;
-                if !hit_range.contains(root) {
+                if !hit_range.surrounds(root) {
                     return None;
                 }
             }
             let point = ray.evaluate(root);
             let outward_normal = (point - self.center) / self.radius;
             Some(HitRecord::new(ray, outward_normal, point, root))
-        }
-    }
-}
-
-pub fn ray_color(ray: &Ray<f32>, world: &impl Hittable) -> Color {
-    let intersection = world.hit(
-        ray,
-        Range {
-            min: 0.0,
-            max: f32::INFINITY,
-        },
-    );
-
-    match intersection {
-        Some(hit) => {
-            let n = (hit.point - Vec3::new(0.0, 0.0, -1.0)).unit();
-            ((n + 1.0) * 0.5).into()
-        }
-        None => {
-            let direction = ray.direction.unit();
-            let t = 0.5 * (direction.y + 1.0);
-            Vec3::one().lerp(Vec3::new(0.5, 0.7, 1.0), t).into()
         }
     }
 }
