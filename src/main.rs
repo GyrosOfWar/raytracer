@@ -8,6 +8,7 @@ use trace::{Object, Sphere, World};
 use vec3::Point3;
 
 mod camera;
+mod helpers;
 mod ppm;
 mod ray;
 mod trace;
