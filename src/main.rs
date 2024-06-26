@@ -7,6 +7,7 @@ use std::{
 use num_traits::Zero;
 use ppm::Image;
 use ray::Ray;
+use trace::{Object, Sphere, World};
 use vec3::{Point3, Vec3};
 
 mod ppm;
@@ -33,6 +34,17 @@ fn main() -> io::Result<()> {
         camera_center - Vec3::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
     let pixel00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
+    let world = World::new(vec![
+        Object::Sphere(Sphere {
+            center: Point3::new(0.0, 0.0, -1.0),
+            radius: 0.5,
+        }),
+        Object::Sphere(Sphere {
+            center: Point3::new(0.0, -100.0, -1.0),
+            radius: 100.0,
+        }),
+    ]);
+
     let mut pixels = vec![];
     for j in 0..height {
         for i in 0..width {
@@ -41,7 +53,7 @@ fn main() -> io::Result<()> {
             let ray_direction = pixel_center - camera_center;
             let ray = Ray::new(camera_center, ray_direction);
 
-            let color = trace::ray_color(&ray);
+            let color = trace::ray_color(&ray, &world);
             pixels.push(color);
         }
     }

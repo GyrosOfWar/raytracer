@@ -1,3 +1,4 @@
+use enum_dispatch::enum_dispatch;
 use num_traits::One;
 
 use crate::{
@@ -45,17 +46,9 @@ impl HitRecord {
             distance,
         }
     }
-
-    pub fn set_face_normal(&mut self, ray: &Ray<f32>, outward_normal: Vec3<f32>) {
-        self.front_facing = ray.direction.dot(outward_normal) < 0.0;
-        self.normal = if self.front_facing {
-            outward_normal
-        } else {
-            -outward_normal
-        };
-    }
 }
 
+#[enum_dispatch]
 pub trait Hittable {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord>;
 }
@@ -64,6 +57,44 @@ pub trait Hittable {
 pub struct Sphere {
     pub center: Point3<f32>,
     pub radius: f32,
+}
+
+#[enum_dispatch(Hittable)]
+#[derive(Debug)]
+pub enum Object {
+    Sphere(Sphere),
+}
+
+#[derive(Debug)]
+pub struct World {
+    objects: Vec<Object>,
+}
+
+impl World {
+    pub fn new(objects: Vec<Object>) -> Self {
+        Self { objects }
+    }
+}
+
+impl Hittable for World {
+    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+        let mut record = None;
+        let mut closest_so_far = hit_range.max;
+
+        for object in &self.objects {
+            let range = Range {
+                min: hit_range.min,
+                max: closest_so_far,
+            };
+
+            if let Some(hit) = object.hit(ray, range) {
+                closest_so_far = hit.distance;
+                record = Some(hit);
+            }
+        }
+
+        record
+    }
 }
 
 impl Hittable for Sphere {
@@ -92,19 +123,21 @@ impl Hittable for Sphere {
     }
 }
 
-pub fn ray_color(ray: &Ray<f32>) -> Color {
-    let center = Point3::new(0.0, 0.0, -1.0);
-    let radius = 0.5;
-    let sphere = Sphere { center, radius };
-    // let intersection = sphere.hit(ray, hit_range)
-    let t = 0.0;
+pub fn ray_color(ray: &Ray<f32>, world: &World) -> Color {
+    let intersection = world.hit(
+        ray,
+        Range {
+            min: 0.0,
+            max: f32::INFINITY,
+        },
+    );
 
-    if t >= 0.0 {
-        let n = (ray.evaluate(t) - Vec3::new(0.0, 0.0, -1.0)).unit();
-        ((n + 1.0) * 0.5).into()
-    } else {
-        let direction = ray.direction.unit();
-        let t = 0.5 * (direction.y + 1.0);
-        Vec3::one().lerp(Vec3::new(0.5, 0.7, 1.0), t).into()
+    match intersection {
+        Some(hit) => (hit.normal * 0.5 + Vec3::one()).into(),
+        None => {
+            let direction = ray.direction.unit();
+            let t = 0.5 * (direction.y + 1.0);
+            Vec3::one().lerp(Vec3::new(0.5, 0.7, 1.0), t).into()
+        }
     }
 }
