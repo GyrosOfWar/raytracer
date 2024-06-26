@@ -39,10 +39,10 @@ fn main() -> io::Result<()> {
             center: Point3::new(0.0, 0.0, -1.0),
             radius: 0.5,
         }),
-        Object::Sphere(Sphere {
-            center: Point3::new(0.0, -100.0, -1.0),
-            radius: 100.0,
-        }),
+        // Object::Sphere(Sphere {
+        //     center: Point3::new(0.0, -100.0, -1.0),
+        //     radius: 100.0,
+        // }),
     ]);
 
     let mut pixels = vec![];

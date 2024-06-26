@@ -123,7 +123,7 @@ impl Hittable for Sphere {
     }
 }
 
-pub fn ray_color(ray: &Ray<f32>, world: &World) -> Color {
+pub fn ray_color(ray: &Ray<f32>, world: &impl Hittable) -> Color {
     let intersection = world.hit(
         ray,
         Range {
