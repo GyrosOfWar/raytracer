@@ -133,7 +133,10 @@ pub fn ray_color(ray: &Ray<f32>, world: &impl Hittable) -> Color {
     );
 
     match intersection {
-        Some(hit) => (hit.normal * 0.5 + Vec3::one()).into(),
+        Some(hit) => {
+            let n = (hit.point - Vec3::new(0.0, 0.0, -1.0)).unit();
+            ((n + 1.0) * 0.5).into()
+        }
         None => {
             let direction = ray.direction.unit();
             let t = 0.5 * (direction.y + 1.0);
