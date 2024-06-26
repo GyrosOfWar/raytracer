@@ -1,10 +1,24 @@
 use std::{io, io::Write};
 
+use num_traits::Float;
+
+use crate::vec3::Vec3;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
     pub r: f32,
     pub g: f32,
     pub b: f32,
+}
+
+impl<T: Float> From<Vec3<T>> for Color {
+    fn from(value: Vec3<T>) -> Self {
+        Color {
+            r: num_traits::cast(value.x).unwrap_or(0.0),
+            g: num_traits::cast(value.y).unwrap_or(0.0),
+            b: num_traits::cast(value.z).unwrap_or(0.0),
+        }
+    }
 }
 
 #[derive(Debug)]

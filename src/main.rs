@@ -1,21 +1,14 @@
 use std::{fs::File, io};
 
 use num_traits::Zero;
-use ppm::{Color, Image};
+use ppm::Image;
 use ray::Ray;
 use vec3::{Point3, Vec3};
 
 mod ppm;
 mod ray;
+mod trace;
 mod vec3;
-
-fn ray_color(ray: &Ray<f32>) -> Color {
-    Color {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-    }
-}
 
 fn main() -> io::Result<()> {
     let aspect_ratio = 16.0 / 9.0;
@@ -43,7 +36,7 @@ fn main() -> io::Result<()> {
             let ray_direction = pixel_center - camera_center;
             let ray = Ray::new(camera_center, ray_direction);
 
-            let color = ray_color(&ray);
+            let color = trace::ray_color(&ray);
             pixels.push(color);
         }
     }

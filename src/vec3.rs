@@ -1,12 +1,16 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-use num_traits::{Float, Zero};
+use num_traits::{Float, One, Zero};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3<T: Float> {
     pub x: T,
     pub y: T,
     pub z: T,
+}
+
+pub fn lerp<T: Float>(a: T, b: T, t: T) -> T {
+    (T::one() - t) * a + t * b
 }
 
 pub type Point3<T> = Vec3<T>;
@@ -39,6 +43,14 @@ impl<T: Float> Vec3<T> {
     pub fn unit(self) -> Self {
         let len = self.length();
         self / len
+    }
+
+    pub fn lerp(&self, rhs: Self, t: T) -> Self {
+        Vec3 {
+            x: lerp(self.x, rhs.x, t),
+            y: lerp(self.y, rhs.y, t),
+            z: lerp(self.z, rhs.z, t),
+        }
     }
 }
 
@@ -125,5 +137,15 @@ impl<T: Float> Zero for Vec3<T> {
 
     fn is_zero(&self) -> bool {
         self.x.is_zero() && self.y.is_zero() && self.z.is_zero()
+    }
+}
+
+impl<T: Float> One for Vec3<T> {
+    fn one() -> Self {
+        Vec3 {
+            x: T::one(),
+            y: T::one(),
+            z: T::one(),
+        }
     }
 }
