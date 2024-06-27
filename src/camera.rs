@@ -1,12 +1,14 @@
-use std::time::Instant;
+use std::{sync::mpsc::channel, time::Instant};
 
-use indicatif::{ProgressBar, ProgressStyle};
 use num_traits::{One, Zero};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
+const PARALLEL: bool = true;
 
 use crate::{
     helpers::random,
     material::Scatterable,
-    ppm::Image,
+    ppm::{Color, Image},
     ray::Ray,
     trace::{Hittable, Range},
     vec3::{self, Point3, Vec3},
@@ -141,30 +143,56 @@ impl Camera {
         return Vec3::new(random() - 0.5, random() - 0.5, 0.0);
     }
 
-    pub fn render(&self, world: &impl Hittable) -> Image {
-        let start = Instant::now();
+    fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
+        let (rx, tx) = channel();
+        (0..self.image_height).into_par_iter().for_each(|j| {
+            let mut row: Vec<Color> = vec![];
+            for i in 0..self.image_width {
+                let mut color = Vec3::zero();
+                for _ in 0..self.samples_per_pixel {
+                    let ray = self.get_ray(i, j);
+                    color += self.ray_color(&ray, MAX_DEPTH, world);
+                }
+                color = color * pixel_samples_scale;
+                row.push(color.into());
+            }
+            rx.send((row, j)).expect("could not send");
+        });
+        drop(rx);
+
+        let mut rows = vec![vec![]; self.image_height];
+        for (row, index) in tx.into_iter() {
+            rows[index] = row;
+        }
+
+        rows.into_iter().flatten().collect()
+    }
+
+    fn render_sequential(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
         let mut pixels = vec![];
-        let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
-        let progress = ProgressBar::new(
-            (self.image_height * self.image_width * self.samples_per_pixel) as u64,
-        );
-        progress.set_style(
-            ProgressStyle::with_template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7}")
-                .unwrap(),
-        );
         for j in 0..self.image_height {
             for i in 0..self.image_width {
                 let mut color = Vec3::zero();
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
                     color += self.ray_color(&ray, MAX_DEPTH, world);
-                    progress.inc(1);
                 }
                 color = color * pixel_samples_scale;
                 pixels.push(color.into());
             }
         }
-        progress.finish_and_clear();
+        pixels
+    }
+
+    pub fn render(&self, world: &impl Hittable) -> Image {
+        let start = Instant::now();
+        let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
+
+        let pixels = if PARALLEL {
+            self.render_parallel(pixel_samples_scale, world)
+        } else {
+            self.render_sequential(pixel_samples_scale, world)
+        };
         let elapsed = start.elapsed();
         println!("rendering took {elapsed:?}");
 

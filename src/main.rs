@@ -57,7 +57,7 @@ fn main() -> io::Result<()> {
         200,
         Point3::new(-2.0, 2.0, 1.0),
         Point3::new(0.0, 0.0, -1.0),
-        10.0,
+        5.0,
         3.4,
     );
     let image = camera.render(&world);

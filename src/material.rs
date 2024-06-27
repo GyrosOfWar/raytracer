@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use enum_dispatch::enum_dispatch;
 
@@ -117,16 +117,16 @@ pub enum Material {
     Dielectric(Dielectric),
 }
 
-pub fn lambertian(albedo: Vec3<f32>) -> Rc<Material> {
-    Rc::new(Material::Lambertian(Lambertian { albedo }))
+pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
+    Arc::new(Material::Lambertian(Lambertian { albedo }))
 }
 
-pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Rc<Material> {
-    Rc::new(Material::Metal(Metal { albedo, fuzz }))
+pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Arc<Material> {
+    Arc::new(Material::Metal(Metal { albedo, fuzz }))
 }
 
-pub fn dielectric(index: f32) -> Rc<Material> {
-    Rc::new(Material::Dielectric(Dielectric {
+pub fn dielectric(index: f32) -> Arc<Material> {
+    Arc::new(Material::Dielectric(Dielectric {
         refraction_index: index,
     }))
 }

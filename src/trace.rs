@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use crate::{
     material::Material,
@@ -45,7 +45,7 @@ pub struct HitRecord {
     pub normal: Vec3<f32>,
     pub distance: f32,
     pub front_facing: bool,
-    pub material: Rc<Material>,
+    pub material: Arc<Material>,
 }
 
 impl HitRecord {
@@ -54,7 +54,7 @@ impl HitRecord {
         outward_normal: Vec3<f32>,
         point: Point3<f32>,
         distance: f32,
-        material: Rc<Material>,
+        material: Arc<Material>,
     ) -> Self {
         let front_facing = ray.direction.dot(outward_normal) < 0.0;
         let normal = if front_facing {
@@ -74,7 +74,7 @@ impl HitRecord {
 }
 
 #[enum_dispatch]
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord>;
 }
 
@@ -82,7 +82,7 @@ pub trait Hittable {
 pub struct Sphere {
     pub center: Point3<f32>,
     pub radius: f32,
-    pub material: Rc<Material>,
+    pub material: Arc<Material>,
 }
 
 #[enum_dispatch(Hittable)]
