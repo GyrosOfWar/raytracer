@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use indicatif::{ProgressBar, ProgressStyle};
 use num_traits::{One, Zero};
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     ppm::Image,
     ray::Ray,
     trace::{Hittable, Range},
-    vec3::{self, Point3, Vec3},
+    vec3::{Point3, Vec3},
 };
 
 const MAX_DEPTH: usize = 10;
@@ -104,6 +105,11 @@ impl Camera {
         let start = Instant::now();
         let mut pixels = vec![];
         let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
+        let progress = ProgressBar::new((self.image_height * self.image_width) as u64);
+        progress.set_style(
+            ProgressStyle::with_template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7}")
+                .unwrap(),
+        );
         for j in 0..self.image_height {
             for i in 0..self.image_width {
                 let mut color = Vec3::zero();
@@ -114,8 +120,10 @@ impl Camera {
                 color = color * pixel_samples_scale;
 
                 pixels.push(color.into());
+                progress.inc(1);
             }
         }
+        progress.finish_and_clear();
         let elapsed = start.elapsed();
         println!("rendering took {elapsed:?}");
 

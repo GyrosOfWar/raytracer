@@ -1,14 +1,12 @@
 use camera::Camera;
-use material::{lambertian, metal, Lambertian, Material, Metal};
-use num_traits::Zero;
+use material::{lambertian, metal};
 use std::{
     fs::File,
     io::{self, BufWriter},
-    rc::Rc,
     time::Instant,
 };
 use trace::{Object, Sphere, World};
-use vec3::{Point3, Vec3};
+use vec3::Vec3;
 
 mod camera;
 mod helpers;
@@ -21,8 +19,8 @@ mod vec3;
 fn main() -> io::Result<()> {
     let material_ground = lambertian(Vec3::new(0.8, 0.8, 0.0));
     let material_center = lambertian(Vec3::new(0.1, 0.2, 0.5));
-    let material_left = metal(Vec3::new(0.8, 0.8, 0.8));
-    let material_right = metal(Vec3::new(0.8, 0.6, 0.2));
+    let material_left = metal(Vec3::new(0.8, 0.8, 0.8), 0.2);
+    let material_right = metal(Vec3::new(0.8, 0.6, 0.2), 1.0);
 
     let world = World::new(vec![
         Object::Sphere(Sphere {

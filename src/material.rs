@@ -5,7 +5,7 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     ray::Ray,
     trace::HitRecord,
-    vec3::{self, Vec3},
+    vec3::{self, random::gen_unit_vector, Vec3},
 };
 
 #[enum_dispatch]
@@ -45,6 +45,7 @@ impl Scatterable for Lambertian {
 #[derive(Debug)]
 pub struct Metal {
     pub albedo: Vec3<f32>,
+    pub fuzz: f32,
 }
 
 impl Scatterable for Metal {
@@ -56,6 +57,7 @@ impl Scatterable for Metal {
         scattered: &mut Ray<f32>,
     ) -> bool {
         let reflected = ray.direction.reflect(hit.normal);
+        let reflected = reflected.unit() + (gen_unit_vector() * self.fuzz);
         *scattered = Ray::new(hit.point, reflected);
         *attenuation = self.albedo;
         return true;
@@ -73,6 +75,6 @@ pub fn lambertian(albedo: Vec3<f32>) -> Rc<Material> {
     Rc::new(Material::Lambertian(Lambertian { albedo }))
 }
 
-pub fn metal(albedo: Vec3<f32>) -> Rc<Material> {
-    Rc::new(Material::Metal(Metal { albedo }))
+pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Rc<Material> {
+    Rc::new(Material::Metal(Metal { albedo, fuzz }))
 }

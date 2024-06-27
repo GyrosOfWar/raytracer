@@ -5,5 +5,6 @@ edition = "2021"
 
 [dependencies]
 enum_dispatch = "0.3.13"
+indicatif = "0.17.8"
 libc = "0.2.155"
 num-traits = "0.2.19"
