@@ -4,11 +4,13 @@ use num_traits::{One, Zero};
 
 use crate::{
     helpers::random,
-    ppm::{Color, Image},
+    ppm::Image,
     ray::Ray,
     trace::{Hittable, Range},
-    vec3::{Point3, Vec3},
+    vec3::{self, Point3, Vec3},
 };
+
+const MAX_DEPTH: usize = 10;
 
 pub struct Camera {
     samples_per_pixel: usize,
@@ -22,6 +24,11 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(width: usize, height: usize, samples_per_pixel: usize) -> Self {
+        assert!(
+            samples_per_pixel >= 1,
+            "must take at least one sample per pixel"
+        );
+
         let focal_length = 1.0f32;
         let viewport_height = 2.0f32;
         let viewport_width = viewport_height * (width as f32 / height as f32);
@@ -46,12 +53,16 @@ impl Camera {
         }
     }
 
-    fn ray_color(&self, ray: &Ray<f32>, world: &impl Hittable) -> Vec3<f32> {
+    fn ray_color(&self, ray: &Ray<f32>, depth: usize, world: &impl Hittable) -> Vec3<f32> {
+        if depth <= 0 {
+            return Vec3::zero();
+        }
+
         let intersection = world.hit(ray, Range::new(0.0, f32::INFINITY));
         match intersection {
             Some(hit) => {
-                let n = (hit.point - Vec3::new(0.0, 0.0, -1.0)).unit();
-                ((n + 1.0) * 0.5)
+                let direction = vec3::random::gen_on_hemisphere(hit.normal);
+                self.ray_color(&Ray::new(hit.point, direction), depth - 1, world) * 0.5
             }
             None => {
                 let direction = ray.direction.unit();
@@ -89,7 +100,7 @@ impl Camera {
                 let mut color = Vec3::zero();
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
-                    color += self.ray_color(&ray, world);
+                    color += self.ray_color(&ray, MAX_DEPTH, world);
                 }
                 color = color * pixel_samples_scale;
 
