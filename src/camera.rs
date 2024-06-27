@@ -3,6 +3,7 @@ use std::time::Instant;
 use num_traits::{One, Zero};
 
 use crate::{
+    helpers::random,
     ppm::{Color, Image},
     ray::Ray,
     trace::{Hittable, Range},
@@ -10,6 +11,7 @@ use crate::{
 };
 
 pub struct Camera {
+    samples_per_pixel: usize,
     image_width: usize,
     image_height: usize,
     center: Point3<f32>,
@@ -19,7 +21,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(width: usize, height: usize, samples_per_pixel: usize) -> Self {
         let focal_length = 1.0f32;
         let viewport_height = 2.0f32;
         let viewport_width = viewport_height * (width as f32 / height as f32);
@@ -40,37 +42,58 @@ impl Camera {
             pixel_00_loc,
             pixel_delta_u,
             pixel_delta_v,
+            samples_per_pixel,
         }
     }
 
-    fn ray_color(&self, ray: &Ray<f32>, world: &impl Hittable) -> Color {
+    fn ray_color(&self, ray: &Ray<f32>, world: &impl Hittable) -> Vec3<f32> {
         let intersection = world.hit(ray, Range::new(0.0, f32::INFINITY));
         match intersection {
             Some(hit) => {
                 let n = (hit.point - Vec3::new(0.0, 0.0, -1.0)).unit();
-                ((n + 1.0) * 0.5).into()
+                ((n + 1.0) * 0.5)
             }
             None => {
                 let direction = ray.direction.unit();
                 let t = 0.5 * (direction.y + 1.0);
-                Vec3::one().lerp(Vec3::new(0.5, 0.7, 1.0), t).into()
+                Vec3::one().lerp(Vec3::new(0.5, 0.7, 1.0), t)
             }
         }
+    }
+
+    // Construct a camera ray originating from the origin and directed at randomly sampled
+    // point around the pixel location i, j.
+    fn get_ray(&self, i: usize, j: usize) -> Ray<f32> {
+        let offset = self.sample_square();
+        let pixel_sample = self.pixel_00_loc
+            + (self.pixel_delta_u * (i as f32 + offset.x))
+            + (self.pixel_delta_v * (j as f32 + offset.y));
+
+        let ray_origin = self.center;
+        let ray_direction = pixel_sample - ray_origin;
+
+        return Ray::new(ray_origin, ray_direction);
+    }
+
+    // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
+    fn sample_square(&self) -> Vec3<f32> {
+        return Vec3::new(random() - 0.5, random() - 0.5, 0.0);
     }
 
     pub fn render(&self, world: &impl Hittable) -> Image {
         let start = Instant::now();
         let mut pixels = vec![];
+        let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
         for j in 0..self.image_height {
             for i in 0..self.image_width {
-                let pixel_center = self.pixel_00_loc
-                    + (self.pixel_delta_u * i as f32)
-                    + (self.pixel_delta_v * j as f32);
-                let ray_direction = pixel_center - self.center;
-                let ray = Ray::new(self.center, ray_direction);
+                let mut color = Vec3::zero();
+                for i in 0..self.samples_per_pixel {
+                    let ray = self.get_ray(i, j);
+                    color += self.ray_color(&ray, world);
+                }
+                color = color * pixel_samples_scale;
 
-                let color = self.ray_color(&ray, world);
-                pixels.push(color);
+                pixels.push(color.into());
             }
         }
         let elapsed = start.elapsed();

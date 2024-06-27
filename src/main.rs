@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
         }),
     ]);
 
-    let camera = Camera::new(720, 480);
+    let camera = Camera::new(720, 480, 10);
     let image = camera.render(&world);
 
     let start = Instant::now();

@@ -25,6 +25,16 @@ impl Range {
     pub fn size(&self) -> f32 {
         self.max - self.min
     }
+
+    pub fn clamp(&self, x: f32) -> f32 {
+        if x < self.min {
+            self.min
+        } else if x > self.max {
+            self.max
+        } else {
+            x
+        }
+    }
 }
 
 pub struct HitRecord {

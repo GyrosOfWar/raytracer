@@ -2,7 +2,7 @@ use std::{io, io::Write};
 
 use num_traits::Float;
 
-use crate::vec3::Vec3;
+use crate::{trace::Range, vec3::Vec3};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
@@ -46,11 +46,12 @@ impl Image {
     }
 
     pub fn write_to_ppm(&self, writer: &mut impl Write) -> io::Result<()> {
+        let intensity = Range::new(0.0, 0.999);
         write!(writer, "P3\n{} {}\n255\n", self.width, self.height)?;
         for pixel in &self.pixels {
-            let r = (pixel.r * 255.999) as u8;
-            let g = (pixel.g * 255.999) as u8;
-            let b = (pixel.b * 255.999) as u8;
+            let r = (256.0 * intensity.clamp(pixel.r)) as u32;
+            let g = (256.0 * intensity.clamp(pixel.g)) as u32;
+            let b = (256.0 * intensity.clamp(pixel.b)) as u32;
             write!(writer, "{} {} {}\n", r, g, b)?;
         }
         Ok(())

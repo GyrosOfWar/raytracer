@@ -1,4 +1,9 @@
-use once_cell::sync::Lazy;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+pub fn random() -> f32 {
+    let rand_int = unsafe { libc::rand() };
+    let f = rand_int as f64 / (libc::RAND_MAX as f64 + 1.0);
+    f as f32
+}
 
-static RNG: Lazy<SmallRng> = Lazy::new(|| SmallRng::from_entropy());
+pub fn random_range(min: f32, max: f32) -> f32 {
+    min + (max - min) * random()
+}
