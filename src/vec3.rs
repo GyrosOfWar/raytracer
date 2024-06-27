@@ -214,6 +214,15 @@ pub mod random {
         }
     }
 
+    pub fn gen_unit_disk() -> Vec3<f32> {
+        loop {
+            let p = Vec3::new(random_range(-1.0, 1.0), random_range(-1.0, 1.0), 0.0);
+            if p.length_squared() < 1.0 {
+                return p;
+            }
+        }
+    }
+
     pub fn gen_unit_vector() -> Vec3<f32> {
         gen_unit_sphere().unit()
     }
