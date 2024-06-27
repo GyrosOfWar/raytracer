@@ -146,7 +146,6 @@ impl Camera {
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
         let (rx, tx) = channel();
         (0..self.image_height).into_par_iter().for_each(|j| {
-            let mut row: Vec<Color> = vec![];
             for i in 0..self.image_width {
                 let mut color = Vec3::zero();
                 for _ in 0..self.samples_per_pixel {
@@ -154,18 +153,18 @@ impl Camera {
                     color += self.ray_color(&ray, MAX_DEPTH, world);
                 }
                 color = color * pixel_samples_scale;
-                row.push(color.into());
+                rx.send((color, i, j)).expect("could not send");
             }
-            rx.send((row, j)).expect("could not send");
         });
         drop(rx);
 
-        let mut rows = vec![vec![]; self.image_height];
-        for (row, index) in tx.into_iter() {
-            rows[index] = row;
+        let mut pixels = vec![Color::black(); self.image_height * self.image_width];
+        for (color, i, j) in tx.into_iter() {
+            let index = j * self.image_width + i;
+            pixels[index] = color.into();
         }
 
-        rows.into_iter().flatten().collect()
+        pixels
     }
 
     fn render_sequential(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
