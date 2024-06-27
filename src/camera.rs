@@ -58,10 +58,10 @@ impl Camera {
             return Vec3::zero();
         }
 
-        let intersection = world.hit(ray, Range::new(0.0, f32::INFINITY));
+        let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
         match intersection {
             Some(hit) => {
-                let direction = vec3::random::gen_on_hemisphere(hit.normal);
+                let direction = hit.normal + vec3::random::gen_unit_vector();
                 self.ray_color(&Ray::new(hit.point, direction), depth - 1, world) * 0.5
             }
             None => {
