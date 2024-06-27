@@ -7,6 +7,7 @@ use crate::{
 };
 use enum_dispatch::enum_dispatch;
 
+#[derive(Debug)]
 pub struct Range {
     pub min: f32,
     pub max: f32,
@@ -36,6 +37,14 @@ impl Range {
             self.max
         } else {
             x
+        }
+    }
+
+    pub fn expand(&self, delta: f32) -> Self {
+        let padding = delta / 2.0;
+        Range {
+            min: self.min - padding,
+            max: self.max + padding,
         }
     }
 }
