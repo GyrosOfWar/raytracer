@@ -87,7 +87,7 @@ impl Camera {
         for j in 0..self.image_height {
             for i in 0..self.image_width {
                 let mut color = Vec3::zero();
-                for i in 0..self.samples_per_pixel {
+                for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
                     color += self.ray_color(&ray, world);
                 }
