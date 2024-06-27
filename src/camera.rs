@@ -25,23 +25,41 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(width: usize, height: usize, samples_per_pixel: usize) -> Self {
+    pub fn new(
+        width: usize,
+        height: usize,
+        samples_per_pixel: usize,
+        look_from: Point3<f32>,
+        look_at: Point3<f32>,
+    ) -> Self {
         assert!(
             samples_per_pixel >= 1,
             "must take at least one sample per pixel"
         );
 
-        let focal_length = 1.0f32;
-        let viewport_height = 2.0f32;
+        let v_up = Vec3::new(0.0, 1.0, 0.0);
+        let v_fov = 90.0f32;
+
+        let focal_length = (look_from - look_at).length();
+        let theta = v_fov.to_radians();
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h * focal_length;
         let viewport_width = viewport_height * (width as f32 / height as f32);
-        let camera_center = Point3::zero();
-        let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
-        let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
+
+        // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
+        let w = (look_from - look_at).unit();
+        let u = v_up.cross(w).unit();
+        let v = w.cross(u);
+
+        let camera_center = look_from;
+        let viewport_u = u * viewport_width;
+        let viewport_v = -v * viewport_height;
+
         let pixel_delta_u = viewport_u / width as f32;
         let pixel_delta_v = viewport_v / height as f32;
 
         let viewport_upper_left =
-            camera_center - Vec3::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
+            camera_center - (w * focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
         let pixel_00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
         Camera {

@@ -6,7 +6,7 @@ use std::{
     time::Instant,
 };
 use trace::{Object, Sphere, World};
-use vec3::Vec3;
+use vec3::{Point3, Vec3};
 
 mod camera;
 mod helpers;
@@ -21,7 +21,7 @@ fn main() -> io::Result<()> {
     let material_center = lambertian(Vec3::new(0.1, 0.2, 0.5));
     let material_left = dielectric(1.50);
     let material_bubble = dielectric(1.00 / 1.50);
-    let material_right = metal(Vec3::new(0.8, 0.6, 0.2), 1.0);
+    let material_right = metal(Vec3::new(0.8, 0.6, 0.2), 0.0);
 
     let world = World::new(vec![
         Object::Sphere(Sphere {
@@ -51,7 +51,13 @@ fn main() -> io::Result<()> {
         }),
     ]);
 
-    let camera = Camera::new(1280, 720, 100);
+    let camera = Camera::new(
+        1280,
+        720,
+        200,
+        Point3::new(-2.0, 2.0, 1.0),
+        Point3::new(0.0, 0.0, -1.0),
+    );
     let image = camera.render(&world);
 
     let start = Instant::now();

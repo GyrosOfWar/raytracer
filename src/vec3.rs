@@ -32,11 +32,11 @@ impl<T: Float> Vec3<T> {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
-    pub fn cross(&self, rhs: Self) -> Self {
+    pub fn cross(self, rhs: Self) -> Self {
         Vec3 {
-            x: self.y * rhs.z - self.y * rhs.z,
-            y: self.x * rhs.z - self.x * rhs.z,
-            z: self.x * rhs.y - self.x * rhs.y,
+            x: self.y * rhs.z - self.z * rhs.y,
+            y: self.z * rhs.x - self.x * rhs.z,
+            z: self.x * rhs.y - self.y * rhs.x,
         }
     }
 
