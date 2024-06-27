@@ -28,7 +28,7 @@ impl<T: Float> Vec3<T> {
         self.length_squared().sqrt()
     }
 
-    pub fn dot(&self, rhs: Self) -> T {
+    pub fn dot(self, rhs: Self) -> T {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
@@ -52,6 +52,21 @@ impl<T: Float> Vec3<T> {
             z: lerp(self.z, rhs.z, t),
         }
     }
+}
+
+impl Vec3<f32> {
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        self.x.abs() < s && self.y.abs() < s && self.z.abs() < s
+    }
+
+    pub fn reflect(self, n: Self) -> Self {
+        reflect(self, n)
+    }
+}
+
+fn reflect(v: Vec3<f32>, n: Vec3<f32>) -> Vec3<f32> {
+    return v - n * Vec3::dot(v, n) * 2.0;
 }
 
 impl<T: Float> Neg for Vec3<T> {

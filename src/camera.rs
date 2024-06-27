@@ -4,6 +4,7 @@ use num_traits::{One, Zero};
 
 use crate::{
     helpers::random,
+    material::Scatterable,
     ppm::Image,
     ray::Ray,
     trace::{Hittable, Range},
@@ -61,8 +62,16 @@ impl Camera {
         let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
         match intersection {
             Some(hit) => {
-                let direction = hit.normal + vec3::random::gen_unit_vector();
-                self.ray_color(&Ray::new(hit.point, direction), depth - 1, world) * 0.5
+                let mut scattered = Ray::new(Vec3::zero(), Vec3::zero());
+                let mut attenuation = Vec3::zero();
+                if hit
+                    .material
+                    .scatter(ray, &hit, &mut attenuation, &mut scattered)
+                {
+                    attenuation * self.ray_color(&scattered, depth - 1, world)
+                } else {
+                    Vec3::zero()
+                }
             }
             None => {
                 let direction = ray.direction.unit();
