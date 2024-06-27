@@ -59,14 +59,17 @@ impl Vec3<f32> {
         let s = 1e-8;
         self.x.abs() < s && self.y.abs() < s && self.z.abs() < s
     }
-
-    pub fn reflect(self, n: Self) -> Self {
-        reflect(self, n)
-    }
 }
 
-fn reflect(v: Vec3<f32>, n: Vec3<f32>) -> Vec3<f32> {
+pub fn reflect(v: Vec3<f32>, n: Vec3<f32>) -> Vec3<f32> {
     return v - n * Vec3::dot(v, n) * 2.0;
+}
+
+pub fn refract(uv: Vec3<f32>, n: Vec3<f32>, etai_over_etat: f32) -> Vec3<f32> {
+    let cos_theta = (-uv).dot(n).min(1.0);
+    let r_out_perp = (uv + n * cos_theta) * etai_over_etat;
+    let r_out_parallel = n * -(1.0 - r_out_perp.length_squared()).abs().sqrt();
+    r_out_perp + r_out_parallel
 }
 
 impl<T: Float> Neg for Vec3<T> {

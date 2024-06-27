@@ -105,7 +105,9 @@ impl Camera {
         let start = Instant::now();
         let mut pixels = vec![];
         let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
-        let progress = ProgressBar::new((self.image_height * self.image_width) as u64);
+        let progress = ProgressBar::new(
+            (self.image_height * self.image_width * self.samples_per_pixel) as u64,
+        );
         progress.set_style(
             ProgressStyle::with_template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7}")
                 .unwrap(),
@@ -116,11 +118,10 @@ impl Camera {
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
                     color += self.ray_color(&ray, MAX_DEPTH, world);
+                    progress.inc(1);
                 }
                 color = color * pixel_samples_scale;
-
                 pixels.push(color.into());
-                progress.inc(1);
             }
         }
         progress.finish_and_clear();
