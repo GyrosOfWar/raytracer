@@ -3,8 +3,6 @@ use std::{sync::mpsc::channel, time::Instant};
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-const PARALLEL: bool = true;
-
 use crate::{
     helpers::random,
     material::Scatterable,
@@ -15,6 +13,7 @@ use crate::{
 };
 
 const MAX_DEPTH: usize = 10;
+const PARALLEL: bool = true;
 
 pub struct Camera {
     samples_per_pixel: usize,
@@ -144,25 +143,19 @@ impl Camera {
     }
 
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
-        let (rx, tx) = channel();
-        (0..self.image_height).into_par_iter().for_each(|j| {
-            for i in 0..self.image_width {
+        let pixels: Vec<Color> = (0..(self.image_height * self.image_width))
+            .into_par_iter()
+            .map(|index| {
+                let i = index % self.image_width;
+                let j = index / self.image_width;
                 let mut color = Vec3::zero();
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
                     color += self.ray_color(&ray, MAX_DEPTH, world);
                 }
-                color = color * pixel_samples_scale;
-                rx.send((color, i, j)).expect("could not send");
-            }
-        });
-        drop(rx);
-
-        let mut pixels = vec![Color::black(); self.image_height * self.image_width];
-        for (color, i, j) in tx.into_iter() {
-            let index = j * self.image_width + i;
-            pixels[index] = color.into();
-        }
+                (color * pixel_samples_scale).into()
+            })
+            .collect();
 
         pixels
     }
@@ -184,17 +177,17 @@ impl Camera {
     }
 
     pub fn render(&self, world: &impl Hittable) -> Image {
-        let start = Instant::now();
         let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
 
+        let start = Instant::now();
         let pixels = if PARALLEL {
             self.render_parallel(pixel_samples_scale, world)
         } else {
             self.render_sequential(pixel_samples_scale, world)
         };
-        let elapsed = start.elapsed();
-        println!("rendering took {elapsed:?}");
+        let duration = start.elapsed();
 
+        println!("Rendering took {duration:?}");
         Image::new(pixels, self.image_width, self.image_height)
     }
 }
