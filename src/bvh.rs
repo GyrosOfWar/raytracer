@@ -1,4 +1,6 @@
-use std::sync::Arc;
+use std::{cmp::Reverse, sync::Arc};
+
+use ordered_float::OrderedFloat;
 
 use crate::{
     ray::Ray,
@@ -117,6 +119,16 @@ impl Aabb {
 
         true
     }
+
+    pub fn longest_axis(&self) -> Axis {
+        if self.x.size() > self.z.size() {
+            Axis::X
+        } else if self.y.size() > self.z.size() {
+            Axis::Y
+        } else {
+            Axis::Z
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -140,6 +152,7 @@ impl BvhNode {
         BvhNode::from_objects(objects, 0, objects.len())
     }
 
+    // TODO make this use slices instead?
     pub fn from_objects(objects: &mut [Arc<Object>], start: usize, end: usize) -> Self {
         let axis = Axis::random();
         let len = end - start;
@@ -148,15 +161,8 @@ impl BvhNode {
             1 => BvhNode::new(objects[start].clone(), objects[start].clone()),
             2 => BvhNode::new(objects[start].clone(), objects[start + 1].clone()),
             _ => {
-                objects[start..end].sort_by(|a, b| {
-                    let a_axis_interval = a.bounding_box().interval_at(axis);
-                    let b_axis_interval = b.bounding_box().interval_at(axis);
-
-                    a_axis_interval
-                        .min
-                        .partial_cmp(&b_axis_interval.min)
-                        .expect("no NaNs allowed")
-                });
+                objects[start..end]
+                    .sort_by_key(|o| Reverse(OrderedFloat(o.bounding_box().interval_at(axis).min)));
 
                 let mid = start + len / 2;
                 let left = BvhNode::from_objects(objects, start, mid);

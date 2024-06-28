@@ -13,11 +13,12 @@ pub enum Axis {
 
 impl Axis {
     pub fn random() -> Axis {
-        let int = random_int(0, 2);
+        let int = random_int(0, 3);
         match int {
             0 => Axis::X,
             1 => Axis::Y,
-            _ => Axis::Z,
+            2 => Axis::Z,
+            _ => unreachable!(),
         }
     }
 }

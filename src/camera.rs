@@ -44,7 +44,7 @@ impl Camera {
         );
 
         let v_up = Vec3::new(0.0, 1.0, 0.0);
-        let v_fov = 45.0f32;
+        let v_fov = 20.0f32;
 
         let theta = v_fov.to_radians();
         let h = (theta / 2.0).tan();

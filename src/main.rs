@@ -1,12 +1,13 @@
 use bvh::BvhNode;
 use camera::Camera;
+use helpers::{random, random_range};
 use material::{dielectric, lambertian, metal};
 use std::{
     fs::File,
     io::{self, BufWriter},
 };
 use trace::{Object, Sphere, World};
-use vec3::{Point3, Vec3};
+use vec3::Point3;
 
 mod bvh;
 mod camera;
@@ -18,42 +19,78 @@ mod trace;
 mod vec3;
 
 fn main() -> io::Result<()> {
-    let material_ground = lambertian(Vec3::new(0.8, 0.8, 0.0));
-    let material_center = lambertian(Vec3::new(0.1, 0.2, 0.5));
-    let material_left = dielectric(1.50);
-    let material_bubble = dielectric(1.00 / 1.50);
-    let material_right = metal(Vec3::new(0.8, 0.6, 0.2), 0.0);
+    let mut objects = vec![];
+    let ground_material = lambertian(Point3::new(0.5, 0.5, 0.5));
+    objects.push(Object::Sphere(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        ground_material,
+    )));
 
-    let mut world = World::new(vec![
-        Object::Sphere(Sphere::new(
-            Vec3::new(0.0, -100.5, -1.0),
-            100.0,
-            material_ground,
-        )),
-        Object::Sphere(Sphere::new(Vec3::new(0.0, 0.0, -1.2), 0.5, material_center)),
-        Object::Sphere(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, material_left)),
-        Object::Sphere(Sphere::new(
-            Vec3::new(-1.0, 0.0, -1.0),
-            0.4,
-            material_bubble,
-        )),
-        Object::Sphere(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, material_right)),
-    ]);
+    for a in -11..11 {
+        for b in -11..11 {
+            let float = random();
+            let center = Point3::new(
+                (a as f32) + 0.9 * random(),
+                0.2,
+                (b as f32) + 0.9 * random(),
+            );
 
+            if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                let object = match float {
+                    0.0..=0.8 => {
+                        let albedo = vec3::random::gen() * vec3::random::gen();
+                        let material = lambertian(albedo);
+                        Sphere::new(center, 0.2, material)
+                    }
+                    0.8..=0.95 => {
+                        let albedo = vec3::random::gen_range(0.5, 1.0);
+                        let fuzz = random_range(0.0, 0.5);
+                        let material = metal(albedo, fuzz);
+                        Sphere::new(center, 0.2, material)
+                    }
+                    _ => Sphere::new(center, 0.2, dielectric(1.5)),
+                };
+
+                objects.push(Object::Sphere(object));
+            }
+        }
+    }
+
+    let material1 = dielectric(1.5);
+    objects.push(Object::Sphere(Sphere::new(
+        Point3::new(0.0, 1.0, 0.0),
+        1.0,
+        material1,
+    )));
+
+    let material2 = lambertian(Point3::new(0.4, 0.2, 0.1));
+    objects.push(Object::Sphere(Sphere::new(
+        Point3::new(-4.0, 1.0, 0.0),
+        1.0,
+        material2,
+    )));
+
+    let material3 = metal(Point3::new(0.7, 0.6, 0.5), 0.0);
+    objects.push(Object::Sphere(Sphere::new(
+        Point3::new(4.0, 1.0, 0.0),
+        1.0,
+        material3,
+    )));
+
+    let mut world = World::new(objects);
     let world = BvhNode::from_world(&mut world);
-    println!("world: {world:#?}");
 
     let camera = Camera::new(
         1280,
         720,
-        200,
-        Point3::new(0.0, 0.0, 1.0),
-        Point3::new(0.0, 0.0, -1.0),
-        7.0,
-        2.0,
+        500,
+        Point3::new(13.0, 2.0, 3.0),
+        Point3::new(0.0, 0.0, 0.0),
+        0.6,
+        10.0,
     );
     let image = camera.render(&world);
-
     let mut file = BufWriter::new(File::create("image.ppm")?);
     image.write_to_ppm(&mut file)?;
 
