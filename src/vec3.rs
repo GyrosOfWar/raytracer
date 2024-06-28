@@ -2,11 +2,24 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use num_traits::{Float, One, Zero};
 
+use crate::helpers::random_int;
+
 #[derive(Debug, Copy, Clone)]
 pub enum Axis {
     X,
     Y,
     Z,
+}
+
+impl Axis {
+    pub fn random() -> Axis {
+        let int = random_int(0, 2);
+        match int {
+            0 => Axis::X,
+            1 => Axis::Y,
+            _ => Axis::Z,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

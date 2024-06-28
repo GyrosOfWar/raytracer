@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use crate::{
     ray::Ray,
-    trace::Range,
+    trace::{HitRecord, Hittable, Object, Range, World},
     vec3::{Axis, Point3},
 };
 
@@ -97,5 +99,65 @@ impl Aabb {
         }
 
         true
+    }
+}
+
+#[derive(Debug)]
+pub struct BvhNode {
+    left: Arc<Object>,
+    right: Arc<Object>,
+    bbox: Aabb,
+}
+
+impl BvhNode {
+    pub fn from_world(world: World) -> Self {
+        todo!()
+    }
+
+    pub fn from_objects(objects: &mut Vec<Object>, start: usize, end: usize) -> Self {
+        let axis = Axis::random();
+        let len = end - start;
+
+        match len {
+            1 => {
+                let left = &objects[start];
+                let right = &objects[start];
+                todo!()
+            }
+            2 => {
+                todo!()
+            }
+            n => {
+                let slice = &objects[start..end];
+
+                todo!()
+            }
+        }
+    }
+}
+
+impl Hittable for BvhNode {
+    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+        if !self.bbox.hit(ray, hit_range) {
+            return None;
+        }
+
+        let hit_left = self.left.hit(ray, hit_range);
+        let hit_right = self.right.hit(
+            ray,
+            Range::new(
+                hit_range.min,
+                hit_left
+                    .as_ref()
+                    .map(|h| h.distance)
+                    .unwrap_or(hit_range.max),
+            ),
+        );
+
+        hit_left.or(hit_right)
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        self.bbox
     }
 }

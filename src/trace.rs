@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use crate::{
     bvh::Aabb,
-    material::Material,
+    material::{Empty, Material},
     ray::Ray,
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
+use num_traits::Zero;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Range {
@@ -66,6 +67,7 @@ impl Range {
     }
 }
 
+#[derive(Debug)]
 pub struct HitRecord {
     pub point: Point3<f32>,
     pub normal: Vec3<f32>,
@@ -75,6 +77,16 @@ pub struct HitRecord {
 }
 
 impl HitRecord {
+    pub fn empty() -> Self {
+        HitRecord {
+            point: Point3::zero(),
+            normal: Vec3::zero(),
+            distance: 0.0,
+            front_facing: false,
+            material: Arc::new(Material::Empty(Empty)),
+        }
+    }
+
     pub fn new(
         ray: &Ray<f32>,
         outward_normal: Vec3<f32>,
@@ -96,6 +108,10 @@ impl HitRecord {
             distance,
             material,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        matches!(*self.material, Material::Empty(_))
     }
 }
 

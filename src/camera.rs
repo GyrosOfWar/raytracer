@@ -1,4 +1,4 @@
-use std::{sync::mpsc::channel, time::Instant};
+use std::time::Instant;
 
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
