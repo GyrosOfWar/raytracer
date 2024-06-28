@@ -2,6 +2,13 @@ use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use num_traits::{Float, One, Zero};
 
+#[derive(Debug, Copy, Clone)]
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3<T: Float> {
     pub x: T,
@@ -50,6 +57,14 @@ impl<T: Float> Vec3<T> {
             x: lerp(self.x, rhs.x, t),
             y: lerp(self.y, rhs.y, t),
             z: lerp(self.z, rhs.z, t),
+        }
+    }
+
+    pub fn at(&self, axis: Axis) -> T {
+        match axis {
+            Axis::X => self.x,
+            Axis::Y => self.y,
+            Axis::Z => self.z,
         }
     }
 }

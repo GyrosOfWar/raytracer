@@ -25,31 +25,19 @@ fn main() -> io::Result<()> {
     let material_right = metal(Vec3::new(0.8, 0.6, 0.2), 0.0);
 
     let world = World::new(vec![
-        Object::Sphere(Sphere {
-            center: Vec3::new(0.0, -100.5, -1.0),
-            radius: 100.0,
-            material: material_ground,
-        }),
-        Object::Sphere(Sphere {
-            center: Vec3::new(0.0, 0.0, -1.2),
-            radius: 0.5,
-            material: material_center,
-        }),
-        Object::Sphere(Sphere {
-            center: Vec3::new(-1.0, 0.0, -1.0),
-            radius: 0.5,
-            material: material_left,
-        }),
-        Object::Sphere(Sphere {
-            center: Vec3::new(-1.0, 0.0, -1.0),
-            radius: 0.4,
-            material: material_bubble,
-        }),
-        Object::Sphere(Sphere {
-            center: Vec3::new(1.0, 0.0, -1.0),
-            radius: 0.5,
-            material: material_right,
-        }),
+        Object::Sphere(Sphere::new(
+            Vec3::new(0.0, -100.5, -1.0),
+            100.0,
+            material_ground,
+        )),
+        Object::Sphere(Sphere::new(Vec3::new(0.0, 0.0, -1.2), 0.5, material_center)),
+        Object::Sphere(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, material_left)),
+        Object::Sphere(Sphere::new(
+            Vec3::new(-1.0, 0.0, -1.0),
+            0.4,
+            material_bubble,
+        )),
+        Object::Sphere(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, material_right)),
     ]);
 
     let camera = Camera::new(

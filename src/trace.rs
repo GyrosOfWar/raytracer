@@ -1,21 +1,38 @@
 use std::sync::Arc;
 
 use crate::{
+    bvh::Aabb,
     material::Material,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Range {
     pub min: f32,
     pub max: f32,
 }
 
+impl Default for Range {
+    fn default() -> Self {
+        Self {
+            min: 0.0,
+            max: f32::INFINITY,
+        }
+    }
+}
+
 impl Range {
     pub fn new(min: f32, max: f32) -> Self {
         Range { min, max }
+    }
+
+    pub fn from_ranges(a: Range, b: Range) -> Self {
+        Range {
+            min: if a.min <= b.min { a.min } else { b.min },
+            max: if a.max >= b.max { a.max } else { b.max },
+        }
     }
 
     pub fn contains(&self, value: f32) -> bool {
@@ -85,13 +102,8 @@ impl HitRecord {
 #[enum_dispatch]
 pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord>;
-}
 
-#[derive(Debug)]
-pub struct Sphere {
-    pub center: Point3<f32>,
-    pub radius: f32,
-    pub material: Arc<Material>,
+    fn bounding_box(&self) -> Aabb;
 }
 
 #[enum_dispatch(Hittable)]
@@ -103,11 +115,23 @@ pub enum Object {
 #[derive(Debug)]
 pub struct World {
     objects: Vec<Object>,
+    bounding_box: Aabb,
+}
+
+fn make_bounding_box(objects: &[Object]) -> Aabb {
+    let mut bbox = Aabb::default();
+    for object in objects {
+        bbox = Aabb::from_boxes(bbox, object.bounding_box());
+    }
+    bbox
 }
 
 impl World {
     pub fn new(objects: Vec<Object>) -> Self {
-        Self { objects }
+        Self {
+            bounding_box: make_bounding_box(&objects),
+            objects,
+        }
     }
 }
 
@@ -129,6 +153,32 @@ impl Hittable for World {
         }
 
         record
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        self.bounding_box
+    }
+}
+
+#[derive(Debug)]
+pub struct Sphere {
+    pub center: Point3<f32>,
+    pub radius: f32,
+    pub material: Arc<Material>,
+    bounding_box: Aabb,
+}
+
+impl Sphere {
+    pub fn new(center: Point3<f32>, radius: f32, material: Arc<Material>) -> Self {
+        let radius_vec = Vec3::new(radius, radius, radius);
+        let bounding_box = Aabb::from_points(center - radius_vec, center + radius_vec);
+
+        Sphere {
+            center,
+            radius,
+            material,
+            bounding_box,
+        }
     }
 }
 
@@ -161,5 +211,9 @@ impl Hittable for Sphere {
                 self.material.clone(),
             ))
         }
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        self.bounding_box
     }
 }
