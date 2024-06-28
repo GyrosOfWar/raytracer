@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use crate::{
-    bvh::Aabb,
-    material::{Empty, Material},
+    bvh::{Aabb, BvhNode},
+    material::Material,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
-use num_traits::Zero;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Range {
@@ -17,10 +16,7 @@ pub struct Range {
 
 impl Default for Range {
     fn default() -> Self {
-        Self {
-            min: 0.0,
-            max: f32::INFINITY,
-        }
+        Self { min: 0.0, max: 0.0 }
     }
 }
 
@@ -77,16 +73,6 @@ pub struct HitRecord {
 }
 
 impl HitRecord {
-    pub fn empty() -> Self {
-        HitRecord {
-            point: Point3::zero(),
-            normal: Vec3::zero(),
-            distance: 0.0,
-            front_facing: false,
-            material: Arc::new(Material::Empty(Empty)),
-        }
-    }
-
     pub fn new(
         ray: &Ray<f32>,
         outward_normal: Vec3<f32>,
@@ -109,10 +95,6 @@ impl HitRecord {
             material,
         }
     }
-
-    pub fn is_empty(&self) -> bool {
-        matches!(*self.material, Material::Empty(_))
-    }
 }
 
 #[enum_dispatch]
@@ -126,11 +108,12 @@ pub trait Hittable: Send + Sync {
 #[derive(Debug)]
 pub enum Object {
     Sphere(Sphere),
+    BvhNode(BvhNode),
 }
 
 #[derive(Debug)]
 pub struct World {
-    objects: Vec<Object>,
+    objects: Vec<Arc<Object>>,
     bounding_box: Aabb,
 }
 
@@ -146,8 +129,16 @@ impl World {
     pub fn new(objects: Vec<Object>) -> Self {
         Self {
             bounding_box: make_bounding_box(&objects),
-            objects,
+            objects: objects.into_iter().map(Arc::new).collect(),
         }
+    }
+
+    pub fn objects(&self) -> &[Arc<Object>] {
+        &self.objects
+    }
+
+    pub fn objects_mut(&mut self) -> &mut [Arc<Object>] {
+        &mut self.objects
     }
 }
 
@@ -231,5 +222,25 @@ impl Hittable for Sphere {
 
     fn bounding_box(&self) -> Aabb {
         self.bounding_box
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{material::metal, trace::Hittable, vec3::Point3};
+
+    use super::Sphere;
+
+    #[test]
+    fn get_sphere_bbox() {
+        let material = metal(Point3::new(0.5, 0.1, 0.7), 0.2);
+        let sphere = Sphere::new(Point3::new(0.0, 0.0, 0.0), 2.0, material);
+        let bbox = sphere.bounding_box();
+        assert_eq!(bbox.x.min, -2.0);
+        assert_eq!(bbox.y.min, -2.0);
+        assert_eq!(bbox.z.min, -2.0);
+        assert_eq!(bbox.x.max, 2.0);
+        assert_eq!(bbox.y.max, 2.0);
+        assert_eq!(bbox.z.max, 2.0);
     }
 }

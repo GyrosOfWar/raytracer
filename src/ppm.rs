@@ -19,14 +19,6 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn black() -> Self {
-        Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-        }
-    }
-
     pub fn gamma_corrected(self) -> Color {
         Color {
             r: linear_to_gamma(self.r),

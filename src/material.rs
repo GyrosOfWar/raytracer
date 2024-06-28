@@ -109,29 +109,12 @@ fn reflectance(cosine: f32, refraction_index: f32) -> f32 {
     return r0 + (1.0 - r0) * (1.0 - cosine).powi(5);
 }
 
-/// Empty placeholder material for BVH nodes
-#[derive(Debug)]
-pub struct Empty;
-
-impl Scatterable for Empty {
-    fn scatter(
-        &self,
-        ray: &Ray<f32>,
-        hit: &HitRecord,
-        attenuation: &mut Vec3<f32>,
-        scattered: &mut Ray<f32>,
-    ) -> bool {
-        false
-    }
-}
-
 #[enum_dispatch(Scatterable)]
 #[derive(Debug)]
 pub enum Material {
     Lambertian(Lambertian),
     Metal(Metal),
     Dielectric(Dielectric),
-    Empty(Empty),
 }
 
 pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
