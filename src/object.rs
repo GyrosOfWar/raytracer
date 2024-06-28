@@ -1,67 +1,14 @@
 use std::sync::Arc;
 
 use crate::{
-    bvh::{Aabb, BvhNode},
+    aabb::Aabb,
+    bvh::BvhNode,
     material::Material,
+    range::Range,
     ray::Ray,
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
-
-#[derive(Debug, Clone, Copy)]
-pub struct Range {
-    pub min: f32,
-    pub max: f32,
-}
-
-impl Default for Range {
-    fn default() -> Self {
-        Self { min: 0.0, max: 0.0 }
-    }
-}
-
-impl Range {
-    pub fn new(min: f32, max: f32) -> Self {
-        Range { min, max }
-    }
-
-    pub fn from_ranges(a: Range, b: Range) -> Self {
-        Range {
-            min: if a.min <= b.min { a.min } else { b.min },
-            max: if a.max >= b.max { a.max } else { b.max },
-        }
-    }
-
-    pub fn contains(&self, value: f32) -> bool {
-        self.min <= value && value <= self.max
-    }
-
-    pub fn surrounds(&self, value: f32) -> bool {
-        self.min < value && value < self.max
-    }
-
-    pub fn size(&self) -> f32 {
-        self.max - self.min
-    }
-
-    pub fn clamp(&self, x: f32) -> f32 {
-        if x < self.min {
-            self.min
-        } else if x > self.max {
-            self.max
-        } else {
-            x
-        }
-    }
-
-    pub fn expand(&self, delta: f32) -> Self {
-        let padding = delta / 2.0;
-        Range {
-            min: self.min - padding,
-            max: self.max + padding,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct HitRecord {
@@ -118,7 +65,7 @@ pub struct World {
 }
 
 fn make_bounding_box(objects: &[Object]) -> Aabb {
-    let mut bbox = Aabb::default();
+    let mut bbox = Aabb::EMPTY;
     for object in objects {
         bbox = Aabb::from_boxes(bbox, object.bounding_box());
     }
@@ -227,7 +174,7 @@ impl Hittable for Sphere {
 
 #[cfg(test)]
 mod tests {
-    use crate::{material::metal, trace::Hittable, vec3::Point3};
+    use crate::{material::metal, object::Hittable, vec3::Point3};
 
     use super::Sphere;
 

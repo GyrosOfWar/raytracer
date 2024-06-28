@@ -2,7 +2,7 @@ use std::{io, io::Write};
 
 use num_traits::Float;
 
-use crate::{trace::Range, vec3::Vec3};
+use crate::{range::Range, vec3::Vec3};
 
 fn linear_to_gamma(linear_component: f32) -> f32 {
     if linear_component > 0.0 {

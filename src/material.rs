@@ -4,8 +4,8 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     helpers::random,
+    object::HitRecord,
     ray::Ray,
-    trace::HitRecord,
     vec3::{self, random::gen_unit_vector, reflect, refract, Vec3},
 };
 
@@ -90,13 +90,11 @@ impl Scatterable for Dielectric {
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = ri * sin_theta > 1.0;
-        let direction;
-
-        if cannot_refract || reflectance(cos_theta, ri) > random() {
-            direction = reflect(unit_direction, hit.normal);
+        let direction = if cannot_refract || reflectance(cos_theta, ri) > random() {
+            reflect(unit_direction, hit.normal)
         } else {
-            direction = refract(unit_direction, hit.normal, ri);
-        }
+            refract(unit_direction, hit.normal, ri)
+        };
         *scattered = Ray::new(hit.point, direction);
         true
     }

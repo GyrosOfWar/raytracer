@@ -2,20 +2,22 @@ use bvh::BvhNode;
 use camera::Camera;
 use helpers::{random, random_range};
 use material::{dielectric, lambertian, metal};
+use object::{Object, Sphere, World};
 use std::{
     fs::File,
     io::{self, BufWriter},
 };
-use trace::{Object, Sphere, World};
 use vec3::Point3;
 
+mod aabb;
 mod bvh;
 mod camera;
 mod helpers;
 mod material;
+mod object;
 mod ppm;
+mod range;
 mod ray;
-mod trace;
 mod vec3;
 
 fn main() -> io::Result<()> {

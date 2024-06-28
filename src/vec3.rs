@@ -1,8 +1,6 @@
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
-
-use num_traits::{Float, One, Zero};
-
 use crate::helpers::random_int;
+use num_traits::{Float, One, Zero};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Axis {

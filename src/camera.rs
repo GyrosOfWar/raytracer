@@ -1,14 +1,15 @@
 use std::time::Instant;
 
+use crate::material::Scatterable;
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
     helpers::random,
-    material::Scatterable,
+    object::Hittable,
     ppm::{Color, Image},
+    range::Range,
     ray::Ray,
-    trace::{Hittable, Range},
     vec3::{self, Point3, Vec3},
 };
 
