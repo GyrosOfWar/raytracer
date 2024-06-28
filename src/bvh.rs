@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, sync::Arc};
+use std::{cmp::Reverse, sync::Arc, time::Instant};
 
 use ordered_float::OrderedFloat;
 
@@ -148,25 +148,27 @@ impl BvhNode {
     }
 
     pub fn from_world(world: &mut World) -> Self {
+        let start = Instant::now();
         let objects = world.objects_mut();
-        BvhNode::from_objects(objects, 0, objects.len())
+        let root = BvhNode::from_objects(objects);
+        println!("building BVH took {:?}", start.elapsed());
+        root
     }
 
-    // TODO make this use slices instead?
-    pub fn from_objects(objects: &mut [Arc<Object>], start: usize, end: usize) -> Self {
+    fn from_objects(objects: &mut [Arc<Object>]) -> Self {
         let axis = Axis::random();
-        let len = end - start;
+        let len = objects.len();
 
         match len {
-            1 => BvhNode::new(objects[start].clone(), objects[start].clone()),
-            2 => BvhNode::new(objects[start].clone(), objects[start + 1].clone()),
+            1 => BvhNode::new(objects[0].clone(), objects[0].clone()),
+            2 => BvhNode::new(objects[0].clone(), objects[1].clone()),
             _ => {
-                objects[start..end]
+                objects
                     .sort_by_key(|o| Reverse(OrderedFloat(o.bounding_box().interval_at(axis).min)));
 
-                let mid = start + len / 2;
-                let left = BvhNode::from_objects(objects, start, mid);
-                let right = BvhNode::from_objects(objects, mid, end);
+                let mid = len / 2;
+                let left = BvhNode::from_objects(&mut objects[0..mid]);
+                let right = BvhNode::from_objects(&mut objects[mid..]);
 
                 BvhNode::new(
                     Arc::new(Object::BvhNode(left)),
