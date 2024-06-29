@@ -5,7 +5,7 @@ pub struct Range {
 }
 
 impl Range {
-    pub const EMPTY: Range = Range::new(f32::NEG_INFINITY, f32::INFINITY);
+    pub const EMPTY: Range = Range::new(f32::INFINITY, f32::NEG_INFINITY);
     pub const UNIVERSE: Range = Range::new(f32::NEG_INFINITY, f32::INFINITY);
 
     pub const fn new(min: f32, max: f32) -> Self {
@@ -30,6 +30,10 @@ impl Range {
 
     pub fn size(&self) -> f32 {
         self.max - self.min
+    }
+
+    pub fn is_bounded(&self) -> bool {
+        self.max.is_finite() && self.min.is_finite()
     }
 
     #[allow(unused)]

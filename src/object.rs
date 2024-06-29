@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
 
 use crate::{
     aabb::Aabb,
@@ -9,6 +12,14 @@ use crate::{
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
+
+static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+pub fn get_id() -> u64 {
+    let id = ID_COUNTER.fetch_add(1, Ordering::SeqCst);
+
+    id
+}
 
 #[derive(Debug)]
 pub struct HitRecord {
@@ -49,6 +60,8 @@ pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord>;
 
     fn bounding_box(&self) -> Aabb;
+
+    fn id(&self) -> u64;
 }
 
 #[enum_dispatch(Hittable)]
@@ -113,6 +126,10 @@ impl Hittable for World {
     fn bounding_box(&self) -> Aabb {
         self.bounding_box
     }
+
+    fn id(&self) -> u64 {
+        0
+    }
 }
 
 #[derive(Debug)]
@@ -121,18 +138,21 @@ pub struct Sphere {
     pub radius: f32,
     pub material: Arc<Material>,
     bounding_box: Aabb,
+    id: u64,
 }
 
 impl Sphere {
     pub fn new(center: Point3<f32>, radius: f32, material: Arc<Material>) -> Self {
         let radius_vec = Vec3::new(radius, radius, radius);
         let bounding_box = Aabb::from_points(center - radius_vec, center + radius_vec);
+        let id = get_id();
 
         Sphere {
             center,
             radius,
             material,
             bounding_box,
+            id,
         }
     }
 }
@@ -170,6 +190,10 @@ impl Hittable for Sphere {
 
     fn bounding_box(&self) -> Aabb {
         self.bounding_box
+    }
+
+    fn id(&self) -> u64 {
+        self.id
     }
 }
 

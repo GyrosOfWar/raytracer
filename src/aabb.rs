@@ -18,7 +18,6 @@ impl Aabb {
         z: Range::EMPTY,
     };
 
-    #[allow(unused)]
     pub const UNIVERSE: Aabb = Aabb {
         x: Range::UNIVERSE,
         y: Range::UNIVERSE,
@@ -66,6 +65,12 @@ impl Aabb {
             Axis::Y => self.y,
             Axis::Z => self.z,
         }
+    }
+
+    pub fn assert_not_infinite(&self) {
+        assert!(self.x.is_bounded(), "X axis not bounded");
+        assert!(self.y.is_bounded(), "Y axis not bounded");
+        assert!(self.z.is_bounded(), "Z axis not bounded");
     }
 
     fn pad_to_minimums(mut self) -> Aabb {
@@ -119,7 +124,6 @@ impl Aabb {
         true
     }
 
-    #[allow(unused)]
     pub fn longest_axis(&self) -> Axis {
         if self.x.size() > self.z.size() {
             Axis::X

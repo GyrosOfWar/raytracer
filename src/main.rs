@@ -1,4 +1,6 @@
-use bvh::BvhNode;
+use std::sync::Arc;
+
+use bvh::{print_tree, BvhNode};
 use camera::Camera;
 use helpers::{random, random_range};
 use material::{dielectric, lambertian, metal};
@@ -15,6 +17,8 @@ mod object;
 mod range;
 mod ray;
 mod vec3;
+
+const DEBUG_BVH: bool = true;
 
 fn main() -> Result<(), image::ImageError> {
     let mut objects = vec![];
@@ -79,19 +83,23 @@ fn main() -> Result<(), image::ImageError> {
     let mut world = World::new(objects);
     let world = BvhNode::from_world(&mut world);
 
-    let camera = Camera::new(
-        1280,
-        720,
-        100,
-        Point3::new(13.0, 2.0, 3.0),
-        Point3::new(0.0, 0.0, 0.0),
-        0.6,
-        10.0,
-    );
-    let image = camera.render(&world);
-    let file_name = std::env::args()
-        .nth(1)
-        .unwrap_or_else(|| "image.jpeg".into());
-    image.save(file_name)?;
+    if DEBUG_BVH {
+        print_tree(Arc::new(Object::BvhNode(world)), 0);
+    } else {
+        let camera = Camera::new(
+            1280,
+            720,
+            100,
+            Point3::new(13.0, 2.0, 3.0),
+            Point3::new(0.0, 0.0, 0.0),
+            0.6,
+            10.0,
+        );
+        let image = camera.render(&world);
+        let file_name = std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "image.jpeg".into());
+        image.save(file_name)?;
+    }
     Ok(())
 }
