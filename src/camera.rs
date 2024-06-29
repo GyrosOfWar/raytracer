@@ -19,7 +19,6 @@ use crate::{
 
 const MAX_DEPTH: usize = 10;
 const PARALLEL: bool = true;
-static MAX_Y: AtomicI64 = AtomicI64::new(i64::MIN);
 
 fn linear_to_gamma(linear_component: f32) -> f32 {
     if linear_component > 0.0 {
@@ -107,9 +106,6 @@ impl Camera {
         let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
         match intersection {
             Some(hit) => {
-                let scaled_y = (hit.point.y * 1000.0) as i64;
-                MAX_Y.fetch_max(scaled_y, Ordering::SeqCst);
-
                 let mut scattered = Ray::new(Vec3::zero(), Vec3::zero());
                 let mut attenuation = Vec3::zero();
                 if hit
@@ -213,7 +209,6 @@ impl Camera {
         let image =
             Rgb32FImage::from_vec(self.image_width as u32, self.image_height as u32, pixels)
                 .expect("dimensions must match");
-        println!("max y: {}", MAX_Y.load(Ordering::SeqCst) as f32 * 0.001);
 
         DynamicImage::from(image).into_rgb8()
     }
