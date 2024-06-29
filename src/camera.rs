@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use crate::material::Scatterable;
+use indicatif::ParallelProgressIterator;
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -146,6 +147,7 @@ impl Camera {
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
         let pixels: Vec<Color> = (0..(self.image_height * self.image_width))
             .into_par_iter()
+            .progress_count((self.image_height * self.image_width) as u64)
             .map(|index| {
                 let i = index % self.image_width;
                 let j = index / self.image_width;

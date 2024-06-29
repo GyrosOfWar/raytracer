@@ -86,14 +86,17 @@ fn main() -> io::Result<()> {
     let camera = Camera::new(
         1280,
         720,
-        500,
+        100,
         Point3::new(13.0, 2.0, 3.0),
         Point3::new(0.0, 0.0, 0.0),
         0.6,
         10.0,
     );
     let image = camera.render(&world);
-    let mut file = BufWriter::new(File::create("image.ppm")?);
+    let file_name = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "image.ppm".into());
+    let mut file = BufWriter::new(File::create(file_name)?);
     image.write_to_ppm(&mut file)?;
 
     Ok(())

@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 enum_dispatch = "0.3.13"
-indicatif = "0.17.8"
+indicatif = { version = "0.17.8", features = ["rayon"] }
 num-traits = "0.2.19"
 ordered-float = "4.2.0"
-rand = "0.8.5"
+rand = { version = "0.8.5", features = ["small_rng"] }
 rayon = "1.10.0"
 
 [profile.release]
