@@ -9,6 +9,7 @@ use crate::{
     material::Material,
     range::Range,
     ray::Ray,
+    texture::TextureCoordinates,
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
@@ -28,6 +29,7 @@ pub struct HitRecord {
     pub distance: f32,
     pub front_facing: bool,
     pub material: Arc<Material>,
+    pub tex_coords: TextureCoordinates,
 }
 
 impl HitRecord {
@@ -37,6 +39,7 @@ impl HitRecord {
         point: Point3<f32>,
         distance: f32,
         material: Arc<Material>,
+        tex_coords: TextureCoordinates,
     ) -> Self {
         let front_facing = ray.direction.dot(outward_normal) < 0.0;
         let normal = if front_facing {
@@ -51,6 +54,7 @@ impl HitRecord {
             front_facing,
             distance,
             material,
+            tex_coords,
         }
     }
 }
@@ -185,6 +189,8 @@ impl Hittable for Sphere {
                 point,
                 root,
                 self.material.clone(),
+                // TODO
+                TextureCoordinates { u: 0.0, v: 0.0 },
             ))
         }
     }

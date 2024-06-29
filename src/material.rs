@@ -6,6 +6,7 @@ use crate::{
     helpers::random,
     object::HitRecord,
     ray::Ray,
+    texture::{HasColorValue, SolidColor, Texture},
     vec3::{self, random::gen_unit_vector, reflect, refract, Vec3},
 };
 
@@ -22,7 +23,7 @@ pub trait Scatterable {
 
 #[derive(Debug)]
 pub struct Lambertian {
-    pub albedo: Vec3<f32>,
+    pub texture: Arc<Texture>,
 }
 
 impl Scatterable for Lambertian {
@@ -38,7 +39,7 @@ impl Scatterable for Lambertian {
             scatter_direction = hit.normal;
         }
         *scattered = Ray::new(hit.point, scatter_direction);
-        *attenuation = self.albedo;
+        *attenuation = self.texture.value_at(hit.tex_coords, hit.point);
         true
     }
 }
@@ -116,7 +117,13 @@ pub enum Material {
 }
 
 pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
-    Arc::new(Material::Lambertian(Lambertian { albedo }))
+    Arc::new(Material::Lambertian(Lambertian {
+        texture: Arc::new(Texture::SolidColor(SolidColor { albedo })),
+    }))
+}
+
+pub fn lambertian_texture(texture: Arc<Texture>) -> Arc<Material> {
+    Arc::new(Material::Lambertian(Lambertian { texture }))
 }
 
 pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Arc<Material> {

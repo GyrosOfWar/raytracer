@@ -1,7 +1,4 @@
-use std::{
-    sync::atomic::{AtomicI64, Ordering},
-    time::Instant,
-};
+use std::time::Instant;
 
 use crate::material::Scatterable;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
@@ -17,7 +14,7 @@ use crate::{
     vec3::{self, Point3, Vec3},
 };
 
-const MAX_DEPTH: usize = 10;
+const MAX_DEPTH: usize = 50;
 const PARALLEL: bool = true;
 
 fn linear_to_gamma(linear_component: f32) -> f32 {

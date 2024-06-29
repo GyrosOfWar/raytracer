@@ -1,4 +1,3 @@
-use crate::helpers::random_int;
 use num_traits::{Float, One, Zero};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
@@ -7,18 +6,6 @@ pub enum Axis {
     X,
     Y,
     Z,
-}
-
-impl Axis {
-    pub fn random() -> Axis {
-        let int = random_int(0, 3);
-        match int {
-            0 => Axis::X,
-            1 => Axis::Y,
-            2 => Axis::Z,
-            _ => unreachable!(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]

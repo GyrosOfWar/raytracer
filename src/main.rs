@@ -3,8 +3,9 @@ use std::sync::Arc;
 use bvh::{print_tree, validate_tree, BvhNode};
 use camera::Camera;
 use helpers::{random, random_range};
-use material::{dielectric, lambertian, metal};
+use material::{dielectric, lambertian, lambertian_texture, metal};
 use object::{Object, Sphere, World};
+use texture::{checkerboard, solid, Checkerboard, Texture};
 use vec3::Point3;
 
 mod aabb;
@@ -13,16 +14,20 @@ mod camera;
 mod helpers;
 mod material;
 mod object;
-// mod ppm;
 mod range;
 mod ray;
+mod texture;
 mod vec3;
 
 const DEBUG_BVH: bool = false;
 
 fn main() -> Result<(), image::ImageError> {
     let mut objects = vec![];
-    let ground_material = lambertian(Point3::new(0.5, 0.5, 0.5));
+    let ground_material = lambertian_texture(checkerboard(
+        3.2,
+        solid(Point3::new(0.2, 0.3, 0.1)),
+        solid(Point3::new(0.9, 0.9, 0.9)),
+    ));
     objects.push(Object::Sphere(Sphere::new(
         Point3::new(0.0, -1000.0, 0.0),
         1000.0,
