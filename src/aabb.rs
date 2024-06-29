@@ -133,4 +133,10 @@ impl Aabb {
             Axis::Z
         }
     }
+
+    pub fn contains(&self, rhs: &Aabb) -> bool {
+        self.x.contains_range(&rhs.x)
+            && self.y.contains_range(&rhs.y)
+            && self.z.contains_range(&rhs.z)
+    }
 }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bvh::{print_tree, BvhNode};
+use bvh::{print_tree, validate_tree, BvhNode};
 use camera::Camera;
 use helpers::{random, random_range};
 use material::{dielectric, lambertian, metal};
@@ -18,7 +18,7 @@ mod range;
 mod ray;
 mod vec3;
 
-const DEBUG_BVH: bool = true;
+const DEBUG_BVH: bool = false;
 
 fn main() -> Result<(), image::ImageError> {
     let mut objects = vec![];
@@ -80,11 +80,14 @@ fn main() -> Result<(), image::ImageError> {
         material3,
     )));
 
-    let mut world = World::new(objects);
-    let world = BvhNode::from_world(&mut world);
+    let world = World::new(objects);
+    let world = BvhNode::from_world(world);
 
     if DEBUG_BVH {
-        print_tree(Arc::new(Object::BvhNode(world)), 0);
+        let root = Arc::new(Object::BvhNode(world));
+        let is_valid = validate_tree(root.clone());
+        assert!(is_valid, "Tree is invalid");
+        print_tree(root, 0);
     } else {
         let camera = Camera::new(
             1280,

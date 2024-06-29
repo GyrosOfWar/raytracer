@@ -1,6 +1,4 @@
-use std::{cmp::Reverse, sync::Arc, time::Instant};
-
-use ordered_float::OrderedFloat;
+use std::{sync::Arc, time::Instant};
 
 use crate::{
     aabb::Aabb,
@@ -29,44 +27,49 @@ impl BvhNode {
         }
     }
 
-    pub fn from_world(world: &mut World) -> Self {
+    pub fn from_world(world: World) -> Self {
         let start = Instant::now();
-        let objects = world.objects_mut();
+        let objects = world.into_objects();
         let root = BvhNode::from_objects(objects);
         println!("building BVH took {:?}", start.elapsed());
         root
     }
 
-    fn from_objects(objects: &mut [Arc<Object>]) -> Self {
+    fn from_objects(mut objects: Vec<Object>) -> Self {
         let len = objects.len();
 
+        let mut bbox = Aabb::EMPTY;
+        for object in objects.iter() {
+            let bbox2 = object.bounding_box();
+            bbox = Aabb::from_boxes(bbox, bbox2);
+        }
+        let axis = bbox.longest_axis();
+        bbox.assert_not_infinite();
+
         match len {
-            1 => BvhNode::new(
-                objects[0].clone(),
-                objects[0].clone(),
-                objects[0].bounding_box(),
-            ),
-            2 => BvhNode::new(
-                objects[0].clone(),
-                objects[1].clone(),
-                Aabb::from_boxes(objects[0].bounding_box(), objects[1].bounding_box()),
-            ),
+            1 => {
+                let object = Arc::new(objects.remove(0));
+                BvhNode::new(object.clone(), object.clone(), bbox)
+            }
+            2 => {
+                let left = Arc::new(objects.remove(0));
+                let right = Arc::new(objects.remove(0));
+
+                BvhNode::new(left, right, bbox)
+            }
             _ => {
-                let mut bbox = Aabb::EMPTY;
-                for object in objects.iter() {
-                    let bbox2 = object.bounding_box();
-                    bbox = Aabb::from_boxes(bbox, bbox2);
-                }
-                let axis = bbox.longest_axis();
-
-                bbox.assert_not_infinite();
-
-                objects
-                    .sort_by_key(|o| Reverse(OrderedFloat(o.bounding_box().interval_at(axis).min)));
+                objects.sort_by(|a, b| {
+                    let r1 = a.bounding_box().interval_at(axis);
+                    let r2 = b.bounding_box().interval_at(axis);
+                    r2.min.partial_cmp(&r1.min).unwrap()
+                });
 
                 let mid = len / 2;
-                let left = BvhNode::from_objects(&mut objects[0..mid]);
-                let right = BvhNode::from_objects(&mut objects[mid..]);
+                let left = objects.drain(0..mid).collect();
+                let right = objects;
+
+                let left = BvhNode::from_objects(left);
+                let right = BvhNode::from_objects(right);
 
                 BvhNode::new(
                     Arc::new(Object::BvhNode(left)),
@@ -139,4 +142,28 @@ pub fn print_tree(object: Arc<Object>, level: usize) {
             print_tree(node.right.clone(), level + 1);
         }
     }
+}
+
+pub fn validate_tree(object: Arc<Object>) -> bool {
+    // make sure the bounding box contains all the children
+    let bbox = object.bounding_box();
+    let mut valid = true;
+    match object.as_ref() {
+        Object::Sphere(s) => {
+            if !bbox.contains(&s.bounding_box()) {
+                println!("Sphere {} not contained in parent", s.id());
+                valid = false;
+            }
+        }
+        Object::BvhNode(node) => {
+            if !bbox.contains(&node.bounding_box()) {
+                println!("Node {} not contained in parent", node.id());
+                valid = false;
+            }
+            valid &= validate_tree(node.left.clone());
+            valid &= validate_tree(node.right.clone());
+        }
+    }
+
+    valid
 }

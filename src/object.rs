@@ -73,7 +73,7 @@ pub enum Object {
 
 #[derive(Debug)]
 pub struct World {
-    objects: Vec<Arc<Object>>,
+    objects: Vec<Object>,
     bounding_box: Aabb,
 }
 
@@ -82,6 +82,7 @@ fn make_bounding_box(objects: &[Object]) -> Aabb {
     for object in objects {
         bbox = Aabb::from_boxes(bbox, object.bounding_box());
     }
+    bbox.assert_not_infinite();
     bbox
 }
 
@@ -89,17 +90,17 @@ impl World {
     pub fn new(objects: Vec<Object>) -> Self {
         Self {
             bounding_box: make_bounding_box(&objects),
-            objects: objects.into_iter().map(Arc::new).collect(),
+            objects: objects,
         }
     }
 
     #[allow(unused)]
-    pub fn objects(&self) -> &[Arc<Object>] {
+    pub fn objects(&self) -> &[Object] {
         &self.objects
     }
 
-    pub fn objects_mut(&mut self) -> &mut [Arc<Object>] {
-        &mut self.objects
+    pub fn into_objects(self) -> Vec<Object> {
+        self.objects
     }
 }
 
