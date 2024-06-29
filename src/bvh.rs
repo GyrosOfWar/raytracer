@@ -88,18 +88,17 @@ impl Hittable for BvhNode {
         }
 
         let hit_left = self.left.hit(ray, hit_range);
-        let hit_right = self.right.hit(
-            ray,
-            Range::new(
-                hit_range.min,
-                hit_left
-                    .as_ref()
-                    .map(|h| h.distance)
-                    .unwrap_or(hit_range.max),
-            ),
+        let range = Range::new(
+            hit_range.min,
+            hit_left
+                .as_ref()
+                .map(|h| h.distance)
+                .unwrap_or(hit_range.max),
         );
 
-        hit_left.or(hit_right)
+        let hit_right = self.right.hit(ray, range);
+
+        hit_right.or(hit_left)
     }
 
     fn bounding_box(&self) -> Aabb {
