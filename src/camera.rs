@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use crate::material::Scatterable;
+use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -8,7 +9,6 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use crate::{
     helpers::random,
     object::Hittable,
-    ppm::{Color, Image},
     range::Range,
     ray::Ray,
     vec3::{self, Point3, Vec3},
@@ -16,6 +16,14 @@ use crate::{
 
 const MAX_DEPTH: usize = 10;
 const PARALLEL: bool = true;
+
+fn linear_to_gamma(linear_component: f32) -> f32 {
+    if linear_component > 0.0 {
+        linear_component.sqrt()
+    } else {
+        0.0
+    }
+}
 
 pub struct Camera {
     samples_per_pixel: usize,
@@ -144,11 +152,11 @@ impl Camera {
         return Vec3::new(random() - 0.5, random() - 0.5, 0.0);
     }
 
-    fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
-        let pixels: Vec<Color> = (0..(self.image_height * self.image_width))
+    fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
+        let pixels: Vec<f32> = (0..(self.image_height * self.image_width))
             .into_par_iter()
             .progress_count((self.image_height * self.image_width) as u64)
-            .map(|index| {
+            .flat_map(|index| {
                 let i = index % self.image_width;
                 let j = index / self.image_width;
                 let mut color = Vec3::zero();
@@ -156,15 +164,17 @@ impl Camera {
                     let ray = self.get_ray(i, j);
                     color += self.ray_color(&ray, MAX_DEPTH, world);
                 }
-                (color * pixel_samples_scale).into()
+                let result = color * pixel_samples_scale;
+                [result.x, result.y, result.z]
             })
+            .map(linear_to_gamma)
             .collect();
 
         pixels
     }
 
-    fn render_sequential(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<Color> {
-        let mut pixels = vec![];
+    fn render_sequential(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
+        let mut pixels = Vec::with_capacity(self.image_height * self.image_width * 3);
         for j in 0..self.image_height {
             for i in 0..self.image_width {
                 let mut color = Vec3::zero();
@@ -172,14 +182,16 @@ impl Camera {
                     let ray = self.get_ray(i, j);
                     color += self.ray_color(&ray, MAX_DEPTH, world);
                 }
-                color = color * pixel_samples_scale;
-                pixels.push(color.into());
+                let result = color * pixel_samples_scale;
+                pixels.push(linear_to_gamma(result.x));
+                pixels.push(linear_to_gamma(result.y));
+                pixels.push(linear_to_gamma(result.z));
             }
         }
         pixels
     }
 
-    pub fn render(&self, world: &impl Hittable) -> Image {
+    pub fn render(&self, world: &impl Hittable) -> RgbImage {
         let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
 
         let start = Instant::now();
@@ -191,6 +203,10 @@ impl Camera {
         let duration = start.elapsed();
 
         println!("Rendering took {duration:?}");
-        Image::new(pixels, self.image_width, self.image_height)
+        let image =
+            Rgb32FImage::from_vec(self.image_width as u32, self.image_height as u32, pixels)
+                .expect("dimensions must match");
+
+        DynamicImage::from(image).into_rgb8()
     }
 }

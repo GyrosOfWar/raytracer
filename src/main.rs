@@ -3,10 +3,6 @@ use camera::Camera;
 use helpers::{random, random_range};
 use material::{dielectric, lambertian, metal};
 use object::{Object, Sphere, World};
-use std::{
-    fs::File,
-    io::{self, BufWriter},
-};
 use vec3::Point3;
 
 mod aabb;
@@ -15,12 +11,12 @@ mod camera;
 mod helpers;
 mod material;
 mod object;
-mod ppm;
+// mod ppm;
 mod range;
 mod ray;
 mod vec3;
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), image::ImageError> {
     let mut objects = vec![];
     let ground_material = lambertian(Point3::new(0.5, 0.5, 0.5));
     objects.push(Object::Sphere(Sphere::new(
@@ -95,9 +91,7 @@ fn main() -> io::Result<()> {
     let image = camera.render(&world);
     let file_name = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "image.ppm".into());
-    let mut file = BufWriter::new(File::create(file_name)?);
-    image.write_to_ppm(&mut file)?;
-
+        .unwrap_or_else(|| "image.jpeg".into());
+    image.save(file_name)?;
     Ok(())
 }

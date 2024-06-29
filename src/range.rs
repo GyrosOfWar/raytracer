@@ -19,6 +19,7 @@ impl Range {
         }
     }
 
+    #[allow(unused)]
     pub fn contains(&self, value: f32) -> bool {
         self.min <= value && value <= self.max
     }
@@ -31,6 +32,7 @@ impl Range {
         self.max - self.min
     }
 
+    #[allow(unused)]
     pub fn clamp(&self, x: f32) -> f32 {
         if x < self.min {
             self.min

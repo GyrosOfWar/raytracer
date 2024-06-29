@@ -80,6 +80,7 @@ impl World {
         }
     }
 
+    #[allow(unused)]
     pub fn objects(&self) -> &[Arc<Object>] {
         &self.objects
     }

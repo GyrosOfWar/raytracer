@@ -254,6 +254,7 @@ pub mod random {
         gen_unit_sphere().unit()
     }
 
+    #[allow(unused)]
     pub fn gen_on_hemisphere(normal: Vec3<f32>) -> Vec3<f32> {
         let on_unit_sphere = gen_unit_vector();
         if on_unit_sphere.dot(normal) > 0.0 {

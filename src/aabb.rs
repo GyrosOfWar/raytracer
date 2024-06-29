@@ -17,6 +17,8 @@ impl Aabb {
         y: Range::EMPTY,
         z: Range::EMPTY,
     };
+
+    #[allow(unused)]
     pub const UNIVERSE: Aabb = Aabb {
         x: Range::UNIVERSE,
         y: Range::UNIVERSE,
@@ -117,6 +119,7 @@ impl Aabb {
         true
     }
 
+    #[allow(unused)]
     pub fn longest_axis(&self) -> Axis {
         if self.x.size() > self.z.size() {
             Axis::X
