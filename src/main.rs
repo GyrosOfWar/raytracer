@@ -5,7 +5,7 @@ use camera::Camera;
 use helpers::{random, random_range};
 use material::{dielectric, lambertian, lambertian_texture, metal};
 use object::{Object, Sphere, World};
-use texture::{checkerboard, solid, Checkerboard, Texture};
+use texture::{checkerboard, solid};
 use vec3::Point3;
 
 mod aabb;

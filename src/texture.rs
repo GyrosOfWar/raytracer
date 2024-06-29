@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
-use num_traits::ops::inv;
 
 use crate::vec3::Point3;
 

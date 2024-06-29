@@ -96,7 +96,7 @@ impl Camera {
     }
 
     fn ray_color(&self, ray: &Ray<f32>, depth: usize, world: &impl Hittable) -> Vec3<f32> {
-        if depth <= 0 {
+        if depth == 0 {
             return Vec3::zero();
         }
 
@@ -137,19 +137,19 @@ impl Camera {
         };
         let ray_direction = pixel_sample - ray_origin;
 
-        return Ray::new(ray_origin, ray_direction);
+        Ray::new(ray_origin, ray_direction)
     }
 
     fn defocus_disk_sample(&self) -> Vec3<f32> {
         // Returns a random point in the camera defocus disk.
         // let p = random_in_unit_disk();
         let p = vec3::random::gen_unit_disk();
-        return self.center + (self.defocus_disk_u * p.x) + (self.defocus_disk_v * p.y);
+        self.center + (self.defocus_disk_u * p.x) + (self.defocus_disk_v * p.y)
     }
 
     // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
     fn sample_square(&self) -> Vec3<f32> {
-        return Vec3::new(random() - 0.5, random() - 0.5, 0.0);
+        Vec3::new(random() - 0.5, random() - 0.5, 0.0)
     }
 
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {

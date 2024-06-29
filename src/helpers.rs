@@ -14,6 +14,7 @@ pub fn random_range(min: f32, max: f32) -> f32 {
     RNG.with_borrow_mut(|r| r.gen_range(min..max))
 }
 
+#[allow(unused)]
 pub fn random_int(min: i32, max: i32) -> i32 {
     RNG.with_borrow_mut(|r| r.gen_range(min..max))
 }

@@ -18,6 +18,7 @@ impl Aabb {
         z: Range::EMPTY,
     };
 
+    #[allow(unused)]
     pub const UNIVERSE: Aabb = Aabb {
         x: Range::UNIVERSE,
         y: Range::UNIVERSE,

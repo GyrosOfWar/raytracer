@@ -76,7 +76,7 @@ impl Vec3<f32> {
 }
 
 pub fn reflect(v: Vec3<f32>, n: Vec3<f32>) -> Vec3<f32> {
-    return v - n * Vec3::dot(v, n) * 2.0;
+    v - n * Vec3::dot(v, n) * 2.0
 }
 
 pub fn refract(uv: Vec3<f32>, n: Vec3<f32>, etai_over_etat: f32) -> Vec3<f32> {

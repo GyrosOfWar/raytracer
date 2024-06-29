@@ -17,9 +17,7 @@ use enum_dispatch::enum_dispatch;
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 pub fn get_id() -> u64 {
-    let id = ID_COUNTER.fetch_add(1, Ordering::SeqCst);
-
-    id
+    ID_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
 #[derive(Debug)]
@@ -94,7 +92,7 @@ impl World {
     pub fn new(objects: Vec<Object>) -> Self {
         Self {
             bounding_box: make_bounding_box(&objects),
-            objects: objects,
+            objects,
         }
     }
 
