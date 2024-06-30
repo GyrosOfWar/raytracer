@@ -68,12 +68,6 @@ impl Aabb {
         }
     }
 
-    pub fn assert_not_infinite(&self) {
-        assert!(self.x.is_bounded(), "X axis not bounded");
-        assert!(self.y.is_bounded(), "Y axis not bounded");
-        assert!(self.z.is_bounded(), "Z axis not bounded");
-    }
-
     fn pad_to_minimums(mut self) -> Aabb {
         let delta = 0.0001f32;
         if self.x.size() < delta {

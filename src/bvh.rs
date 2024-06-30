@@ -43,7 +43,6 @@ impl BvhNode {
             bbox = Aabb::from_boxes(bbox, bbox2);
         }
         let axis = bbox.longest_axis();
-        bbox.assert_not_infinite();
 
         match len {
             1 => {

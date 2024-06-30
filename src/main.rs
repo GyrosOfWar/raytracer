@@ -12,8 +12,6 @@ mod scenes;
 mod texture;
 mod vec3;
 
-const DEBUG_BVH: bool = false;
-
 fn main() -> Result<(), image::ImageError> {
     let arg = std::env::args().nth(1).unwrap_or("spheres".into());
 

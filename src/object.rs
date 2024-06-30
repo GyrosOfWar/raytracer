@@ -228,7 +228,7 @@ impl Hittable for Quad {
             point: intersection,
             distance: t,
             material: self.material.clone(),
-            // TODO
+            // TODO?
             front_facing: false,
             normal: self.normal,
             tex_coords,

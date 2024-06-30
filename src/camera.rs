@@ -40,8 +40,8 @@ impl Default for CameraParams {
         Self {
             image_size: (1280, 720),
             samples_per_pixel: 100,
-            look_at: Point3::new(0.0, 0.0, -1.0),
-            look_from: Point3::zero(),
+            look_at: Point3::zero(),
+            look_from: Point3::new(0.0, 0.0, -1.0),
             defocus_angle: 0.0,
             focus_dist: 0.0,
             vertical_fov: 90.0,
