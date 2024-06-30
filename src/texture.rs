@@ -1,13 +1,24 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use enum_dispatch::enum_dispatch;
+use image::{DynamicImage, GenericImageView, ImageError};
 
-use crate::vec3::Point3;
+use crate::{range::Range, vec3::Point3};
 
 #[derive(Debug, Clone, Copy)]
 pub struct TextureCoordinates {
     pub u: f32,
     pub v: f32,
+}
+
+impl TextureCoordinates {
+    pub fn clamp01(self) -> Self {
+        let range = Range::new(0.0, 1.0);
+        TextureCoordinates {
+            u: range.clamp(self.u),
+            v: range.clamp(self.v),
+        }
+    }
 }
 
 #[enum_dispatch]
@@ -58,11 +69,45 @@ impl HasColorValue for Checkerboard {
     }
 }
 
+#[derive(Debug)]
+pub struct Image {
+    image: DynamicImage,
+}
+
+impl Image {
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, ImageError> {
+        let image = image::open(path)?;
+        Ok(Image { image })
+    }
+}
+
+impl HasColorValue for Image {
+    fn value_at(&self, coords: TextureCoordinates, _: Point3<f32>) -> Point3<f32> {
+        if self.image.height() == 0 {
+            return Point3::new(0.0, 1.0, 1.0);
+        }
+        let mut coords = coords.clamp01();
+        // Flip V to image coordinates
+        coords.v = 1.0 - coords.v;
+
+        let i = (coords.u * self.image.width() as f32) as u32;
+        let j = (coords.v * self.image.height() as f32) as u32;
+        let pixel = self.image.get_pixel(i, j);
+        let color_scale = 1.0 / 255.0;
+        Point3::new(
+            pixel.0[0] as f32 * color_scale,
+            pixel.0[1] as f32 * color_scale,
+            pixel.0[2] as f32 * color_scale,
+        )
+    }
+}
+
 #[enum_dispatch(HasColorValue)]
 #[derive(Debug)]
 pub enum Texture {
     SolidColor(SolidColor),
     Checkerboard(Checkerboard),
+    Image(Image),
 }
 
 pub fn solid(albedo: Point3<f32>) -> Arc<Texture> {
@@ -73,4 +118,10 @@ pub fn checkerboard(inv_scale: f32, even: Arc<Texture>, solid: Arc<Texture>) -> 
     Arc::new(Texture::Checkerboard(Checkerboard::new(
         inv_scale, even, solid,
     )))
+}
+
+pub fn image(path: impl AsRef<Path>) -> Arc<Texture> {
+    Arc::new(Texture::Image(
+        Image::load(path).expect("could not load image"),
+    ))
 }
