@@ -1,12 +1,12 @@
 use num_traits::Zero;
 
 use crate::{
-    camera::Camera,
+    camera::{Camera, CameraParams},
     material::{dielectric, lambertian, lambertian_texture, metal},
-    object::{Object, Sphere},
+    object::{Object, Quad, Sphere},
     random::{random, random_range},
     texture::{checkerboard, image, solid},
-    vec3::{self, Point3},
+    vec3::{self, Point3, Vec3},
 };
 
 pub fn lots_of_spheres() -> (Camera, Vec<Object>) {
@@ -73,15 +73,17 @@ pub fn lots_of_spheres() -> (Camera, Vec<Object>) {
         material3,
     )));
 
-    let camera = Camera::new(
-        1280,
-        720,
-        100,
-        Point3::new(13.0, 2.0, 3.0),
-        Point3::new(0.0, 0.0, 0.0),
-        0.6,
-        10.0,
-    );
+    let params = CameraParams {
+        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_from: Point3::new(13.0, 2.0, 3.0),
+        defocus_angle: 0.6,
+        focus_dist: 10.0,
+        vertical_fov: 20.0,
+        samples_per_pixel: 500,
+        ..Default::default()
+    };
+
+    let camera = Camera::new(params);
 
     (camera, objects)
 }
@@ -94,15 +96,62 @@ pub fn earth() -> (Camera, Vec<Object>) {
         lambertian_texture(texture),
     ));
 
-    let camera = Camera::new(
-        1280,
-        720,
-        50,
-        Point3::new(0.0, 0.0, 12.0),
-        Point3::new(0.0, 0.0, 0.0),
-        0.0,
-        10.0,
-    );
+    let params = CameraParams {
+        vertical_fov: 20.0,
+        samples_per_pixel: 100,
+        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_from: Point3::new(0.0, 0.0, 12.0),
+        ..Default::default()
+    };
+    let camera = Camera::new(params);
 
     (camera, vec![sphere])
+}
+
+pub fn quads() -> (Camera, Vec<Object>) {
+    let material = lambertian(Point3::new(1.0, 0.2, 0.2));
+    let objects = vec![
+        Object::Quad(Quad::new(
+            Point3::new(-3.0, -2.0, 5.0),
+            Vec3::new(0.0, 0.0, -4.0),
+            Vec3::new(0.0, 4.0, 0.0),
+            material.clone(),
+        )),
+        Object::Quad(Quad::new(
+            Point3::new(-2.0, -2.0, 0.0),
+            Vec3::new(4.0, 0.0, 0.0),
+            Vec3::new(0.0, 4.0, 0.0),
+            material.clone(),
+        )),
+        Object::Quad(Quad::new(
+            Point3::new(3.0, -2.0, 1.0),
+            Vec3::new(0.0, 0.0, 4.0),
+            Vec3::new(0.0, 4.0, 0.0),
+            material.clone(),
+        )),
+        Object::Quad(Quad::new(
+            Point3::new(-2.0, 3.0, 1.0),
+            Vec3::new(4.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 4.0),
+            material.clone(),
+        )),
+        Object::Quad(Quad::new(
+            Point3::new(-2.0, -3.0, 5.0),
+            Vec3::new(4.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, -4.0),
+            material.clone(),
+        )),
+    ];
+
+    let params = CameraParams {
+        vertical_fov: 80.0,
+        look_at: Point3::new(0.0, 0.0, 0.0),
+        look_from: Point3::new(0.0, 0.0, 9.0),
+        image_size: (400, 400),
+        ..Default::default()
+    };
+
+    let camera = Camera::new(params);
+
+    (camera, objects)
 }

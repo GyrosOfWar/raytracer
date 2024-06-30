@@ -13,10 +13,9 @@ pub struct TextureCoordinates {
 
 impl TextureCoordinates {
     pub fn clamp01(self) -> Self {
-        let range = Range::new(0.0, 1.0);
         TextureCoordinates {
-            u: range.clamp(self.u),
-            v: range.clamp(self.v),
+            u: Range::UNIT.clamp(self.u),
+            v: Range::UNIT.clamp(self.v),
         }
     }
 }

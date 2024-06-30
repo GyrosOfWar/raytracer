@@ -1,5 +1,4 @@
 use bvh::BvhNode;
-use object::World;
 
 mod aabb;
 mod bvh;
@@ -21,11 +20,11 @@ fn main() -> Result<(), image::ImageError> {
     let (camera, objects) = match arg.as_str() {
         "spheres" => scenes::lots_of_spheres(),
         "earth" => scenes::earth(),
+        "quads" => scenes::quads(),
         _ => panic!("unknown scene"),
     };
 
-    let world = World::new(objects);
-    let world = BvhNode::from_world(world);
+    let world = BvhNode::from_world(objects);
 
     let image = camera.render(&world);
     let file_name = std::env::args()

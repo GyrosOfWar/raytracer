@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Instant};
 
 use crate::{
     aabb::Aabb,
-    object::{get_id, HitRecord, Hittable, Object, World},
+    object::{get_id, HitRecord, Hittable, Object},
     range::Range,
     ray::Ray,
 };
@@ -27,9 +27,8 @@ impl BvhNode {
         }
     }
 
-    pub fn from_world(world: World) -> Self {
+    pub fn from_world(objects: Vec<Object>) -> Self {
         let start = Instant::now();
-        let objects = world.into_objects();
         let root = BvhNode::from_objects(objects);
         println!("building BVH took {:?}", start.elapsed());
         root

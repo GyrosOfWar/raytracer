@@ -14,7 +14,6 @@ use crate::{
     vec3::{self, Point3, Vec3},
 };
 
-const MAX_DEPTH: usize = 50;
 const PARALLEL: bool = true;
 
 fn linear_to_gamma(linear_component: f32) -> f32 {
@@ -22,6 +21,32 @@ fn linear_to_gamma(linear_component: f32) -> f32 {
         linear_component.sqrt()
     } else {
         0.0
+    }
+}
+
+pub struct CameraParams {
+    pub image_size: (usize, usize),
+    pub samples_per_pixel: usize,
+    pub look_at: Point3<f32>,
+    pub look_from: Point3<f32>,
+    pub defocus_angle: f32,
+    pub focus_dist: f32,
+    pub vertical_fov: f32,
+    pub max_depth: usize,
+}
+
+impl Default for CameraParams {
+    fn default() -> Self {
+        Self {
+            image_size: (1280, 720),
+            samples_per_pixel: 100,
+            look_at: Point3::new(0.0, 0.0, -1.0),
+            look_from: Point3::zero(),
+            defocus_angle: 0.0,
+            focus_dist: 0.0,
+            vertical_fov: 90.0,
+            max_depth: 50,
+        }
     }
 }
 
@@ -36,17 +61,21 @@ pub struct Camera {
     defocus_disk_u: Vec3<f32>,
     defocus_disk_v: Vec3<f32>,
     defocus_angle: f32,
+    max_depth: usize,
 }
 
 impl Camera {
     pub fn new(
-        width: usize,
-        height: usize,
-        samples_per_pixel: usize,
-        look_from: Point3<f32>,
-        look_at: Point3<f32>,
-        defocus_angle: f32,
-        focus_dist: f32,
+        CameraParams {
+            image_size,
+            samples_per_pixel,
+            look_at,
+            look_from,
+            defocus_angle,
+            focus_dist,
+            vertical_fov,
+            max_depth,
+        }: CameraParams,
     ) -> Self {
         assert!(
             samples_per_pixel >= 1,
@@ -54,11 +83,11 @@ impl Camera {
         );
 
         let v_up = Vec3::new(0.0, 1.0, 0.0);
-        let v_fov = 20.0f32;
 
-        let theta = v_fov.to_radians();
+        let theta = vertical_fov.to_radians();
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h * focus_dist;
+        let (width, height) = image_size;
         let viewport_width = viewport_height * (width as f32 / height as f32);
 
         // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
@@ -92,6 +121,7 @@ impl Camera {
             defocus_disk_u,
             defocus_disk_v,
             defocus_angle,
+            max_depth,
         }
     }
 
@@ -162,7 +192,7 @@ impl Camera {
                 let mut color = Vec3::zero();
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
-                    color += self.ray_color(&ray, MAX_DEPTH, world);
+                    color += self.ray_color(&ray, self.max_depth, world);
                 }
                 let result = color * pixel_samples_scale;
                 [result.x, result.y, result.z]
@@ -180,7 +210,7 @@ impl Camera {
                 let mut color = Vec3::zero();
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i, j);
-                    color += self.ray_color(&ray, MAX_DEPTH, world);
+                    color += self.ray_color(&ray, self.max_depth, world);
                 }
                 let result = color * pixel_samples_scale;
                 pixels.push(linear_to_gamma(result.x));
