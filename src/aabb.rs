@@ -69,7 +69,7 @@ impl Aabb {
     }
 
     fn pad_to_minimums(mut self) -> Aabb {
-        let delta = 0.0001f32;
+        let delta = 0.001f32;
         if self.x.size() < delta {
             self.x = self.x.expand(delta);
         }

@@ -107,3 +107,82 @@ impl Hittable for BvhNode {
         self.id
     }
 }
+
+pub mod debug {
+    use std::sync::Arc;
+
+    use crate::{
+        aabb::Aabb,
+        object::{Hittable, Object},
+    };
+
+    fn indent(level: usize) -> String {
+        (0..(level * 2)).map(|_| " ").collect()
+    }
+
+    fn bbox_to_string(bbox: &Aabb) -> String {
+        format!(
+            "x = {} {}, y = {} {}, z={} {}",
+            bbox.x.min, bbox.x.max, bbox.y.min, bbox.y.max, bbox.z.min, bbox.z.max,
+        )
+    }
+
+    pub fn print_tree(object: Arc<Object>, level: usize) {
+        let indent = indent(level);
+        match object.as_ref() {
+            Object::Sphere(s) => {
+                println!(
+                    "{indent}- Sphere (id = {}, bbox = {}) ",
+                    s.id(),
+                    bbox_to_string(&s.bounding_box())
+                );
+            }
+            Object::Quad(q) => {
+                println!(
+                    "{indent}- Quad (id = {}, bbox = {})",
+                    q.id(),
+                    bbox_to_string(&q.bounding_box())
+                )
+            }
+            Object::BvhNode(node) => {
+                println!(
+                    "{indent}- Node (id = {}, bbox = {})",
+                    node.id(),
+                    bbox_to_string(&node.bounding_box())
+                );
+                print_tree(node.left.clone(), level + 1);
+                print_tree(node.right.clone(), level + 1);
+            }
+        }
+    }
+
+    pub fn validate_tree(object: Arc<Object>) -> bool {
+        // make sure the bounding box contains all the children
+        let bbox = object.bounding_box();
+        let mut valid = true;
+        match object.as_ref() {
+            Object::Sphere(s) => {
+                if !bbox.contains(&s.bounding_box()) {
+                    println!("Sphere {} not contained in parent", s.id());
+                    valid = false;
+                }
+            }
+            Object::Quad(q) => {
+                if !bbox.contains(&q.bounding_box()) {
+                    println!("Quad {} not contained in parent", q.id());
+                    valid = false;
+                }
+            }
+            Object::BvhNode(node) => {
+                if !bbox.contains(&node.bounding_box()) {
+                    println!("Node {} not contained in parent", node.id());
+                    valid = false;
+                }
+                valid &= validate_tree(node.left.clone());
+                valid &= validate_tree(node.right.clone());
+            }
+        }
+
+        valid
+    }
+}
