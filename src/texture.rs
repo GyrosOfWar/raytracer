@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{fmt, path::Path, sync::Arc};
 
 use enum_dispatch::enum_dispatch;
 use image::{DynamicImage, GenericImageView, ImageError};
@@ -68,9 +68,17 @@ impl HasColorValue for Checkerboard {
     }
 }
 
-#[derive(Debug)]
 pub struct Image {
     image: DynamicImage,
+}
+
+impl fmt::Debug for Image {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Image")
+            .field("width", &self.image.width())
+            .field("height", &self.image.height())
+            .finish()
+    }
 }
 
 impl Image {

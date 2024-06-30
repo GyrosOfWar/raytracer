@@ -79,6 +79,7 @@ pub fn lots_of_spheres() -> (Camera, Vec<Object>) {
         focus_dist: 10.0,
         vertical_fov: 20.0,
         samples_per_pixel: 500,
+        image_size: (2560, 1440),
         ..Default::default()
     };
 

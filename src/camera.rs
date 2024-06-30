@@ -183,7 +183,7 @@ impl Camera {
     }
 
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
-        let pixels: Vec<f32> = (0..(self.image_height * self.image_width))
+        (0..(self.image_height * self.image_width))
             .into_par_iter()
             .progress_count((self.image_height * self.image_width) as u64)
             .flat_map(|index| {
@@ -198,9 +198,7 @@ impl Camera {
                 [result.x, result.y, result.z]
             })
             .map(linear_to_gamma)
-            .collect();
-
-        pixels
+            .collect()
     }
 
     fn render_sequential(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {

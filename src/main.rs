@@ -16,14 +16,16 @@ mod texture;
 mod vec3;
 
 fn main() -> Result<(), image::ImageError> {
-    let arg = std::env::args().nth(1).unwrap_or("spheres".into());
+    let arg = std::env::args().nth(1).unwrap_or("quads".into());
 
     let (camera, objects) = match arg.as_str() {
         "spheres" => scenes::lots_of_spheres(),
         "earth" => scenes::earth(),
         "quads" => scenes::quads(),
-        _ => scenes::quads(),
+        _ => unreachable!(),
     };
+
+    println!("rendering objects {objects:#?}");
 
     let world = BvhNode::from_world(objects);
     let debug = std::env::var("RT_DEBUG").is_ok();
