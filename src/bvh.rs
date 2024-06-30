@@ -12,7 +12,7 @@ pub struct BvhNode {
     left: Arc<Object>,
     right: Arc<Object>,
     bbox: Aabb,
-    id: u64,
+    id: u32,
 }
 
 impl BvhNode {
@@ -105,7 +105,7 @@ impl Hittable for BvhNode {
         self.bbox
     }
 
-    fn id(&self) -> u64 {
+    fn id(&self) -> u32 {
         self.id
     }
 }

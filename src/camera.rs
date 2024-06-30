@@ -7,8 +7,8 @@ use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
-    helpers::random,
     object::Hittable,
+    random::random,
     range::Range,
     ray::Ray,
     vec3::{self, Point3, Vec3},

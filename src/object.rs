@@ -1,5 +1,5 @@
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
+    atomic::{AtomicU32, Ordering},
     Arc,
 };
 
@@ -14,9 +14,9 @@ use crate::{
 };
 use enum_dispatch::enum_dispatch;
 
-static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+static ID_COUNTER: AtomicU32 = AtomicU32::new(1);
 
-pub fn get_id() -> u64 {
+pub fn get_id() -> u32 {
     ID_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
@@ -63,7 +63,7 @@ pub trait Hittable: Send + Sync {
 
     fn bounding_box(&self) -> Aabb;
 
-    fn id(&self) -> u64;
+    fn id(&self) -> u32;
 }
 
 #[enum_dispatch(Hittable)]
@@ -131,7 +131,7 @@ impl Hittable for World {
         self.bounding_box
     }
 
-    fn id(&self) -> u64 {
+    fn id(&self) -> u32 {
         0
     }
 }
@@ -142,7 +142,7 @@ pub struct Sphere {
     pub radius: f32,
     pub material: Arc<Material>,
     bounding_box: Aabb,
-    id: u64,
+    id: u32,
 }
 
 impl Sphere {
@@ -215,7 +215,7 @@ impl Hittable for Sphere {
         self.bounding_box
     }
 
-    fn id(&self) -> u64 {
+    fn id(&self) -> u32 {
         self.id
     }
 }
@@ -225,7 +225,7 @@ pub struct Quad {
     q: Point3<f32>,
     v: Vec3<f32>,
     u: Vec3<f32>,
-    id: u64,
+    id: u32,
     material: Arc<Material>,
     bbox: Aabb,
     normal: Vec3<f32>,
@@ -263,7 +263,7 @@ impl Hittable for Quad {
         todo!()
     }
 
-    fn id(&self) -> u64 {
+    fn id(&self) -> u32 {
         self.id
     }
 }

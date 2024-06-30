@@ -3,8 +3,8 @@ use std::sync::Arc;
 use enum_dispatch::enum_dispatch;
 
 use crate::{
-    helpers::random,
     object::HitRecord,
+    random::random,
     ray::Ray,
     texture::{HasColorValue, SolidColor, Texture},
     vec3::{self, random::gen_unit_vector, reflect, refract, Vec3},

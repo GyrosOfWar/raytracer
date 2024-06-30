@@ -2,9 +2,9 @@ use num_traits::Zero;
 
 use crate::{
     camera::Camera,
-    helpers::{random, random_range},
     material::{dielectric, lambertian, lambertian_texture, metal},
     object::{Object, Sphere},
+    random::{random, random_range},
     texture::{checkerboard, image, solid},
     vec3::{self, Point3},
 };

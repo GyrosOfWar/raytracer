@@ -203,7 +203,7 @@ impl<T: Float> One for Vec3<T> {
 }
 
 pub mod random {
-    use crate::helpers::{random, random_range};
+    use crate::random::{random, random_range};
 
     use super::Vec3;
 
