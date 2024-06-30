@@ -1,8 +1,5 @@
-use core::panic;
-use std::sync::Arc;
-
-use bvh::{print_tree, validate_tree, BvhNode};
-use object::{Object, World};
+use bvh::BvhNode;
+use object::World;
 
 mod aabb;
 mod bvh;
@@ -30,17 +27,11 @@ fn main() -> Result<(), image::ImageError> {
     let world = World::new(objects);
     let world = BvhNode::from_world(world);
 
-    if DEBUG_BVH {
-        let root = Arc::new(Object::BvhNode(world));
-        let is_valid = validate_tree(root.clone());
-        assert!(is_valid, "Tree is invalid");
-        print_tree(root, 0);
-    } else {
-        let image = camera.render(&world);
-        let file_name = std::env::args()
-            .nth(2)
-            .unwrap_or_else(|| "image.jpeg".into());
-        image.save(file_name)?;
-    }
+    let image = camera.render(&world);
+    let file_name = std::env::args()
+        .nth(2)
+        .unwrap_or_else(|| "image.jpeg".into());
+    image.save(file_name)?;
+
     Ok(())
 }

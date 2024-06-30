@@ -71,6 +71,7 @@ pub trait Hittable: Send + Sync {
 pub enum Object {
     Sphere(Sphere),
     BvhNode(BvhNode),
+    Quad(Quad),
 }
 
 #[derive(Debug)]
@@ -158,6 +159,24 @@ impl Sphere {
             id,
         }
     }
+
+    fn get_uv(p: Point3<f32>) -> TextureCoordinates {
+        use std::f32::consts::PI;
+        // p: a given point on the sphere of radius one, centered at the origin.
+        // u: returned value [0,1] of angle around the Y axis from X=-1.
+        // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+        //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+        //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+        //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+
+        let theta = (-p.y).acos();
+        let phi = f32::atan2(-p.z, p.x) + PI;
+
+        TextureCoordinates {
+            u: phi / (2.0 * PI),
+            v: theta / PI,
+        }
+    }
 }
 
 impl Hittable for Sphere {
@@ -187,7 +206,7 @@ impl Hittable for Sphere {
                 point,
                 root,
                 self.material.clone(),
-                get_uv(point),
+                Self::get_uv(point),
             ))
         }
     }
@@ -201,21 +220,51 @@ impl Hittable for Sphere {
     }
 }
 
-fn get_uv(p: Point3<f32>) -> TextureCoordinates {
-    use std::f32::consts::PI;
-    // p: a given point on the sphere of radius one, centered at the origin.
-    // u: returned value [0,1] of angle around the Y axis from X=-1.
-    // v: returned value [0,1] of angle from Y=-1 to Y=+1.
-    //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
-    //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
-    //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+#[derive(Debug)]
+pub struct Quad {
+    q: Point3<f32>,
+    v: Vec3<f32>,
+    u: Vec3<f32>,
+    id: u64,
+    material: Arc<Material>,
+    bbox: Aabb,
+    normal: Vec3<f32>,
+    d: f32,
+}
 
-    let theta = (-p.y).acos();
-    let phi = f32::atan2(-p.z, p.x) + PI;
+impl Quad {
+    pub fn new(q: Point3<f32>, v: Vec3<f32>, u: Vec3<f32>, material: Arc<Material>) -> Self {
+        let diagonal1 = Aabb::from_points(q, q + u + v);
+        let diagonal2 = Aabb::from_points(q + u, q + v);
+        let bbox = Aabb::from_boxes(diagonal1, diagonal2);
+        let id = get_id();
+        let normal = u.cross(v).unit();
+        let d = normal.dot(q);
 
-    TextureCoordinates {
-        u: phi / (2.0 * PI),
-        v: theta / PI,
+        Quad {
+            q,
+            v,
+            u,
+            id,
+            material,
+            bbox,
+            normal,
+            d,
+        }
+    }
+}
+
+impl Hittable for Quad {
+    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+        todo!()
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        todo!()
+    }
+
+    fn id(&self) -> u64 {
+        self.id
     }
 }
 
