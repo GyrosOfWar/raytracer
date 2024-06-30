@@ -222,14 +222,18 @@ impl Hittable for Sphere {
 
 #[derive(Debug)]
 pub struct Quad {
+    /// Origin point
     q: Point3<f32>,
+    /// First direction vector
     v: Vec3<f32>,
+    /// Second direction vector
     u: Vec3<f32>,
     id: u32,
     material: Arc<Material>,
     bbox: Aabb,
     normal: Vec3<f32>,
     d: f32,
+    w: Vec3<f32>,
 }
 
 impl Quad {
@@ -240,6 +244,7 @@ impl Quad {
         let id = get_id();
         let normal = u.cross(v).unit();
         let d = normal.dot(q);
+        let w = normal / normal.dot(normal);
 
         Quad {
             q,
@@ -250,17 +255,50 @@ impl Quad {
             bbox,
             normal,
             d,
+            w,
         }
     }
 }
 
+fn is_interior(a: f32, b: f32) -> Option<TextureCoordinates> {
+    if !Range::UNIT.contains(a) || !Range::UNIT.contains(b) {
+        None
+    } else {
+        Some(TextureCoordinates { u: a, v: b })
+    }
+}
 impl Hittable for Quad {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
-        todo!()
+        let denom = self.normal.dot(ray.direction);
+
+        // ray is parallel to the plane
+        if denom.abs() < 1e-8 {
+            return None;
+        }
+
+        let t = self.d - self.normal.dot(ray.origin) / denom;
+        if !hit_range.contains(t) {
+            return None;
+        }
+
+        let intersection = ray.evaluate(t);
+        let planar_hit_vector = intersection - self.q;
+        let alpha = self.w.dot(planar_hit_vector.cross(self.v));
+        let beta = self.w.dot(self.u.cross(planar_hit_vector));
+
+        is_interior(alpha, beta).map(|tex_coords| HitRecord {
+            point: intersection,
+            distance: t,
+            material: self.material.clone(),
+            // TODO
+            front_facing: false,
+            normal: self.normal,
+            tex_coords,
+        })
     }
 
     fn bounding_box(&self) -> Aabb {
-        todo!()
+        self.bbox
     }
 
     fn id(&self) -> u32 {
