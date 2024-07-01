@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use bvh::BvhNode;
 use camera::RenderMode;
-use object::{Hittable, Object, World};
+use object::{Object, World};
 use tracing::{error, info};
+use tracing_subscriber::fmt::format::FmtSpan;
 
 mod aabb;
 mod bvh;
@@ -39,9 +40,11 @@ impl Configuration {
 }
 
 fn main() -> Result<(), image::ImageError> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::fmt()
+        .with_span_events(FmtSpan::CLOSE)
+        .init();
 
-    let scene = std::env::args().nth(1).unwrap_or("bvh".into());
+    let scene = std::env::args().nth(1).unwrap_or("quads".into());
     info!("rendering scene '{scene}'");
 
     let (camera, objects) = match scene.as_str() {

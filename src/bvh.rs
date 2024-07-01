@@ -1,4 +1,3 @@
-use core::panic;
 use std::{cmp::Reverse, sync::Arc, time::Instant};
 
 use crate::{

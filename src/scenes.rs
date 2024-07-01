@@ -96,9 +96,10 @@ pub fn earth() -> (Camera, Vec<Object>) {
     ));
 
     let params = CameraParams {
+        look_from: Point3::new(13.0, 2.0, 3.0),
         vertical_fov: 20.0,
-        samples_per_pixel: 100,
-        look_from: Point3::new(0.0, 0.0, 12.0),
+        samples_per_pixel: 50,
+        image_size: (800, 800),
         ..Default::default()
     };
     let camera = Camera::new(params);
@@ -158,11 +159,13 @@ pub fn quads() -> (Camera, Vec<Object>) {
 pub fn million_spheres() -> (Camera, Vec<Object>) {
     let count = 2_000_000;
     let mut objects = Vec::with_capacity(count);
-    let material = lambertian(Point3::new(0.4, 0.2, 0.1));
 
     for _ in 0..count {
         let position = vec3::random::gen_unit_sphere() * 2.0;
-        objects.push(Object::Sphere(Sphere::new(position, 0.2, material.clone())));
+        let color = vec3::random::gen() * vec3::random::gen();
+        let material = lambertian(color);
+
+        objects.push(Object::Sphere(Sphere::new(position, 0.2, material)));
     }
 
     let params = CameraParams {

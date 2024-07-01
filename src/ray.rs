@@ -2,6 +2,7 @@ use num_traits::Float;
 
 use crate::vec3::{Point3, Vec3};
 
+#[derive(Debug)]
 pub struct Ray<T: Float> {
     pub origin: Point3<T>,
     pub direction: Vec3<T>,

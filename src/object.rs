@@ -261,15 +261,6 @@ impl World {
             objects,
         }
     }
-
-    #[allow(unused)]
-    pub fn objects(&self) -> &[Object] {
-        &self.objects
-    }
-
-    pub fn into_objects(self) -> Vec<Object> {
-        self.objects
-    }
 }
 
 impl Hittable for World {
