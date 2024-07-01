@@ -154,3 +154,28 @@ pub fn quads() -> (Camera, Vec<Object>) {
 
     (camera, objects)
 }
+
+pub fn million_spheres() -> (Camera, Vec<Object>) {
+    let count = 1_000_000;
+    let mut objects = Vec::with_capacity(count);
+    let material = lambertian(Point3::new(0.4, 0.2, 0.1));
+
+    for _ in 0..count {
+        let position = vec3::random::gen_unit_sphere();
+        objects.push(Object::Sphere(Sphere::new(position, 0.2, material.clone())));
+    }
+
+    let params = CameraParams {
+        look_from: Point3::new(13.0, 2.0, 3.0),
+        defocus_angle: 1.2,
+        focus_dist: 10.0,
+        vertical_fov: 20.0,
+        samples_per_pixel: 500,
+        image_size: (2560, 1440),
+        ..Default::default()
+    };
+
+    let camera = Camera::new(params);
+
+    (camera, objects)
+}

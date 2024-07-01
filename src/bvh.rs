@@ -6,6 +6,7 @@ use crate::{
     range::Range,
     ray::Ray,
 };
+use rayon::prelude::*;
 
 #[derive(Debug)]
 pub struct BvhNode {
@@ -56,18 +57,20 @@ impl BvhNode {
                 BvhNode::new(left, right, bbox)
             }
             _ => {
-                objects.sort_by(|a, b| {
+                objects.par_sort_by(|a, b| {
                     let r1 = a.bounding_box().interval_at(axis);
                     let r2 = b.bounding_box().interval_at(axis);
                     r2.min.partial_cmp(&r1.min).unwrap()
                 });
 
                 let mid = len / 2;
-                let left = objects.drain(0..mid).collect();
+                let left = objects.par_drain(0..mid).collect();
                 let right = objects;
 
-                let left = BvhNode::from_objects(left);
-                let right = BvhNode::from_objects(right);
+                let (left, right) = rayon::join(
+                    || BvhNode::from_objects(left),
+                    || BvhNode::from_objects(right),
+                );
 
                 BvhNode::new(
                     Arc::new(Object::BvhNode(left)),
