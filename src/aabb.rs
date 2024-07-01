@@ -1,4 +1,5 @@
 use crate::{
+    object::Hittable,
     range::Range,
     ray::Ray,
     vec3::{Axis, Point3},
@@ -58,6 +59,15 @@ impl Aabb {
             z: Range::from_ranges(box0.z, box1.z),
         }
         .pad_to_minimums()
+    }
+
+    pub fn from_objects(objects: &[impl Hittable]) -> Self {
+        let mut bbox = Aabb::EMPTY;
+        for object in objects.iter() {
+            let bbox2 = object.bounding_box();
+            bbox = Aabb::from_boxes(bbox, bbox2);
+        }
+        bbox
     }
 
     pub fn interval_at(&self, axis: Axis) -> Range {

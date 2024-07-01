@@ -38,17 +38,13 @@ impl BvhNode {
     fn from_objects(mut objects: Vec<Object>) -> Self {
         let len = objects.len();
 
-        let mut bbox = Aabb::EMPTY;
-        for object in objects.iter() {
-            let bbox2 = object.bounding_box();
-            bbox = Aabb::from_boxes(bbox, bbox2);
-        }
+        let bbox = Aabb::from_objects(&objects);
         let axis = bbox.longest_axis();
 
         match len {
             1 => {
                 let object = Arc::new(objects.remove(0));
-                BvhNode::new(object.clone(), object.clone(), bbox)
+                BvhNode::new(object.clone(), object, bbox)
             }
             2 => {
                 let left = Arc::new(objects.remove(0));
@@ -111,6 +107,7 @@ impl Hittable for BvhNode {
     }
 }
 
+#[allow(unused)]
 pub mod debug {
     use std::sync::Arc;
 

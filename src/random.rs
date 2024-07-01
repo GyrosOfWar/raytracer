@@ -1,3 +1,4 @@
+#[allow(unused)]
 mod rand {
     use rand::{rngs::SmallRng, Rng, SeedableRng};
     use std::cell::RefCell;
@@ -19,6 +20,7 @@ mod rand {
     }
 }
 
+#[allow(unused)]
 mod libc {
     use libc::{rand, RAND_MAX};
 

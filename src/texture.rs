@@ -5,7 +5,7 @@ use image::{DynamicImage, GenericImageView, ImageError};
 
 use crate::{range::Range, vec3::Point3};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TextureCoordinates {
     pub u: f32,
     pub v: f32,

@@ -43,7 +43,7 @@ impl Default for CameraParams {
             look_at: Point3::zero(),
             look_from: Point3::new(0.0, 0.0, -1.0),
             defocus_angle: 0.0,
-            focus_dist: 0.0,
+            focus_dist: 10.0,
             vertical_fov: 90.0,
             max_depth: 50,
         }

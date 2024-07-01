@@ -175,7 +175,7 @@ pub struct Quad {
 }
 
 impl Quad {
-    pub fn new(q: Point3<f32>, v: Vec3<f32>, u: Vec3<f32>, material: Arc<Material>) -> Self {
+    pub fn new(q: Point3<f32>, u: Vec3<f32>, v: Vec3<f32>, material: Arc<Material>) -> Self {
         let diagonal1 = Aabb::from_points(q, q + u + v);
         let diagonal2 = Aabb::from_points(q + u, q + v);
         let bbox = Aabb::from_boxes(diagonal1, diagonal2);
@@ -199,39 +199,45 @@ impl Quad {
 }
 
 fn is_interior(a: f32, b: f32) -> Option<TextureCoordinates> {
-    if !Range::UNIT.contains(a) || !Range::UNIT.contains(b) {
+    if a < 0.0 || a > 1.0 || b < 0.0 || b > 1.0 {
         None
     } else {
         Some(TextureCoordinates { u: a, v: b })
     }
 }
+
 impl Hittable for Quad {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
         let denom = self.normal.dot(ray.direction);
 
         // ray is parallel to the plane
-        if denom.abs() < 1e-8 {
+        if denom.abs() < 1e-4 {
             return None;
         }
 
-        let t = self.d - self.normal.dot(ray.origin) / denom;
+        let t = (self.d - Vec3::dot(self.normal, ray.origin)) / denom;
         if !hit_range.contains(t) {
             return None;
         }
 
         let intersection = ray.evaluate(t);
-        let planar_hit_vector = intersection - self.q;
-        let alpha = self.w.dot(planar_hit_vector.cross(self.v));
-        let beta = self.w.dot(self.u.cross(planar_hit_vector));
+        let planar_hitpt_vector = intersection - self.q;
+        let w = self.w;
+        let v = self.v;
+        let u = self.u;
 
-        is_interior(alpha, beta).map(|tex_coords| HitRecord {
-            point: intersection,
-            distance: t,
-            material: self.material.clone(),
-            // TODO?
-            front_facing: false,
-            normal: self.normal,
-            tex_coords,
+        let alpha = Vec3::dot(w, Vec3::cross(planar_hitpt_vector, v));
+        let beta = Vec3::dot(w, Vec3::cross(u, planar_hitpt_vector));
+
+        is_interior(alpha, beta).map(|tex_coords| {
+            HitRecord::new(
+                ray,
+                self.normal,
+                intersection,
+                t,
+                self.material.clone(),
+                tex_coords,
+            )
         })
     }
 
@@ -246,7 +252,11 @@ impl Hittable for Quad {
 
 #[cfg(test)]
 mod tests {
-    use crate::{material::metal, object::Hittable, vec3::Point3};
+    use crate::{
+        material::metal,
+        object::{is_interior, Hittable},
+        vec3::Point3,
+    };
 
     use super::Sphere;
 
@@ -261,5 +271,13 @@ mod tests {
         assert_eq!(bbox.x.max, 2.0);
         assert_eq!(bbox.y.max, 2.0);
         assert_eq!(bbox.z.max, 2.0);
+    }
+
+    #[test]
+    fn test_quad_is_interior() {
+        assert!(is_interior(-0.001, 0.5).is_none());
+        assert!(is_interior(0.001, 0.001).is_some());
+        assert!(is_interior(0.5, 0.5).is_some());
+        assert!(is_interior(0.001, 0.999).is_some());
     }
 }
