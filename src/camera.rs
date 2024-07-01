@@ -5,6 +5,7 @@ use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use tracing::info;
 
 use crate::{
     object::Hittable,
@@ -14,7 +15,10 @@ use crate::{
     vec3::{self, Point3, Vec3},
 };
 
-const PARALLEL: bool = true;
+pub enum RenderMode {
+    Sequential,
+    Parallel,
+}
 
 fn linear_to_gamma(linear_component: f32) -> f32 {
     if linear_component > 0.0 {
@@ -182,7 +186,7 @@ impl Camera {
 
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
         let threads = rayon::current_num_threads();
-        println!("rendering in parallel with {threads} threads");
+        info!("rendering in parallel with {threads} threads");
         (0..(self.image_height * self.image_width))
             .into_par_iter()
             .progress_count((self.image_height * self.image_width) as u64)
@@ -219,18 +223,17 @@ impl Camera {
         pixels
     }
 
-    pub fn render(&self, world: &impl Hittable) -> RgbImage {
+    pub fn render(&self, world: &impl Hittable, mode: RenderMode) -> RgbImage {
         let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
 
         let start = Instant::now();
-        let pixels = if PARALLEL {
-            self.render_parallel(pixel_samples_scale, world)
-        } else {
-            self.render_sequential(pixel_samples_scale, world)
+        let pixels = match mode {
+            RenderMode::Parallel => self.render_parallel(pixel_samples_scale, world),
+            RenderMode::Sequential => self.render_sequential(pixel_samples_scale, world),
         };
         let duration = start.elapsed();
 
-        println!("Rendering took {duration:?}");
+        info!("rendering took {duration:?}");
         let image =
             Rgb32FImage::from_vec(self.image_width as u32, self.image_height as u32, pixels)
                 .expect("dimensions must match");

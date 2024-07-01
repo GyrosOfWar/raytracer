@@ -72,6 +72,7 @@ pub enum Object {
     Sphere(Sphere),
     BvhNode(BvhNode),
     Quad(Quad),
+    World(World),
 }
 
 #[derive(Debug)]
@@ -222,12 +223,9 @@ impl Hittable for Quad {
 
         let intersection = ray.evaluate(t);
         let planar_hitpt_vector = intersection - self.q;
-        let w = self.w;
-        let v = self.v;
-        let u = self.u;
 
-        let alpha = Vec3::dot(w, Vec3::cross(planar_hitpt_vector, v));
-        let beta = Vec3::dot(w, Vec3::cross(u, planar_hitpt_vector));
+        let alpha = Vec3::dot(self.w, Vec3::cross(planar_hitpt_vector, self.v));
+        let beta = Vec3::dot(self.w, Vec3::cross(self.u, planar_hitpt_vector));
 
         is_interior(alpha, beta).map(|tex_coords| {
             HitRecord::new(
@@ -247,6 +245,59 @@ impl Hittable for Quad {
 
     fn id(&self) -> u32 {
         self.id
+    }
+}
+
+#[derive(Debug)]
+pub struct World {
+    objects: Vec<Object>,
+    bounding_box: Aabb,
+}
+
+impl World {
+    pub fn new(objects: Vec<Object>) -> Self {
+        Self {
+            bounding_box: Aabb::from_objects(&objects),
+            objects,
+        }
+    }
+
+    #[allow(unused)]
+    pub fn objects(&self) -> &[Object] {
+        &self.objects
+    }
+
+    pub fn into_objects(self) -> Vec<Object> {
+        self.objects
+    }
+}
+
+impl Hittable for World {
+    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+        let mut record = None;
+        let mut closest_so_far = hit_range.max;
+
+        for object in &self.objects {
+            let range = Range {
+                min: hit_range.min,
+                max: closest_so_far,
+            };
+
+            if let Some(hit) = object.hit(ray, range) {
+                closest_so_far = hit.distance;
+                record = Some(hit);
+            }
+        }
+
+        record
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        self.bounding_box
+    }
+
+    fn id(&self) -> u32 {
+        0
     }
 }
 

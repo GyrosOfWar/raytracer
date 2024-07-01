@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use bvh::BvhNode;
-use object::{Hittable, Object};
+use camera::RenderMode;
+use object::{Hittable, Object, World};
+use tracing::{error, info};
 
 mod aabb;
 mod bvh;
@@ -15,10 +17,34 @@ mod scenes;
 mod texture;
 mod vec3;
 
-fn main() -> Result<(), image::ImageError> {
-    let arg = std::env::args().nth(1).unwrap_or("bvh".into());
+#[derive(Debug)]
+pub struct Configuration {
+    bvh_disabled: bool,
+    sequential_rendering: bool,
+    bvh_debug: bool,
+}
 
-    let (camera, objects) = match arg.as_str() {
+impl Configuration {
+    pub fn from_env() -> Configuration {
+        let bvh_disabled = std::env::var("RT_BVH_DISABLED").is_ok();
+        let sequential_rendering = std::env::var("RT_SEQUENTIAL").is_ok();
+        let bvh_debug = std::env::var("RT_DEBUG").is_ok();
+
+        Configuration {
+            bvh_disabled,
+            sequential_rendering,
+            bvh_debug,
+        }
+    }
+}
+
+fn main() -> Result<(), image::ImageError> {
+    tracing_subscriber::fmt::init();
+
+    let scene = std::env::args().nth(1).unwrap_or("bvh".into());
+    info!("rendering scene '{scene}'");
+
+    let (camera, objects) = match scene.as_str() {
         "spheres" => scenes::lots_of_spheres(),
         "earth" => scenes::earth(),
         "quads" => scenes::quads(),
@@ -26,16 +52,29 @@ fn main() -> Result<(), image::ImageError> {
         _ => unreachable!(),
     };
 
-    let world = BvhNode::from_world(objects);
-    let debug = std::env::var("RT_DEBUG").is_ok();
-
-    if debug {
-        println!("{:?}", world.bounding_box());
-        let root = Arc::new(Object::BvhNode(world));
-        bvh::debug::validate_tree(root.clone());
-        // bvh::debug::print_tree(root, 0);
+    let config = Configuration::from_env();
+    info!("rendering with configuration {config:#?}");
+    let world = if config.bvh_disabled {
+        Object::World(World::new(objects))
     } else {
-        let image = camera.render(&world);
+        Object::BvhNode(BvhNode::from_world(objects))
+    };
+
+    if config.bvh_debug {
+        if config.bvh_disabled {
+            error!("BVH is disabled, nothing to show.");
+        } else {
+            let root = Arc::new(world);
+            bvh::debug::validate_tree(root.clone());
+            bvh::debug::print_tree(root, 0);
+        }
+    } else {
+        let mode = if config.sequential_rendering {
+            RenderMode::Sequential
+        } else {
+            RenderMode::Parallel
+        };
+        let image = camera.render(&world, mode);
         let file_name = std::env::args()
             .nth(2)
             .unwrap_or_else(|| "image.jpeg".into());

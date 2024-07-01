@@ -1,3 +1,4 @@
+use core::panic;
 use std::{cmp::Reverse, sync::Arc, time::Instant};
 
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
 };
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
+use tracing::info;
 
 #[derive(Debug)]
 pub struct BvhNode {
@@ -32,7 +34,7 @@ impl BvhNode {
     pub fn from_world(objects: Vec<Object>) -> Self {
         let start = Instant::now();
         let root = BvhNode::from_objects(objects);
-        println!("building BVH took {:?}", start.elapsed());
+        info!("building BVH took {:?}", start.elapsed());
         root
     }
 
@@ -110,6 +112,8 @@ impl Hittable for BvhNode {
 pub mod debug {
     use std::sync::Arc;
 
+    use tracing::error;
+
     use crate::{
         aabb::Aabb,
         object::{Hittable, Object},
@@ -152,6 +156,7 @@ pub mod debug {
                 print_tree(node.left.clone(), level + 1);
                 print_tree(node.right.clone(), level + 1);
             }
+            Object::World(_) => panic!("World should not be in the tree"),
         }
     }
 
@@ -162,24 +167,25 @@ pub mod debug {
         match object.as_ref() {
             Object::Sphere(s) => {
                 if !bbox.contains(&s.bounding_box()) {
-                    println!("Sphere {} not contained in parent", s.id());
+                    error!("Sphere {} not contained in parent", s.id());
                     valid = false;
                 }
             }
             Object::Quad(q) => {
                 if !bbox.contains(&q.bounding_box()) {
-                    println!("Quad {} not contained in parent", q.id());
+                    error!("Quad {} not contained in parent", q.id());
                     valid = false;
                 }
             }
             Object::BvhNode(node) => {
                 if !bbox.contains(&node.bounding_box()) {
-                    println!("Node {} not contained in parent", node.id());
+                    error!("Node {} not contained in parent", node.id());
                     valid = false;
                 }
                 valid &= validate_tree(node.left.clone());
                 valid &= validate_tree(node.right.clone());
             }
+            Object::World(_) => panic!("World should not be in the tree"),
         }
 
         valid
