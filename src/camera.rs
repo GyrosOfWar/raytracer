@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::material::Scatterable;
+use crate::material::{ScatterResult, Scatterable};
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
 use num_traits::{One, Zero};
@@ -133,11 +133,10 @@ impl Camera {
         let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
         match intersection {
             Some(hit) => {
-                let mut scattered = Ray::new(Vec3::zero(), Vec3::zero());
-                let mut attenuation = Vec3::zero();
-                if hit
-                    .material
-                    .scatter(ray, &hit, &mut attenuation, &mut scattered)
+                if let Some(ScatterResult {
+                    attenuation,
+                    scattered,
+                }) = hit.material.scatter(ray, &hit)
                 {
                     attenuation * self.ray_color(&scattered, depth - 1, world)
                 } else {
@@ -152,8 +151,8 @@ impl Camera {
         }
     }
 
-    // Construct a camera ray originating from the origin and directed at randomly sampled
-    // point around the pixel location i, j.
+    /// Construct a camera ray originating from the origin and directed at randomly sampled
+    /// point around the pixel location `(i, j)`.
     fn get_ray(&self, i: usize, j: usize) -> Ray<f32> {
         let offset = self.sample_square();
         let pixel_sample = self.pixel_00_loc
@@ -170,9 +169,8 @@ impl Camera {
         Ray::new(ray_origin, ray_direction)
     }
 
+    /// Returns a random point in the camera defocus disk.
     fn defocus_disk_sample(&self) -> Vec3<f32> {
-        // Returns a random point in the camera defocus disk.
-        // let p = random_in_unit_disk();
         let p = vec3::random::gen_unit_disk();
         self.center + (self.defocus_disk_u * p.x) + (self.defocus_disk_v * p.y)
     }
@@ -183,6 +181,8 @@ impl Camera {
     }
 
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
+        let threads = rayon::current_num_threads();
+        println!("rendering in parallel with {threads} threads");
         (0..(self.image_height * self.image_width))
             .into_par_iter()
             .progress_count((self.image_height * self.image_width) as u64)

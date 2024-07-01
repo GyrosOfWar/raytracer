@@ -10,15 +10,14 @@ use crate::{
     vec3::{self, random::gen_unit_vector, reflect, refract, Vec3},
 };
 
+pub struct ScatterResult {
+    pub attenuation: Vec3<f32>,
+    pub scattered: Ray<f32>,
+}
+
 #[enum_dispatch]
 pub trait Scatterable {
-    fn scatter(
-        &self,
-        ray: &Ray<f32>,
-        hit: &HitRecord,
-        attenuation: &mut Vec3<f32>,
-        scattered: &mut Ray<f32>,
-    ) -> bool;
+    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult>;
 }
 
 #[derive(Debug)]
@@ -27,20 +26,15 @@ pub struct Lambertian {
 }
 
 impl Scatterable for Lambertian {
-    fn scatter(
-        &self,
-        _ray: &Ray<f32>,
-        hit: &HitRecord,
-        attenuation: &mut Vec3<f32>,
-        scattered: &mut Ray<f32>,
-    ) -> bool {
+    fn scatter(&self, _ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
         let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
         if scatter_direction.near_zero() {
             scatter_direction = hit.normal;
         }
-        *scattered = Ray::new(hit.point, scatter_direction);
-        *attenuation = self.texture.value_at(hit.tex_coords, hit.point);
-        true
+        Some(ScatterResult {
+            scattered: Ray::new(hit.point, scatter_direction),
+            attenuation: self.texture.value_at(hit.tex_coords, hit.point),
+        })
     }
 }
 
@@ -51,18 +45,13 @@ pub struct Metal {
 }
 
 impl Scatterable for Metal {
-    fn scatter(
-        &self,
-        ray: &Ray<f32>,
-        hit: &HitRecord,
-        attenuation: &mut Vec3<f32>,
-        scattered: &mut Ray<f32>,
-    ) -> bool {
+    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
         let reflected = reflect(ray.direction, hit.normal);
         let reflected = reflected.unit() + (gen_unit_vector() * self.fuzz);
-        *scattered = Ray::new(hit.point, reflected);
-        *attenuation = self.albedo;
-        true
+        Some(ScatterResult {
+            scattered: Ray::new(hit.point, reflected),
+            attenuation: self.albedo,
+        })
     }
 }
 
@@ -72,14 +61,7 @@ pub struct Dielectric {
 }
 
 impl Scatterable for Dielectric {
-    fn scatter(
-        &self,
-        ray: &Ray<f32>,
-        hit: &HitRecord,
-        attenuation: &mut Vec3<f32>,
-        scattered: &mut Ray<f32>,
-    ) -> bool {
-        *attenuation = Vec3::new(1.0, 1.0, 1.0);
+    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
         let ri = if hit.front_facing {
             1.0 / self.refraction_index
         } else {
@@ -96,8 +78,11 @@ impl Scatterable for Dielectric {
         } else {
             refract(unit_direction, hit.normal, ri)
         };
-        *scattered = Ray::new(hit.point, direction);
-        true
+
+        Some(ScatterResult {
+            attenuation: Vec3::new(1.0, 1.0, 1.0),
+            scattered: Ray::new(hit.point, direction),
+        })
     }
 }
 

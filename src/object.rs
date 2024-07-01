@@ -199,10 +199,10 @@ impl Quad {
 }
 
 fn is_interior(a: f32, b: f32) -> Option<TextureCoordinates> {
-    if a < 0.0 || a > 1.0 || b < 0.0 || b > 1.0 {
-        None
-    } else {
+    if Range::UNIT.contains(a) && Range::UNIT.contains(b) {
         Some(TextureCoordinates { u: a, v: b })
+    } else {
+        None
     }
 }
 

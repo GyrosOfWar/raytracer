@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::{cmp::Reverse, sync::Arc, time::Instant};
 
 use crate::{
     aabb::Aabb,
@@ -6,6 +6,7 @@ use crate::{
     range::Range,
     ray::Ray,
 };
+use ordered_float::OrderedFloat;
 use rayon::prelude::*;
 
 #[derive(Debug)]
@@ -53,10 +54,8 @@ impl BvhNode {
                 BvhNode::new(left, right, bbox)
             }
             _ => {
-                objects.par_sort_by(|a, b| {
-                    let r1 = a.bounding_box().interval_at(axis);
-                    let r2 = b.bounding_box().interval_at(axis);
-                    r2.min.partial_cmp(&r1.min).unwrap()
+                objects.par_sort_unstable_by_key(|o| {
+                    Reverse(OrderedFloat(o.bounding_box().interval_at(axis).min))
                 });
 
                 let mid = len / 2;

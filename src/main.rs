@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bvh::BvhNode;
-use object::Object;
+use object::{Hittable, Object};
 
 mod aabb;
 mod bvh;
@@ -16,7 +16,7 @@ mod texture;
 mod vec3;
 
 fn main() -> Result<(), image::ImageError> {
-    let arg = std::env::args().nth(1).unwrap_or("quads".into());
+    let arg = std::env::args().nth(1).unwrap_or("bvh".into());
 
     let (camera, objects) = match arg.as_str() {
         "spheres" => scenes::lots_of_spheres(),
@@ -30,6 +30,7 @@ fn main() -> Result<(), image::ImageError> {
     let debug = std::env::var("RT_DEBUG").is_ok();
 
     if debug {
+        println!("{:?}", world.bounding_box());
         let root = Arc::new(Object::BvhNode(world));
         bvh::debug::validate_tree(root.clone());
         // bvh::debug::print_tree(root, 0);

@@ -78,7 +78,7 @@ pub fn lots_of_spheres() -> (Camera, Vec<Object>) {
         defocus_angle: 1.2,
         focus_dist: 10.0,
         vertical_fov: 20.0,
-        samples_per_pixel: 500,
+        samples_per_pixel: 250,
         ..Default::default()
     };
 
@@ -156,12 +156,12 @@ pub fn quads() -> (Camera, Vec<Object>) {
 }
 
 pub fn million_spheres() -> (Camera, Vec<Object>) {
-    let count = 1_000_000;
+    let count = 2_000_000;
     let mut objects = Vec::with_capacity(count);
     let material = lambertian(Point3::new(0.4, 0.2, 0.1));
 
     for _ in 0..count {
-        let position = vec3::random::gen_unit_sphere();
+        let position = vec3::random::gen_unit_sphere() * 2.0;
         objects.push(Object::Sphere(Sphere::new(position, 0.2, material.clone())));
     }
 
