@@ -110,44 +110,44 @@ pub fn earth() -> (Camera, Vec<Object>) {
 pub fn quads() -> (Camera, Vec<Object>) {
     let material = lambertian(Point3::new(1.0, 0.2, 0.2));
     let objects = vec![
-        Object::Quad(Quad::new(
-            Point3::new(-3.0, -2.0, 5.0),
-            Vec3::new(0.0, 0.0, -4.0),
-            Vec3::new(0.0, 4.0, 0.0),
-            material.clone(),
-        )),
+        // Object::Quad(Quad::new(
+        //     Point3::new(-3.0, -2.0, 5.0),
+        //     Vec3::new(0.0, 0.0, -4.0),
+        //     Vec3::new(0.0, 4.0, 0.0),
+        //     material.clone(),
+        // )),
         Object::Quad(Quad::new(
             Point3::new(-2.0, -2.0, 0.0),
-            Vec3::new(4.0, 0.0, 0.0),
-            Vec3::new(0.0, 4.0, 0.0),
+            Vec3::new(400.0, 0.0, 0.0),
+            Vec3::new(0.0, 400.0, 0.0),
             material.clone(),
         )),
-        Object::Quad(Quad::new(
-            Point3::new(3.0, -2.0, 1.0),
-            Vec3::new(0.0, 0.0, 4.0),
-            Vec3::new(0.0, 4.0, 0.0),
-            material.clone(),
-        )),
-        Object::Quad(Quad::new(
-            Point3::new(-2.0, 3.0, 1.0),
-            Vec3::new(4.0, 0.0, 0.0),
-            Vec3::new(0.0, 0.0, 4.0),
-            material.clone(),
-        )),
-        Object::Quad(Quad::new(
-            Point3::new(-2.0, -3.0, 5.0),
-            Vec3::new(4.0, 0.0, 0.0),
-            Vec3::new(0.0, 0.0, -4.0),
-            material.clone(),
-        )),
+        // Object::Quad(Quad::new(
+        //     Point3::new(3.0, -2.0, 1.0),
+        //     Vec3::new(0.0, 0.0, 4.0),
+        //     Vec3::new(0.0, 4.0, 0.0),
+        //     material.clone(),
+        // )),
+        // Object::Quad(Quad::new(
+        //     Point3::new(-2.0, 3.0, 1.0),
+        //     Vec3::new(4.0, 0.0, 0.0),
+        //     Vec3::new(0.0, 0.0, 4.0),
+        //     material.clone(),
+        // )),
+        // Object::Quad(Quad::new(
+        //     Point3::new(-2.0, -3.0, 5.0),
+        //     Vec3::new(4.0, 0.0, 0.0),
+        //     Vec3::new(0.0, 0.0, -4.0),
+        //     material.clone(),
+        // )),
     ];
 
     let params = CameraParams {
         vertical_fov: 80.0,
         look_from: Point3::new(0.0, 0.0, 9.0),
         look_at: Point3::new(0.0, 0.0, 0.0),
-        image_size: (400, 400),
-        samples_per_pixel: 100,
+        image_size: (256, 256),
+        samples_per_pixel: 1,
         ..Default::default()
     };
 

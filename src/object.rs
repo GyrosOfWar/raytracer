@@ -13,6 +13,7 @@ use crate::{
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
+use tracing::info;
 
 static ID_COUNTER: AtomicU32 = AtomicU32::new(1);
 
@@ -184,6 +185,7 @@ impl Quad {
         let normal = u.cross(v).unit();
         let d = normal.dot(q);
         let w = normal / normal.dot(normal);
+        info!("q = {q:?}, u = {u:?}, v = {v:?}, normal = {normal:?}, d = {d}, w = {w:?}");
 
         Quad {
             q,
@@ -226,6 +228,7 @@ impl Hittable for Quad {
 
         let alpha = Vec3::dot(self.w, Vec3::cross(planar_hitpt_vector, self.v));
         let beta = Vec3::dot(self.w, Vec3::cross(self.u, planar_hitpt_vector));
+        // info!("alpha: {}, beta: {}", alpha, beta);
 
         is_interior(alpha, beta).map(|tex_coords| {
             HitRecord::new(
