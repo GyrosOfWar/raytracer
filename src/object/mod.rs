@@ -6,7 +6,8 @@ use std::sync::{
 use crate::{
     aabb::Aabb,
     bvh::BvhNode,
-    material::Material,
+    camera::CameraParams,
+    material::{Material, MaterialBuilder},
     range::Range,
     ray::Ray,
     texture::TextureCoordinates,
@@ -14,11 +15,13 @@ use crate::{
 };
 use enum_dispatch::enum_dispatch;
 pub use quad::Quad;
+use serde::{Deserialize, Serialize};
 pub use sphere::Sphere;
 pub use world::World;
 
 mod quad;
 mod sphere;
+mod triangle_mesh;
 mod world;
 
 pub fn get_id() -> u32 {
@@ -82,6 +85,51 @@ pub enum Object {
     World(World),
 }
 
+#[derive(Debug)]
+pub struct Scene {
+    pub objects: Vec<ObjectBuilder>,
+    pub camera: CameraParams,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ObjectBuilder {
+    Sphere(SphereBuilder),
+    Quad(QuadBuilder),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SphereBuilder {
+    pub radius: f32,
+    pub center: Point3<f32>,
+    pub material: MaterialBuilder,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QuadBuilder {
+    pub q: Point3<f32>,
+    pub u: Vec3<f32>,
+    pub v: Vec3<f32>,
+    pub material: MaterialBuilder,
+}
+
+impl From<ObjectBuilder> for Object {
+    fn from(value: ObjectBuilder) -> Self {
+        match value {
+            ObjectBuilder::Sphere(sphere) => Object::Sphere(Sphere::new(
+                sphere.center,
+                sphere.radius,
+                Arc::new(sphere.material.into()),
+            )),
+            ObjectBuilder::Quad(quad) => Object::Quad(Quad::new(
+                quad.q,
+                quad.u,
+                quad.v,
+                Arc::new(quad.material.into()),
+            )),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{material::metal, object::Hittable, vec3::Point3};
@@ -100,12 +148,4 @@ mod tests {
         assert_eq!(bbox.y.max, 2.0);
         assert_eq!(bbox.z.max, 2.0);
     }
-
-    // #[test]
-    // fn test_quad_is_interior() {
-    //     assert!(is_interior(-0.001, 0.5).is_none());
-    //     assert!(is_interior(0.001, 0.001).is_some());
-    //     assert!(is_interior(0.5, 0.5).is_some());
-    //     assert!(is_interior(0.001, 0.999).is_some());
-    // }
 }

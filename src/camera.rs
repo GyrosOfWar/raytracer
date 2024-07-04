@@ -5,6 +5,7 @@ use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
 use num_traits::{One, Zero};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::{
@@ -28,6 +29,7 @@ fn linear_to_gamma(linear_component: f32) -> f32 {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CameraParams {
     pub image_size: (usize, usize),
     pub samples_per_pixel: usize,

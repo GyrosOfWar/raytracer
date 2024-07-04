@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     object::HitRecord,
@@ -119,4 +120,33 @@ pub fn dielectric(index: f32) -> Arc<Material> {
     Arc::new(Material::Dielectric(Dielectric {
         refraction_index: index,
     }))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum MaterialBuilder {
+    Lambertian(LambertianBuilder),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LambertianBuilder {
+    pub texture: TextureBuilder,
+}
+
+impl From<MaterialBuilder> for Material {
+    fn from(value: MaterialBuilder) -> Self {
+        match value {
+            MaterialBuilder::Lambertian(l) => Material::Lambertian(Lambertian {
+                texture: Arc::new(l.texture.into()),
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum TextureBuilder {}
+
+impl From<TextureBuilder> for Texture {
+    fn from(value: TextureBuilder) -> Self {
+        todo!()
+    }
 }

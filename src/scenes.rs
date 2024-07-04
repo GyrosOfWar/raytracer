@@ -1,8 +1,10 @@
+use enum_dispatch::enum_dispatch;
 use num_traits::Zero;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     camera::{Camera, CameraParams},
-    material::{dielectric, lambertian, lambertian_texture, metal},
+    material::{dielectric, lambertian, lambertian_texture, metal, Material},
     object::{Object, Quad, Sphere},
     random::{random, random_range},
     texture::{checkerboard, image, solid},
@@ -116,12 +118,12 @@ pub fn quads() -> (Camera, Vec<Object>) {
         //     Vec3::new(0.0, 4.0, 0.0),
         //     material.clone(),
         // )),
-        Object::Quad(Quad::new(
-            Point3::new(-2.0, -2.0, 0.0),
-            Vec3::new(400.0, 0.0, 0.0),
-            Vec3::new(0.0, 400.0, 0.0),
-            material.clone(),
-        )),
+        // Object::Quad(Quad::new(
+        //     Point3::new(-2.0, -2.0, 0.0),
+        //     Vec3::new(4.0, 0.0, 0.0),
+        //     Vec3::new(0.0, 4.0, 0.0),
+        //     material.clone(),
+        // )),
         // Object::Quad(Quad::new(
         //     Point3::new(3.0, -2.0, 1.0),
         //     Vec3::new(0.0, 0.0, 4.0),
@@ -140,13 +142,20 @@ pub fn quads() -> (Camera, Vec<Object>) {
         //     Vec3::new(0.0, 0.0, -4.0),
         //     material.clone(),
         // )),
+        Object::Quad(Quad::new(
+            Point3::new(0.0, -2.0, 0.0),
+            Vec3::new(0.0, 4.0, 0.0),
+            Vec3::new(4.0, 0.0, 0.0),
+            material.clone(),
+        )),
+        // Object::Sphere(Sphere::new(Point3::zero(), 4.0, material.clone())),
     ];
 
     let params = CameraParams {
         vertical_fov: 80.0,
-        look_from: Point3::new(0.0, 0.0, 9.0),
-        look_at: Point3::new(0.0, 0.0, 0.0),
-        image_size: (256, 256),
+        look_from: Point3::new(0.0, 0.0, 8.0),
+        look_at: Point3::new(0.0, 0.0, -1.0),
+        image_size: (800, 800),
         samples_per_pixel: 1,
         ..Default::default()
     };

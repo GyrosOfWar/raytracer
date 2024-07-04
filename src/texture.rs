@@ -2,6 +2,7 @@ use std::{fmt, path::Path, sync::Arc};
 
 use enum_dispatch::enum_dispatch;
 use image::{DynamicImage, GenericImageView, ImageError};
+use serde::Deserialize;
 
 use crate::{range::Range, vec3::Point3};
 
@@ -25,7 +26,7 @@ pub trait HasColorValue: Send + Sync {
     fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Point3<f32>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct SolidColor {
     pub albedo: Point3<f32>,
 }
@@ -67,7 +68,7 @@ impl HasColorValue for Checkerboard {
         }
     }
 }
-
+// #[derive(Deserialize)]
 pub struct Image {
     image: DynamicImage,
 }

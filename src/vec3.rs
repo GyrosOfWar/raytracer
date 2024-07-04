@@ -1,4 +1,5 @@
 use num_traits::{Float, One, Zero};
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 #[derive(Debug, Copy, Clone)]
@@ -8,7 +9,7 @@ pub enum Axis {
     Z,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Vec3<T: Float> {
     pub x: T,
     pub y: T,

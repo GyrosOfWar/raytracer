@@ -84,6 +84,15 @@ impl Hittable for Quad {
         let beta = Vec3::dot(self.w, Vec3::cross(self.u, planar_hitpt_vector));
         // info!("alpha: {}, beta: {}", alpha, beta);
 
+        // Some(HitRecord::new(
+        //     ray,
+        //     self.normal,
+        //     intersection,
+        //     t,
+        //     self.material.clone(),
+        //     Default::default(),
+        // ))
+
         is_interior(alpha, beta).map(|tex_coords| {
             HitRecord::new(
                 ray,
