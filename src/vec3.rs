@@ -9,12 +9,14 @@ pub enum Axis {
     Z,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Vec3<T: Float> {
     pub x: T,
     pub y: T,
     pub z: T,
 }
+
+impl Eq for Vec3<f32> {}
 
 pub fn lerp<T: Float>(a: T, b: T, t: T) -> T {
     (T::one() - t) * a + t * b

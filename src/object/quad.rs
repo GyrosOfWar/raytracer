@@ -73,6 +73,7 @@ impl Hittable for Quad {
         }
 
         let t = (self.d - Vec3::dot(self.normal, ray.origin)) / denom;
+        assert!(t.is_finite() && t > 0.0, "t = {}", t);
         if !hit_range.contains(t) {
             return None;
         }
@@ -82,16 +83,6 @@ impl Hittable for Quad {
 
         let alpha = Vec3::dot(self.w, Vec3::cross(planar_hitpt_vector, self.v));
         let beta = Vec3::dot(self.w, Vec3::cross(self.u, planar_hitpt_vector));
-        // info!("alpha: {}, beta: {}", alpha, beta);
-
-        // Some(HitRecord::new(
-        //     ray,
-        //     self.normal,
-        //     intersection,
-        //     t,
-        //     self.material.clone(),
-        //     Default::default(),
-        // ))
 
         is_interior(alpha, beta).map(|tex_coords| {
             HitRecord::new(
@@ -111,5 +102,74 @@ impl Hittable for Quad {
 
     fn id(&self) -> u32 {
         self.id
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use num_traits::Zero;
+
+    use super::*;
+    use crate::material::{lambertian, Lambertian};
+    use crate::texture::SolidColor;
+    use std::sync::Arc;
+
+    #[test]
+    fn hit_parallel_ray() {
+        let q = Point3::new(0.0, 0.0, 0.0);
+        let u = Vec3::new(1.0, 0.0, 0.0);
+        let v = Vec3::new(0.0, 1.0, 0.0);
+        let material = lambertian(Point3::zero());
+        let quad = Quad::new(q, u, v, material);
+
+        let ray = Ray::new(Point3::new(0.0, 0.0, 1.0), Vec3::new(0.0, 0.0, -1.0));
+        let hit = quad.hit(&ray, Range::new(0.0, 10.0));
+
+        assert!(hit.is_some());
+    }
+
+    #[test]
+    fn hit_miss_due_to_range() {
+        let q = Point3::new(0.0, 0.0, 0.0);
+        let u = Vec3::new(1.0, 0.0, 0.0);
+        let v = Vec3::new(0.0, 1.0, 0.0);
+        let material = lambertian(Point3::zero());
+        let quad = Quad::new(q, u, v, material);
+
+        let ray = Ray::new(Point3::new(0.0, 0.0, 5.0), Vec3::new(0.0, 0.0, -1.0));
+        let hit = quad.hit(&ray, Range::new(0.0, 0.1));
+
+        assert!(hit.is_none());
+    }
+
+    #[test]
+    fn hit_miss_due_to_direction() {
+        let q = Point3::new(0.0, 0.0, 0.0);
+        let u = Vec3::new(1.0, 0.0, 0.0);
+        let v = Vec3::new(0.0, 1.0, 0.0);
+        let material = lambertian(Point3::zero());
+        let quad = Quad::new(q, u, v, material);
+
+        let ray = Ray::new(Point3::new(0.0, 0.0, 5.0), Vec3::new(0.0, 1.0, 0.0));
+        let hit = quad.hit(&ray, Range::new(0.0, 10.0));
+
+        assert!(hit.is_none());
+    }
+
+    #[test]
+    fn hit_on_edge() {
+        let q = Point3::new(0.0, 0.0, 0.0);
+        let u = Vec3::new(1.0, 0.0, 0.0);
+        let v = Vec3::new(0.0, 1.0, 0.0);
+        let material = lambertian(Point3::zero());
+        let quad = Quad::new(q, u, v, material);
+
+        let ray = Ray::new(Point3::new(1.0, 1.0, -1.0), Vec3::new(0.0, 0.0, 1.0));
+        let hit = quad.hit(&ray, Range::new(0.0, 2.0));
+
+        assert!(hit.is_some());
+        let hit = hit.unwrap();
+        assert_eq!(hit.distance, 1.0);
+        assert_eq!(hit.point, Point3::new(1.0, 1.0, 0.0));
     }
 }
