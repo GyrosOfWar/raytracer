@@ -20,9 +20,9 @@ mod vec3;
 
 #[derive(Debug)]
 pub struct Configuration {
-    bvh_disabled: bool,
-    sequential_rendering: bool,
-    bvh_debug: bool,
+    pub bvh_disabled: bool,
+    pub sequential_rendering: bool,
+    pub bvh_debug: bool,
 }
 
 impl Configuration {
