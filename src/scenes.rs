@@ -1,10 +1,8 @@
-use enum_dispatch::enum_dispatch;
 use num_traits::Zero;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     camera::{Camera, CameraParams},
-    material::{dielectric, lambertian, lambertian_texture, metal, Material},
+    material::{dielectric, lambertian, lambertian_texture, metal},
     object::{Object, Quad, Sphere},
     random::{random, random_range},
     texture::{checkerboard, image, solid},

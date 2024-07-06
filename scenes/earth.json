@@ -1,0 +1,38 @@
+{
+  "camera": {
+    "vertical_fov": 80,
+    "look_at": {
+      "x": 0,
+      "y": 0,
+      "z": -1
+    },
+    "look_from": {
+      "x": 0,
+      "y": 0,
+      "z": 8
+    },
+    "image_size": [900, 900],
+    "samples_per_pixel": 100,
+    "defocus_angle": 0,
+    "focus_dist": 10,
+    "max_depth": 50
+  },
+  "objects": [
+    {
+      "type": "Sphere",
+      "radius": 0.5,
+      "center": {
+        "x": 0,
+        "y": 0,
+        "z": -1
+      },
+      "material": {
+        "type": "Lambertian",
+        "texture": {
+          "type": "Image",
+          "path": "./textures/earthmap.jpg"
+        }
+      }
+    }
+  ]
+}

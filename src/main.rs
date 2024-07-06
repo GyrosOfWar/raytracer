@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use std::{error::Error, fs::File, sync::Arc};
 
 use bvh::BvhNode;
 use camera::RenderMode;
-use object::{Object, World};
+use object::{Object, Scene, World};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -39,21 +39,17 @@ impl Configuration {
     }
 }
 
-fn main() -> Result<(), image::ImageError> {
+fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt::fmt()
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
     let scene = std::env::args().nth(1).unwrap_or("quads".into());
     info!("rendering scene '{scene}'");
+    let file = File::open(scene)?;
 
-    let (camera, objects) = match scene.as_str() {
-        "spheres" => scenes::lots_of_spheres(),
-        "earth" => scenes::earth(),
-        "quads" => scenes::quads(),
-        "bvh" => scenes::million_spheres(),
-        _ => unreachable!(),
-    };
+    let scene: Scene = serde_json::from_reader(file)?;
+    let (camera, objects) = scene.build();
 
     let config = Configuration::from_env();
     info!("rendering with configuration {config:#?}");

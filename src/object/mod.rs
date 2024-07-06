@@ -6,7 +6,7 @@ use std::sync::{
 use crate::{
     aabb::Aabb,
     bvh::BvhNode,
-    camera::CameraParams,
+    camera::{Camera, CameraParams},
     material::{Material, MaterialBuilder},
     range::Range,
     ray::Ray,
@@ -85,13 +85,21 @@ pub enum Object {
     World(World),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Scene {
     pub objects: Vec<ObjectBuilder>,
     pub camera: CameraParams,
 }
 
+impl Scene {
+    pub fn build(self) -> (Camera, Vec<Object>) {
+        let objects = self.objects.into_iter().map(Object::from).collect();
+        (Camera::new(self.camera), objects)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum ObjectBuilder {
     Sphere(SphereBuilder),
     Quad(QuadBuilder),

@@ -1,8 +1,12 @@
-use std::{fmt, path::Path, sync::Arc};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use enum_dispatch::enum_dispatch;
 use image::{DynamicImage, GenericImageView, ImageError};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{range::Range, vec3::Point3};
 
@@ -26,7 +30,7 @@ pub trait HasColorValue: Send + Sync {
     fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Point3<f32>;
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SolidColor {
     pub albedo: Point3<f32>,
 }
@@ -132,4 +136,29 @@ pub fn image(path: impl AsRef<Path>) -> Arc<Texture> {
     Arc::new(Texture::Image(
         Image::load(path).expect("could not load image"),
     ))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImageTextureBuilder {
+    pub path: PathBuf,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum TextureBuilder {
+    Image(ImageTextureBuilder),
+    SolidColor(SolidColor),
+}
+
+impl From<TextureBuilder> for Texture {
+    fn from(value: TextureBuilder) -> Self {
+        match value {
+            TextureBuilder::Image(image) => {
+                Texture::Image(Image::load(image.path).expect("failed to load image"))
+            }
+            TextureBuilder::SolidColor(tex) => {
+                Texture::SolidColor(SolidColor { albedo: tex.albedo })
+            }
+        }
+    }
 }

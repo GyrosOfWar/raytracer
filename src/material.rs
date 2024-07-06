@@ -7,7 +7,7 @@ use crate::{
     object::HitRecord,
     random::random,
     ray::Ray,
-    texture::{HasColorValue, SolidColor, Texture},
+    texture::{HasColorValue, SolidColor, Texture, TextureBuilder},
     vec3::{self, random::gen_unit_vector, reflect, refract, Vec3},
 };
 
@@ -123,6 +123,7 @@ pub fn dielectric(index: f32) -> Arc<Material> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum MaterialBuilder {
     Lambertian(LambertianBuilder),
 }
@@ -139,14 +140,5 @@ impl From<MaterialBuilder> for Material {
                 texture: Arc::new(l.texture.into()),
             }),
         }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum TextureBuilder {}
-
-impl From<TextureBuilder> for Texture {
-    fn from(value: TextureBuilder) -> Self {
-        todo!()
     }
 }
