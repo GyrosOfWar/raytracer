@@ -1,5 +1,7 @@
 use std::{error::Error, path::Path, sync::Arc};
 
+use tracing::info;
+
 use crate::{
     aabb::Aabb,
     material::{lambertian, metal, Material},
@@ -94,9 +96,13 @@ impl TriangleRef {
         )
     }
 
-    // FIXME?
-    pub fn normal(&self) -> Vec3<f32> {
-        self.mesh.normals[self.index as usize]
+    pub fn normals(&self) -> (Vec3<f32>, Vec3<f32>, Vec3<f32>) {
+        let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
+        (
+            self.mesh.normals[v0 as usize],
+            self.mesh.normals[v1 as usize],
+            self.mesh.normals[v2 as usize],
+        )
     }
 }
 
@@ -132,8 +138,9 @@ impl Hittable for TriangleRef {
             return None;
         }
 
-        // TODO interpolate normals
-        let normal = e1.cross(e2).unit();
+        let (n0, n1, n2) = self.normals();
+        // interpolate normals based on barycentric coordinates
+        let normal = n0 * (1.0 - u - v) + n1 * u + n2 * v;
 
         Some(HitRecord::new(
             ray,
@@ -183,6 +190,13 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<TriangleMesh>, Box<d
                 normals.extend(normals_iter.map(|n| Vec3::from_array(n)));
             }
         }
+
+        info!(
+            "loaded mesh with {} vertices, {} faces and {} normals",
+            vertices.len(),
+            face_indices.len(),
+            normals.len()
+        );
 
         meshes.push(TriangleMesh::new(
             vertices,
