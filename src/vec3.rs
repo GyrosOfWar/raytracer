@@ -29,6 +29,14 @@ impl<T: Float> Vec3<T> {
         Vec3 { x, y, z }
     }
 
+    pub fn from_array(arr: [T; 3]) -> Self {
+        Vec3 {
+            x: arr[0],
+            y: arr[1],
+            z: arr[2],
+        }
+    }
+
     pub fn length_squared(&self) -> T {
         self.x * self.x + self.y * self.y + self.z * self.z
     }

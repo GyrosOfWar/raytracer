@@ -30,7 +30,7 @@ impl BvhNode {
         }
     }
 
-    pub fn from_world(objects: Vec<Object>) -> Self {
+    pub fn from(objects: Vec<Object>) -> Self {
         let start = Instant::now();
         let root = BvhNode::from_objects(objects);
         info!("building BVH took {:?}", start.elapsed());
@@ -155,6 +155,13 @@ pub mod debug {
                 print_tree(node.left.clone(), level + 1);
                 print_tree(node.right.clone(), level + 1);
             }
+            Object::TriangleRef(t) => {
+                println!(
+                    "{indent}- TriangleRef (id = {}, bbox = {})",
+                    t.id(),
+                    bbox_to_string(&t.bounding_box())
+                );
+            }
             Object::World(_) => panic!("World should not be in the tree"),
         }
     }
@@ -183,6 +190,12 @@ pub mod debug {
                 }
                 valid &= validate_tree(node.left.clone());
                 valid &= validate_tree(node.right.clone());
+            }
+            Object::TriangleRef(t) => {
+                if !bbox.contains(&t.bounding_box()) {
+                    error!("TriangleRef {} not contained in parent", t.id());
+                    valid = false;
+                }
             }
             Object::World(_) => panic!("World should not be in the tree"),
         }

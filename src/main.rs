@@ -1,8 +1,8 @@
-use std::{error::Error, fs::File, sync::Arc};
+use std::{error::Error, sync::Arc};
 
 use bvh::BvhNode;
-use camera::RenderMode;
-use object::{Object, Scene, World};
+use camera::{Camera, CameraParams, RenderMode};
+use object::{triangle_mesh, Object};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -44,20 +44,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
-    let scene = std::env::args().nth(1).unwrap_or("quads".into());
-    info!("rendering scene '{scene}'");
-    let file = File::open(scene)?;
-
-    let scene: Scene = serde_json::from_reader(file)?;
-    let (camera, objects) = scene.build();
-
+    let mut mesh = triangle_mesh::load_from_gltf("assets/teapot.gltf")?;
     let config = Configuration::from_env();
     info!("rendering with configuration {config:#?}");
-    let world = if config.bvh_disabled {
-        Object::World(World::new(objects))
-    } else {
-        Object::BvhNode(BvhNode::from_world(objects))
-    };
+    let world = Object::BvhNode(BvhNode::from(
+        mesh.remove(0)
+            .faces()
+            .map(|f| Object::TriangleRef(f))
+            .collect(),
+    ));
+
+    let camera = Camera::new(CameraParams {
+        look_from: vec3::Point3::new(0.0, 0.0, 5.0),
+        ..Default::default()
+    });
 
     if config.bvh_debug {
         if config.bvh_disabled {

@@ -17,11 +17,12 @@ use enum_dispatch::enum_dispatch;
 pub use quad::Quad;
 use serde::{Deserialize, Serialize};
 pub use sphere::Sphere;
+use triangle_mesh::TriangleRef;
 pub use world::World;
 
 mod quad;
 mod sphere;
-mod triangle_mesh;
+pub mod triangle_mesh;
 mod world;
 
 pub fn get_id() -> u32 {
@@ -83,6 +84,7 @@ pub enum Object {
     BvhNode(BvhNode),
     Quad(Quad),
     World(World),
+    TriangleRef(TriangleRef),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
