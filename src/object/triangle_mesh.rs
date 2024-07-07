@@ -1,5 +1,6 @@
 use std::{error::Error, path::Path, sync::Arc};
 
+use builders::default_normal;
 use tracing::info;
 
 use crate::{
@@ -101,13 +102,16 @@ impl TriangleRef {
         )
     }
 
-    pub fn normals(&self) -> (Vec3<f32>, Vec3<f32>, Vec3<f32>) {
+    pub fn normals(&self) -> Option<(Vec3<f32>, Vec3<f32>, Vec3<f32>)> {
         let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
-        (
-            self.mesh.normals[v0 as usize],
-            self.mesh.normals[v1 as usize],
-            self.mesh.normals[v2 as usize],
-        )
+        match (
+            self.mesh.normals.get(v0 as usize),
+            self.mesh.normals.get(v1 as usize),
+            self.mesh.normals.get(v2 as usize),
+        ) {
+            (Some(a), Some(b), Some(c)) => Some((*a, *b, *c)),
+            _ => None,
+        }
     }
 }
 
@@ -144,10 +148,12 @@ impl Hittable for TriangleRef {
             return None;
         }
 
-        let (n0, n1, n2) = self.normals();
-        // interpolate normals based on barycentric coordinates
-        let normal = n0 * (1.0 - u - v) + n1 * u + n2 * v;
-
+        let normal = if let Some((n0, n1, n2)) = self.normals() {
+            // interpolate normals based on barycentric coordinates
+            n0 * (1.0 - u - v) + n1 * u + n2 * v
+        } else {
+            default_normal(v0, v1, v2)
+        };
         Some(HitRecord::new(
             ray,
             normal,
@@ -170,7 +176,7 @@ impl Hittable for TriangleRef {
 }
 
 pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Error>> {
-    let (gltf, buffers, images) = gltf::import(path)?;
+    let (gltf, buffers, _images) = gltf::import(path)?;
     let mut meshes = Vec::new();
 
     for source_mesh in gltf.meshes() {
@@ -231,4 +237,41 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
         .flat_map(|m| m.faces().collect::<Vec<_>>())
         .map(|f| Object::TriangleRef(f))
         .collect())
+}
+
+pub mod builders {
+    use std::sync::Arc;
+
+    use crate::{
+        material::Material,
+        object::Object,
+        vec3::{Point3, Vec3},
+    };
+
+    use super::TriangleMesh;
+
+    pub fn default_normal(v0: Point3<f32>, v1: Point3<f32>, v2: Point3<f32>) -> Vec3<f32> {
+        let e1 = v1 - v0;
+        let e2 = v2 - v0;
+
+        e1.cross(e2).unit()
+    }
+
+    pub fn quad(
+        p1: Point3<f32>,
+        p2: Point3<f32>,
+        p3: Point3<f32>,
+        p4: Point3<f32>,
+        material: Arc<Material>,
+    ) -> Vec<Object> {
+        let mesh = TriangleMesh::new(
+            vec![p1, p2, p3, p4],
+            vec![(0, 1, 2), (1, 2, 3)],
+            vec![],
+            vec![],
+            material,
+        );
+
+        mesh.faces().map(Object::TriangleRef).collect()
+    }
 }

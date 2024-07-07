@@ -2,7 +2,11 @@ use std::{env, error::Error, sync::Arc};
 
 use bvh::BvhNode;
 use camera::{Camera, CameraParams, RenderMode};
-use object::{triangle_mesh, Object};
+use material::helpers::lambertian;
+use object::{
+    triangle_mesh::{self, builders},
+    Object,
+};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 use vec3::Point3;
@@ -51,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let world = Object::BvhNode(BvhNode::from(meshes));
 
     let camera = Camera::new(CameraParams {
-        look_from: Point3::new(200.0, 150.0, 150.0),
+        look_from: Point3::new(2.0, 1.5, 3.0),
         background_color: Point3::new(0.5, 0.5, 0.5),
         samples_per_pixel: 25,
         ..Default::default()
