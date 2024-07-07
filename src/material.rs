@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
+use num_traits::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     object::HitRecord,
     random::random,
     ray::Ray,
-    texture::{HasColorValue, SolidColor, Texture, TextureBuilder},
-    vec3::{self, random::gen_unit_vector, reflect, refract, Vec3},
+    texture::{HasColorValue, Texture, TextureBuilder, TextureCoordinates},
+    vec3::{self, random::gen_unit_vector, reflect, refract, Point3, Vec3},
 };
 
 pub struct ScatterResult {
@@ -16,9 +17,23 @@ pub struct ScatterResult {
     pub scattered: Ray<f32>,
 }
 
+impl ScatterResult {
+    pub fn mix(self, other: ScatterResult, factor: f32) -> ScatterResult {
+        ScatterResult {
+            attenuation: self.attenuation * factor + other.attenuation * (1.0 - factor),
+            scattered: self.scattered,
+        }
+    }
+}
+
 #[enum_dispatch]
 pub trait Scatterable {
     fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult>;
+
+    fn emit(&self, _: TextureCoordinates, _: Point3<f32>) -> Point3<f32> {
+        // default material does not emit anything
+        Point3::zero()
+    }
 }
 
 #[derive(Debug)]
@@ -94,32 +109,29 @@ fn reflectance(cosine: f32, refraction_index: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
 }
 
+#[derive(Debug)]
+pub struct DiffuseLight {
+    pub texture: Arc<Texture>,
+}
+
+impl Scatterable for DiffuseLight {
+    fn scatter(&self, _: &Ray<f32>, _: &HitRecord) -> Option<ScatterResult> {
+        None
+    }
+
+    fn emit(&self, uv: TextureCoordinates, point: Point3<f32>) -> Point3<f32> {
+        self.texture.value_at(uv, point)
+    }
+}
+
 #[enum_dispatch(Scatterable)]
 #[derive(Debug)]
 pub enum Material {
     Lambertian(Lambertian),
     Metal(Metal),
     Dielectric(Dielectric),
-}
-
-pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
-    Arc::new(Material::Lambertian(Lambertian {
-        texture: Arc::new(Texture::SolidColor(SolidColor { albedo })),
-    }))
-}
-
-pub fn lambertian_texture(texture: Arc<Texture>) -> Arc<Material> {
-    Arc::new(Material::Lambertian(Lambertian { texture }))
-}
-
-pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Arc<Material> {
-    Arc::new(Material::Metal(Metal { albedo, fuzz }))
-}
-
-pub fn dielectric(index: f32) -> Arc<Material> {
-    Arc::new(Material::Dielectric(Dielectric {
-        refraction_index: index,
-    }))
+    DiffuseLight(DiffuseLight),
+    Mix(Mix),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -140,5 +152,62 @@ impl From<MaterialBuilder> for Material {
                 texture: Arc::new(l.texture.into()),
             }),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct Mix {
+    pub left: Arc<Material>,
+    pub right: Arc<Material>,
+    pub factor: f32,
+}
+
+impl Scatterable for Mix {
+    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+        let left = self.left.scatter(ray, hit);
+        let right = self.right.scatter(ray, hit);
+        match (left, right) {
+            (Some(l), Some(r)) => Some(l.mix(r, self.factor)),
+            (None, Some(r)) => Some(r),
+            (Some(l), None) => Some(l),
+            (None, None) => None,
+        }
+    }
+}
+
+pub mod helpers {
+    use std::sync::Arc;
+
+    use crate::{
+        texture::{solid, SolidColor, Texture},
+        vec3::{Point3, Vec3},
+    };
+
+    use super::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
+
+    pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
+        Arc::new(Material::Lambertian(Lambertian {
+            texture: Arc::new(Texture::SolidColor(SolidColor { albedo })),
+        }))
+    }
+
+    pub fn lambertian_texture(texture: Arc<Texture>) -> Arc<Material> {
+        Arc::new(Material::Lambertian(Lambertian { texture }))
+    }
+
+    pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Arc<Material> {
+        Arc::new(Material::Metal(Metal { albedo, fuzz }))
+    }
+
+    pub fn dielectric(index: f32) -> Arc<Material> {
+        Arc::new(Material::Dielectric(Dielectric {
+            refraction_index: index,
+        }))
+    }
+
+    pub fn diffuse_light(color: Point3<f32>) -> Arc<Material> {
+        Arc::new(Material::DiffuseLight(DiffuseLight {
+            texture: solid(color),
+        }))
     }
 }

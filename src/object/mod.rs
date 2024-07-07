@@ -14,13 +14,11 @@ use crate::{
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
-pub use quad::Quad;
 use serde::{Deserialize, Serialize};
 pub use sphere::Sphere;
 use triangle_mesh::TriangleRef;
 pub use world::World;
 
-mod quad;
 mod sphere;
 pub mod triangle_mesh;
 mod world;
@@ -82,7 +80,6 @@ pub trait Hittable: Send + Sync {
 pub enum Object {
     Sphere(Sphere),
     BvhNode(BvhNode),
-    Quad(Quad),
     World(World),
     TriangleRef(TriangleRef),
 }
@@ -104,7 +101,6 @@ impl Scene {
 #[serde(tag = "type")]
 pub enum ObjectBuilder {
     Sphere(SphereBuilder),
-    Quad(QuadBuilder),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -130,19 +126,13 @@ impl From<ObjectBuilder> for Object {
                 sphere.radius,
                 Arc::new(sphere.material.into()),
             )),
-            ObjectBuilder::Quad(quad) => Object::Quad(Quad::new(
-                quad.q,
-                quad.u,
-                quad.v,
-                Arc::new(quad.material.into()),
-            )),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{material::metal, object::Hittable, vec3::Point3};
+    use crate::{material::helpers::metal, object::Hittable, vec3::Point3};
 
     use super::Sphere;
 

@@ -139,13 +139,6 @@ pub mod debug {
                     bbox_to_string(&s.bounding_box())
                 );
             }
-            Object::Quad(q) => {
-                println!(
-                    "{indent}- Quad (id = {}, bbox = {})",
-                    q.id(),
-                    bbox_to_string(&q.bounding_box())
-                )
-            }
             Object::BvhNode(node) => {
                 println!(
                     "{indent}- Node (id = {}, bbox = {})",
@@ -174,12 +167,6 @@ pub mod debug {
             Object::Sphere(s) => {
                 if !bbox.contains(&s.bounding_box()) {
                     error!("Sphere {} not contained in parent", s.id());
-                    valid = false;
-                }
-            }
-            Object::Quad(q) => {
-                if !bbox.contains(&q.bounding_box()) {
-                    error!("Quad {} not contained in parent", q.id());
                     valid = false;
                 }
             }

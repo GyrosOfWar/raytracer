@@ -3,7 +3,7 @@ use std::time::Instant;
 use crate::material::{ScatterResult, Scatterable};
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
-use num_traits::{One, Zero};
+use num_traits::Zero;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -39,6 +39,7 @@ pub struct CameraParams {
     pub focus_dist: f32,
     pub vertical_fov: f32,
     pub max_depth: usize,
+    pub background_color: Point3<f32>,
 }
 
 impl Default for CameraParams {
@@ -52,6 +53,7 @@ impl Default for CameraParams {
             focus_dist: 10.0,
             vertical_fov: 90.0,
             max_depth: 50,
+            background_color: Point3::new(0.5, 0.5, 0.5),
         }
     }
 }
@@ -68,6 +70,7 @@ pub struct Camera {
     defocus_disk_v: Vec3<f32>,
     defocus_angle: f32,
     max_depth: usize,
+    background_color: Point3<f32>,
 }
 
 impl Camera {
@@ -81,6 +84,7 @@ impl Camera {
             focus_dist,
             vertical_fov,
             max_depth,
+            background_color,
         }: CameraParams,
     ) -> Self {
         assert!(
@@ -128,6 +132,7 @@ impl Camera {
             defocus_disk_v,
             defocus_angle,
             max_depth,
+            background_color,
         }
     }
 
@@ -139,21 +144,21 @@ impl Camera {
         let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
         match intersection {
             Some(hit) => {
-                if let Some(ScatterResult {
-                    attenuation,
-                    scattered,
-                }) = hit.material.scatter(ray, &hit)
-                {
-                    attenuation * self.ray_color(&scattered, depth - 1, world)
-                } else {
-                    Vec3::zero()
+                let emitted_color = hit.material.emit(hit.tex_coords, hit.point);
+
+                match hit.material.scatter(ray, &hit) {
+                    Some(ScatterResult {
+                        attenuation,
+                        scattered,
+                    }) => {
+                        let scattered_color =
+                            attenuation * self.ray_color(&scattered, depth - 1, world);
+                        emitted_color + scattered_color
+                    }
+                    None => emitted_color,
                 }
             }
-            None => {
-                let direction = ray.direction.unit();
-                let t = 0.5 * (direction.y + 1.0);
-                Vec3::one().lerp(Vec3::new(0.5, 0.7, 1.0), t)
-            }
+            None => self.background_color,
         }
     }
 

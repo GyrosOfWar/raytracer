@@ -1,10 +1,11 @@
-use std::{error::Error, sync::Arc};
+use std::{env, error::Error, sync::Arc};
 
 use bvh::BvhNode;
 use camera::{Camera, CameraParams, RenderMode};
 use object::{triangle_mesh, Object};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
+use vec3::Point3;
 
 mod aabb;
 mod bvh;
@@ -14,7 +15,6 @@ mod object;
 mod random;
 mod range;
 mod ray;
-mod scenes;
 mod texture;
 mod vec3;
 
@@ -44,18 +44,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
-    let mut mesh = triangle_mesh::load_from_gltf("assets/teapot.gltf")?;
+    let path = env::args().nth(1).expect("missing path to gltf file");
+    let meshes = triangle_mesh::load_from_gltf(path)?;
     let config = Configuration::from_env();
     info!("rendering with configuration {config:#?}");
-    let world = Object::BvhNode(BvhNode::from(
-        mesh.remove(0)
-            .faces()
-            .map(|f| Object::TriangleRef(f))
-            .collect(),
-    ));
+    let world = Object::BvhNode(BvhNode::from(meshes));
 
     let camera = Camera::new(CameraParams {
-        look_from: vec3::Point3::new(0.0, 0.0, 5.0),
+        look_from: Point3::new(200.0, 150.0, 150.0),
+        background_color: Point3::new(0.5, 0.5, 0.5),
+        samples_per_pixel: 25,
         ..Default::default()
     });
 

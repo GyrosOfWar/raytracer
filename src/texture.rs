@@ -23,6 +23,10 @@ impl TextureCoordinates {
             v: Range::UNIT.clamp(self.v),
         }
     }
+
+    pub fn from_array(uv: [f32; 2]) -> Self {
+        TextureCoordinates { u: uv[0], v: uv[1] }
+    }
 }
 
 #[enum_dispatch]

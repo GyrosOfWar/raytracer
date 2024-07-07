@@ -4,19 +4,21 @@ use tracing::info;
 
 use crate::{
     aabb::Aabb,
-    material::{lambertian, metal, Material},
+    material::{helpers, Material},
     range::Range,
     ray::Ray,
+    texture::TextureCoordinates,
     vec3::{Point3, Vec3},
 };
 
-use super::{HitRecord, Hittable};
+use super::{HitRecord, Hittable, Object};
 
 #[derive(Debug)]
 struct TriangleMeshData {
     vertices: Box<[Point3<f32>]>,
     face_indices: Box<[(u32, u32, u32)]>,
     normals: Box<[Vec3<f32>]>,
+    uv: Box<[TextureCoordinates]>,
     material: Arc<Material>,
 }
 
@@ -25,12 +27,14 @@ impl TriangleMeshData {
         vertices: Vec<Point3<f32>>,
         face_indices: Vec<(u32, u32, u32)>,
         normals: Vec<Vec3<f32>>,
+        uv: Vec<TextureCoordinates>,
         material: Arc<Material>,
     ) -> Self {
         TriangleMeshData {
             vertices: vertices.into_boxed_slice(),
             face_indices: face_indices.into_boxed_slice(),
             normals: normals.into_boxed_slice(),
+            uv: uv.into_boxed_slice(),
             material,
         }
     }
@@ -46,9 +50,10 @@ impl TriangleMesh {
         vertices: Vec<Point3<f32>>,
         face_indices: Vec<(u32, u32, u32)>,
         normals: Vec<Vec3<f32>>,
+        uv: Vec<TextureCoordinates>,
         material: Arc<Material>,
     ) -> Self {
-        let data = TriangleMeshData::new(vertices, face_indices, normals, material);
+        let data = TriangleMeshData::new(vertices, face_indices, normals, uv, material);
         TriangleMesh {
             data: Arc::new(data),
         }
@@ -109,7 +114,8 @@ impl TriangleRef {
 impl Hittable for TriangleRef {
     fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
         let (v0, v1, v2) = self.vertices();
-        // Moller-Trumbore algorithm
+
+        // Möller-Trumbore algorithm
         let e1 = v1 - v0;
         let e2 = v2 - v0;
         let p = ray.direction.cross(e2);
@@ -163,7 +169,7 @@ impl Hittable for TriangleRef {
     }
 }
 
-pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<TriangleMesh>, Box<dyn Error>> {
+pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Error>> {
     let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
 
@@ -171,6 +177,7 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<TriangleMesh>, Box<d
         let mut vertices = Vec::new();
         let mut face_indices = Vec::new();
         let mut normals = Vec::new();
+        let mut uv = Vec::new();
 
         for primitive in source_mesh.primitives() {
             let reader = primitive.reader(|b| Some(&buffers[b.index()]));
@@ -189,22 +196,39 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<TriangleMesh>, Box<d
             if let Some(normals_iter) = reader.read_normals() {
                 normals.extend(normals_iter.map(|n| Vec3::from_array(n)));
             }
+
+            if let Some(tex_coords) = reader.read_tex_coords(0) {
+                let tex_coords: Vec<_> = tex_coords.into_f32().collect();
+                uv.extend(
+                    tex_coords
+                        .into_iter()
+                        .map(|uv| TextureCoordinates::from_array(uv)),
+                )
+            }
         }
 
         info!(
-            "loaded mesh with {} vertices, {} faces and {} normals",
+            "loaded mesh with {} vertices, {} faces, {} normals and {} texture coordinates",
             vertices.len(),
             face_indices.len(),
-            normals.len()
+            normals.len(),
+            uv.len(),
         );
 
         meshes.push(TriangleMesh::new(
             vertices,
             face_indices,
             normals,
-            metal(Point3::new(0.7, 0.1, 0.1), 0.02),
+            uv,
+            // diffuse_light(Point3::new(1.0, 1.0, 1.0)),
+            // metal(Point3::new(0.1, 0.1, 0.1), 0.02),
+            helpers::lambertian(Point3::new(0.2, 0.2, 0.9)),
         ));
     }
 
-    Ok(meshes)
+    Ok(meshes
+        .into_iter()
+        .flat_map(|m| m.faces().collect::<Vec<_>>())
+        .map(|f| Object::TriangleRef(f))
+        .collect())
 }
