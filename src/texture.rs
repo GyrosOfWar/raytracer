@@ -106,6 +106,7 @@ impl HasColorValue for Image {
         // Flip V to image coordinates
         coords.v = 1.0 - coords.v;
 
+        // TODO anti-aliasing
         let i = (coords.u * self.image.width() as f32) as u32;
         let j = (coords.v * self.image.height() as f32) as u32;
         let pixel = self.image.get_pixel(i, j);

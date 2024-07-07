@@ -179,7 +179,7 @@ impl Hittable for TriangleRef {
 }
 
 pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Error>> {
-    let (gltf, buffers, _images) = gltf::import(path)?;
+    let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
 
     for source_mesh in gltf.meshes() {

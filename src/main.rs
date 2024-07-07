@@ -50,8 +50,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     info!("rendering with configuration {config:#?}");
     let world = Object::BvhNode(BvhNode::from(meshes));
 
+    let zoom = 0.05;
+
     let camera = Camera::new(CameraParams {
-        look_from: Point3::new(2.0, 1.5, 3.0),
+        look_from: Point3::new(2.0 * zoom, 1.5 * zoom, 3.0 * zoom),
         background_color: Point3::new(0.5, 0.5, 0.5),
         samples_per_pixel: 25,
         ..Default::default()
