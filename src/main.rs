@@ -2,11 +2,7 @@ use std::{env, error::Error, sync::Arc};
 
 use bvh::BvhNode;
 use camera::{Camera, CameraParams, RenderMode};
-use material::helpers::lambertian;
-use object::{
-    triangle_mesh::{self, builders},
-    Object,
-};
+use object::{triangle_mesh, Object};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 use vec3::Point3;

@@ -5,7 +5,10 @@ use tracing::info;
 
 use crate::{
     aabb::Aabb,
-    material::{helpers, Material},
+    material::{
+        helpers::{self, dielectric, mix},
+        Material,
+    },
     range::Range,
     ray::Ray,
     texture::TextureCoordinates,
@@ -226,9 +229,11 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
             face_indices,
             normals,
             uv,
-            // diffuse_light(Point3::new(1.0, 1.0, 1.0)),
-            // metal(Point3::new(0.1, 0.1, 0.1), 0.02),
-            helpers::lambertian(Point3::new(0.2, 0.2, 0.9)),
+            helpers::mix(
+                helpers::lambertian(Point3::new(0.2, 0.1, 0.1)),
+                dielectric(0.12),
+                0.8,
+            ), // helpers::lambertian(Point3::new(0.2, 0.2, 0.9)),
         ));
     }
 

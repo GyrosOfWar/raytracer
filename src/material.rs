@@ -132,6 +132,7 @@ pub enum Material {
     Dielectric(Dielectric),
     DiffuseLight(DiffuseLight),
     Mix(Mix),
+    Ggx(Ggx),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -175,6 +176,17 @@ impl Scatterable for Mix {
     }
 }
 
+#[derive(Debug)]
+pub struct Ggx {
+    pub roughness: f32,
+}
+
+impl Scatterable for Ggx {
+    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+        todo!()
+    }
+}
+
 pub mod helpers {
     use std::sync::Arc;
 
@@ -183,7 +195,7 @@ pub mod helpers {
         vec3::{Point3, Vec3},
     };
 
-    use super::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
+    use super::{Dielectric, DiffuseLight, Lambertian, Material, Metal, Mix};
 
     pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
         Arc::new(Material::Lambertian(Lambertian {
@@ -208,6 +220,14 @@ pub mod helpers {
     pub fn diffuse_light(color: Point3<f32>) -> Arc<Material> {
         Arc::new(Material::DiffuseLight(DiffuseLight {
             texture: solid(color),
+        }))
+    }
+
+    pub fn mix(left: Arc<Material>, right: Arc<Material>, factor: f32) -> Arc<Material> {
+        Arc::new(Material::Mix(Mix {
+            left,
+            right,
+            factor,
         }))
     }
 }
