@@ -1,5 +1,4 @@
 use num_traits::{Float, One, Zero};
-use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 #[derive(Debug, Copy, Clone)]
@@ -9,7 +8,7 @@ pub enum Axis {
     Z,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Vec3<T: Float> {
     pub x: T,
     pub y: T,
@@ -34,6 +33,15 @@ impl<T: Float> Vec3<T> {
             x: arr[0],
             y: arr[1],
             z: arr[2],
+        }
+    }
+
+    pub fn from_slice(slice: &[T]) -> Self {
+        assert!(slice.len() >= 3, "slice must have at least three elements");
+        Vec3 {
+            x: slice[0],
+            y: slice[1],
+            z: slice[2],
         }
     }
 

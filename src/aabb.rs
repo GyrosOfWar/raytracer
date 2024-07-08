@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{
     object::Hittable,
     range::Range,
@@ -7,7 +5,7 @@ use crate::{
     vec3::{Axis, Point3},
 };
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct Aabb {
     pub x: Range,
     pub y: Range,

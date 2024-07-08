@@ -6,15 +6,13 @@ use std::sync::{
 use crate::{
     aabb::Aabb,
     bvh::BvhNode,
-    camera::{Camera, CameraParams},
-    material::{Material, MaterialBuilder},
+    material::Material,
     range::Range,
     ray::Ray,
     texture::TextureCoordinates,
     vec3::{Point3, Vec3},
 };
 use enum_dispatch::enum_dispatch;
-use serde::{Deserialize, Serialize};
 pub use sphere::Sphere;
 use triangle_mesh::TriangleRef;
 pub use world::World;
@@ -82,52 +80,6 @@ pub enum Object {
     BvhNode(BvhNode),
     World(World),
     TriangleRef(TriangleRef),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Scene {
-    pub objects: Vec<ObjectBuilder>,
-    pub camera: CameraParams,
-}
-
-impl Scene {
-    pub fn build(self) -> (Camera, Vec<Object>) {
-        let objects = self.objects.into_iter().map(Object::from).collect();
-        (Camera::new(self.camera), objects)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum ObjectBuilder {
-    Sphere(SphereBuilder),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SphereBuilder {
-    pub radius: f32,
-    pub center: Point3<f32>,
-    pub material: MaterialBuilder,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct QuadBuilder {
-    pub q: Point3<f32>,
-    pub u: Vec3<f32>,
-    pub v: Vec3<f32>,
-    pub material: MaterialBuilder,
-}
-
-impl From<ObjectBuilder> for Object {
-    fn from(value: ObjectBuilder) -> Self {
-        match value {
-            ObjectBuilder::Sphere(sphere) => Object::Sphere(Sphere::new(
-                sphere.center,
-                sphere.radius,
-                Arc::new(sphere.material.into()),
-            )),
-        }
-    }
 }
 
 #[cfg(test)]

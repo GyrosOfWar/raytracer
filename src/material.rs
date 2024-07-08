@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
 use num_traits::Zero;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     object::HitRecord,
     random::random,
     ray::Ray,
-    texture::{HasColorValue, Texture, TextureBuilder, TextureCoordinates},
+    texture::{HasColorValue, Texture, TextureCoordinates},
     vec3::{self, random::gen_unit_vector, reflect, refract, Point3, Vec3},
 };
 
@@ -132,28 +131,7 @@ pub enum Material {
     Dielectric(Dielectric),
     DiffuseLight(DiffuseLight),
     Mix(Mix),
-    Ggx(Ggx),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum MaterialBuilder {
-    Lambertian(LambertianBuilder),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LambertianBuilder {
-    pub texture: TextureBuilder,
-}
-
-impl From<MaterialBuilder> for Material {
-    fn from(value: MaterialBuilder) -> Self {
-        match value {
-            MaterialBuilder::Lambertian(l) => Material::Lambertian(Lambertian {
-                texture: Arc::new(l.texture.into()),
-            }),
-        }
-    }
+    TrowbridgeReitz(TrowbridgeReitz),
 }
 
 #[derive(Debug)]
@@ -177,11 +155,11 @@ impl Scatterable for Mix {
 }
 
 #[derive(Debug)]
-pub struct Ggx {
+pub struct TrowbridgeReitz {
     pub roughness: f32,
 }
 
-impl Scatterable for Ggx {
+impl Scatterable for TrowbridgeReitz {
     fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
         todo!()
     }

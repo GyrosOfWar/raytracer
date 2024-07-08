@@ -1,11 +1,11 @@
 use std::time::Instant;
 
 use crate::material::{ScatterResult, Scatterable};
+use clap::ValueEnum;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
 use num_traits::Zero;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use serde::{Deserialize, Serialize};
+use rayon::prelude::*;
 use tracing::info;
 
 use crate::{
@@ -16,9 +16,11 @@ use crate::{
     vec3::{self, Point3, Vec3},
 };
 
+#[derive(Debug, ValueEnum, Clone, Copy)]
 pub enum RenderMode {
     Sequential,
     Parallel,
+    ParallelChunks,
 }
 
 fn linear_to_gamma(linear_component: f32) -> f32 {
@@ -29,7 +31,7 @@ fn linear_to_gamma(linear_component: f32) -> f32 {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct CameraParams {
     pub image_size: (usize, usize),
     pub samples_per_pixel: usize,
@@ -193,10 +195,11 @@ impl Camera {
 
     fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
         let threads = rayon::current_num_threads();
+        let pixel_count = self.image_height * self.image_width;
         info!("rendering in parallel with {threads} threads");
-        (0..(self.image_height * self.image_width))
+        (0..pixel_count)
             .into_par_iter()
-            .progress_count((self.image_height * self.image_width) as u64)
+            .progress_count(pixel_count as u64)
             .flat_map(|index| {
                 let i = index % self.image_width;
                 let j = index / self.image_width;
@@ -209,6 +212,31 @@ impl Camera {
                 [result.x, result.y, result.z]
             })
             .map(linear_to_gamma)
+            .collect()
+    }
+
+    fn render_parallel_chunks(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
+        let chunk_size = 4096;
+        let pixel_count = self.image_height * self.image_width;
+        let pixels: Vec<_> = (0..pixel_count).collect();
+        pixels
+            .par_chunks(chunk_size)
+            .flat_map(|chunk| {
+                let mut pixels = vec![];
+                for index in chunk {
+                    let i = index % self.image_width;
+                    let j = index / self.image_width;
+                    let mut color = Vec3::zero();
+                    for _ in 0..self.samples_per_pixel {
+                        let ray = self.get_ray(i, j);
+                        color += self.ray_color(&ray, self.max_depth, world);
+                    }
+                    let result = color * pixel_samples_scale;
+                    pixels.extend([result.x, result.y, result.z]);
+                }
+
+                pixels
+            })
             .collect()
     }
 
@@ -237,6 +265,7 @@ impl Camera {
         let pixels = match mode {
             RenderMode::Parallel => self.render_parallel(pixel_samples_scale, world),
             RenderMode::Sequential => self.render_sequential(pixel_samples_scale, world),
+            RenderMode::ParallelChunks => self.render_parallel_chunks(pixel_samples_scale, world),
         };
         let duration = start.elapsed();
 

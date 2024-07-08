@@ -1,17 +1,19 @@
 use std::{error::Error, path::Path, sync::Arc};
 
 use builders::default_normal;
+use gltf::mesh::Mode;
+use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, RgbImage, Rgba, RgbaImage};
 use tracing::info;
 
 use crate::{
     aabb::Aabb,
     material::{
-        helpers::{self, dielectric, mix},
+        helpers::{lambertian, lambertian_texture},
         Material,
     },
     range::Range,
     ray::Ray,
-    texture::TextureCoordinates,
+    texture::{Image, Texture, TextureCoordinates},
     vec3::{Point3, Vec3},
 };
 
@@ -178,8 +180,60 @@ impl Hittable for TriangleRef {
     }
 }
 
+fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage, Box<dyn Error>> {
+    use gltf::image::Format;
+
+    let image = match image.format {
+        Format::R8 => DynamicImage::from(
+            ImageBuffer::<Luma<u8>, _>::from_raw(image.width, image.height, image.pixels)
+                .expect("failed to construct image"),
+        ),
+        Format::R8G8 => DynamicImage::from(
+            ImageBuffer::<LumaA<u8>, _>::from_raw(image.width, image.height, image.pixels)
+                .expect("failed to construct image"),
+        ),
+        Format::R8G8B8 => DynamicImage::from(
+            ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
+                .expect("failed to construct image"),
+        ),
+        Format::R8G8B8A8 => DynamicImage::from(
+            ImageBuffer::<Rgba<u8>, _>::from_raw(image.width, image.height, image.pixels)
+                .expect("failed to construct image"),
+        ),
+        _ => panic!(
+            "unsupported image format {:?} for image {}",
+            image.format, name
+        ), // Format::R16 => DynamicImage::from(
+           //     ImageBuffer::<Luma<u16>, _>::from_raw(image.width, image.height, image.pixels)
+           //         .expect("failed to construct image"),
+           // ),
+           // Format::R16G16 => DynamicImage::from(
+           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
+           //         .expect("failed to construct image"),
+           // ),
+           // Format::R16G16B16 => DynamicImage::from(
+           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
+           //         .expect("failed to construct image"),
+           // ),
+           // Format::R16G16B16A16 => DynamicImage::from(
+           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
+           //         .expect("failed to construct image"),
+           // ),
+           // Format::R32G32B32FLOAT => DynamicImage::from(
+           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
+           //         .expect("failed to construct image"),
+           // ),
+           // Format::R32G32B32A32FLOAT => DynamicImage::from(
+           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
+           //         .expect("failed to construct image"),
+           // ),
+    };
+
+    Ok(image)
+}
+
 pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Error>> {
-    let (gltf, buffers, images) = gltf::import(path)?;
+    let (gltf, buffers, mut images) = gltf::import(path)?;
     let mut meshes = Vec::new();
 
     for source_mesh in gltf.meshes() {
@@ -187,33 +241,47 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
         let mut face_indices = Vec::new();
         let mut normals = Vec::new();
         let mut uv = Vec::new();
+        let primitive = source_mesh
+            .primitives()
+            .filter(|p| p.mode() == Mode::Triangles)
+            .nth(0)
+            .expect("mesh must have at least one triangles primitive");
 
-        for primitive in source_mesh.primitives() {
-            let reader = primitive.reader(|b| Some(&buffers[b.index()]));
+        let reader = primitive.reader(|b| Some(&buffers[b.index()]));
+        let material = primitive.material();
+        let material = if let Some(texture) = material.pbr_metallic_roughness().base_color_texture()
+        {
+            let idx = texture.texture().source().index();
+            let image = images.remove(idx);
+            let image = load_image(image, texture.texture().name().unwrap_or("<no name>"))?;
+            lambertian_texture(Arc::new(Texture::Image(Image::new(image))))
+        } else {
+            let color = material.pbr_metallic_roughness().base_color_factor();
+            lambertian(Point3::from_slice(&color))
+        };
 
-            if let Some(positions) = reader.read_positions() {
-                vertices.extend(positions.map(|p| Point3::from_array(p)));
+        if let Some(positions) = reader.read_positions() {
+            vertices.extend(positions.map(|p| Point3::from_array(p)));
+        }
+
+        if let Some(indices) = reader.read_indices() {
+            let indices: Vec<_> = indices.into_u32().collect();
+            for chunk in indices.chunks(3) {
+                face_indices.push((chunk[0], chunk[1], chunk[2]));
             }
+        }
 
-            if let Some(indices) = reader.read_indices() {
-                let indices: Vec<_> = indices.into_u32().collect();
-                for chunk in indices.chunks(3) {
-                    face_indices.push((chunk[0], chunk[1], chunk[2]));
-                }
-            }
+        if let Some(normals_iter) = reader.read_normals() {
+            normals.extend(normals_iter.map(|n| Vec3::from_array(n)));
+        }
 
-            if let Some(normals_iter) = reader.read_normals() {
-                normals.extend(normals_iter.map(|n| Vec3::from_array(n)));
-            }
-
-            if let Some(tex_coords) = reader.read_tex_coords(0) {
-                let tex_coords: Vec<_> = tex_coords.into_f32().collect();
-                uv.extend(
-                    tex_coords
-                        .into_iter()
-                        .map(|uv| TextureCoordinates::from_array(uv)),
-                )
-            }
+        if let Some(tex_coords) = reader.read_tex_coords(0) {
+            let tex_coords: Vec<_> = tex_coords.into_f32().collect();
+            uv.extend(
+                tex_coords
+                    .into_iter()
+                    .map(|uv| TextureCoordinates::from_array(uv)),
+            )
         }
 
         info!(
@@ -229,11 +297,7 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
             face_indices,
             normals,
             uv,
-            helpers::mix(
-                helpers::lambertian(Point3::new(0.2, 0.1, 0.1)),
-                dielectric(0.12),
-                0.8,
-            ), // helpers::lambertian(Point3::new(0.2, 0.2, 0.9)),
+            material,
         ));
     }
 

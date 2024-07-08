@@ -1,8 +1,9 @@
-use std::{env, error::Error, sync::Arc};
+use std::{error::Error, path::PathBuf, sync::Arc};
 
 use bvh::BvhNode;
 use camera::{Camera, CameraParams, RenderMode};
-use object::{triangle_mesh, Object};
+use clap::Parser;
+use object::{triangle_mesh, Hittable, Object};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
 use vec3::Point3;
@@ -18,25 +19,21 @@ mod ray;
 mod texture;
 mod vec3;
 
-#[derive(Debug)]
-pub struct Configuration {
+#[derive(Debug, Parser)]
+pub struct Args {
+    #[clap(short, long)]
     pub bvh_disabled: bool,
-    pub sequential_rendering: bool,
-    pub bvh_debug: bool,
-}
 
-impl Configuration {
-    pub fn from_env() -> Configuration {
-        let bvh_disabled = std::env::var("RT_BVH_DISABLED").is_ok();
-        let sequential_rendering = std::env::var("RT_SEQUENTIAL").is_ok();
-        let bvh_debug = std::env::var("RT_DEBUG").is_ok();
+    #[clap(short, long, default_value = "parallel")]
+    pub render_mode: RenderMode,
 
-        Configuration {
-            bvh_disabled,
-            sequential_rendering,
-            bvh_debug,
-        }
-    }
+    #[clap(long)]
+    pub debug: bool,
+
+    pub input: PathBuf,
+
+    #[clap(default_value = "image.jpeg")]
+    pub output: PathBuf,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -44,23 +41,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
-    let path = env::args().nth(1).expect("missing path to gltf file");
-    let meshes = triangle_mesh::load_from_gltf(path)?;
-    let config = Configuration::from_env();
-    info!("rendering with configuration {config:#?}");
-    let world = Object::BvhNode(BvhNode::from(meshes));
+    let args = Args::parse();
 
-    let zoom = 0.05;
+    let meshes = triangle_mesh::load_from_gltf(&args.input)?;
+    info!("rendering with configuration {args:#?}");
+    let world = Object::BvhNode(BvhNode::from(meshes));
+    info!("extents of the scene: {:?}", world.bounding_box());
+
+    let zoom = 100.0;
 
     let camera = Camera::new(CameraParams {
-        look_from: Point3::new(2.0 * zoom, 1.5 * zoom, 3.0 * zoom),
+        look_from: Point3::new(2.0 * zoom, 1.5 * zoom, -3.0 * zoom),
         background_color: Point3::new(0.5, 0.5, 0.5),
-        samples_per_pixel: 25,
+        samples_per_pixel: 100,
         ..Default::default()
     });
 
-    if config.bvh_debug {
-        if config.bvh_disabled {
+    if args.debug {
+        if args.bvh_disabled {
             error!("BVH is disabled, nothing to show.");
         } else {
             let root = Arc::new(world);
@@ -68,16 +66,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             bvh::debug::print_tree(root, 0);
         }
     } else {
-        let mode = if config.sequential_rendering {
-            RenderMode::Sequential
-        } else {
-            RenderMode::Parallel
-        };
-        let image = camera.render(&world, mode);
-        let file_name = std::env::args()
-            .nth(2)
-            .unwrap_or_else(|| "image.jpeg".into());
-        image.save(file_name)?;
+        let image = camera.render(&world, args.render_mode);
+        image.save(args.output)?;
     }
 
     Ok(())
