@@ -118,6 +118,18 @@ impl TriangleRef {
             _ => None,
         }
     }
+
+    pub fn uv(&self, a: f32, b: f32) -> TextureCoordinates {
+        if self.mesh.uv.len() == 0 {
+            TextureCoordinates::default()
+        } else {
+            let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
+            let uv0 = self.mesh.uv[v0 as usize];
+            let uv1 = self.mesh.uv[v1 as usize];
+            let uv2 = self.mesh.uv[v2 as usize];
+            TextureCoordinates::tri_lerp(uv0, uv1, uv2, a, b)
+        }
+    }
 }
 
 impl Hittable for TriangleRef {
@@ -159,13 +171,15 @@ impl Hittable for TriangleRef {
         } else {
             default_normal(v0, v1, v2)
         };
+        let uv = self.uv(u, v);
+
         Some(HitRecord::new(
             ray,
             normal,
             ray.evaluate(t),
             t,
             self.material.clone(),
-            Default::default(),
+            uv,
         ))
     }
 
@@ -203,30 +217,7 @@ fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage, Box<
         _ => panic!(
             "unsupported image format {:?} for image {}",
             image.format, name
-        ), // Format::R16 => DynamicImage::from(
-           //     ImageBuffer::<Luma<u16>, _>::from_raw(image.width, image.height, image.pixels)
-           //         .expect("failed to construct image"),
-           // ),
-           // Format::R16G16 => DynamicImage::from(
-           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
-           //         .expect("failed to construct image"),
-           // ),
-           // Format::R16G16B16 => DynamicImage::from(
-           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
-           //         .expect("failed to construct image"),
-           // ),
-           // Format::R16G16B16A16 => DynamicImage::from(
-           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
-           //         .expect("failed to construct image"),
-           // ),
-           // Format::R32G32B32FLOAT => DynamicImage::from(
-           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
-           //         .expect("failed to construct image"),
-           // ),
-           // Format::R32G32B32A32FLOAT => DynamicImage::from(
-           //     ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
-           //         .expect("failed to construct image"),
-           // ),
+        ),
     };
 
     Ok(image)
@@ -283,14 +274,15 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
                     .map(|uv| TextureCoordinates::from_array(uv)),
             )
         }
-
         info!(
-            "loaded mesh with {} vertices, {} faces, {} normals and {} texture coordinates",
+            "loaded mesh {} with {} vertices, {} faces, {} normals and {} texture coordinates",
+            source_mesh.name().unwrap_or("<no name>"),
             vertices.len(),
             face_indices.len(),
             normals.len(),
             uv.len(),
         );
+        info!("assigned material {material:?}");
 
         meshes.push(TriangleMesh::new(
             vertices,

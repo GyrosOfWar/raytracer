@@ -22,6 +22,13 @@ impl TextureCoordinates {
     pub fn from_array(uv: [f32; 2]) -> Self {
         TextureCoordinates { u: uv[0], v: uv[1] }
     }
+
+    pub fn tri_lerp(uv0: Self, uv1: Self, uv2: Self, a: f32, b: f32) -> TextureCoordinates {
+        TextureCoordinates {
+            u: uv0.u * (1.0 - a - b) + uv1.u * a + uv2.u * b,
+            v: uv0.v * (1.0 - a - b) + uv1.v * a + uv2.v * b,
+        }
+    }
 }
 
 #[enum_dispatch]
@@ -112,8 +119,8 @@ impl HasColorValue for Image {
         coords.v = 1.0 - coords.v;
 
         // TODO anti-aliasing
-        let i = (coords.u * self.image.width() as f32) as u32;
-        let j = (coords.v * self.image.height() as f32) as u32;
+        let i = ((coords.u * self.image.width() as f32) as u32).min(self.image.height() - 1);
+        let j = ((coords.v * self.image.height() as f32) as u32).min(self.image.height() - 1);
         let pixel = self.image.get_pixel(i, j);
         let color_scale = 1.0 / 255.0;
         Point3::new(

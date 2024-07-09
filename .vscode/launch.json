@@ -15,7 +15,7 @@
           "kind": "bin"
         }
       },
-      "args": [],
+      "args": ["../glTF-Sample-Assets/Models/ToyCar/glTF/ToyCar.gltf"],
       "cwd": "${workspaceFolder}",
       "env": {
         "RT_SEQUENTIAL": "1"
