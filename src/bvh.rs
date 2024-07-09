@@ -1,14 +1,15 @@
-use std::{cmp::Reverse, sync::Arc, time::Instant};
+use std::cmp::Reverse;
+use std::sync::Arc;
+use std::time::Instant;
 
-use crate::{
-    aabb::Aabb,
-    object::{get_id, HitRecord, Hittable, Object},
-    range::Range,
-    ray::Ray,
-};
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
 use tracing::info;
+
+use crate::aabb::Aabb;
+use crate::object::{get_id, HitRecord, Hittable, Object};
+use crate::range::Range;
+use crate::ray::Ray;
 
 #[derive(Debug)]
 pub struct BvhNode {
@@ -113,10 +114,8 @@ pub mod debug {
 
     use tracing::error;
 
-    use crate::{
-        aabb::Aabb,
-        object::{Hittable, Object},
-    };
+    use crate::aabb::Aabb;
+    use crate::object::{Hittable, Object};
 
     fn indent(level: usize) -> String {
         (0..(level * 2)).map(|_| " ").collect()

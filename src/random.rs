@@ -1,7 +1,9 @@
 #[allow(unused)]
 mod rand {
-    use rand::{rngs::SmallRng, Rng, SeedableRng};
     use std::cell::RefCell;
+
+    use rand::rngs::SmallRng;
+    use rand::{Rng, SeedableRng};
 
     thread_local! {
         static RNG: RefCell<SmallRng> = RefCell::new(SmallRng::from_entropy());

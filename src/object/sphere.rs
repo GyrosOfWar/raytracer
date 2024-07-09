@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
 use super::{get_id, HitRecord, Hittable};
-use crate::{
-    aabb::Aabb,
-    material::Material,
-    range::Range,
-    ray::Ray,
-    texture::TextureCoordinates,
-    vec3::{Point3, Vec3},
-};
+use crate::aabb::Aabb;
+use crate::material::Material;
+use crate::range::Range;
+use crate::ray::Ray;
+use crate::texture::TextureCoordinates;
+use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
 pub struct Sphere {

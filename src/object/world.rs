@@ -1,6 +1,7 @@
-use crate::{aabb::Aabb, range::Range, ray::Ray};
-
 use super::{HitRecord, Hittable, Object};
+use crate::aabb::Aabb;
+use crate::range::Range;
+use crate::ray::Ray;
 
 #[derive(Debug)]
 pub struct World {

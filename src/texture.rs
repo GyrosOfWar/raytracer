@@ -1,12 +1,12 @@
-use std::{fmt, path::Path, sync::Arc};
+use std::fmt;
+use std::path::Path;
+use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
 use image::{DynamicImage, GenericImageView, ImageError};
 
-use crate::{
-    range::Range,
-    vec3::{Color, Point3, Vec3},
-};
+use crate::range::Range;
+use crate::vec3::{Color, Point3, Vec3};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TextureCoordinates {
@@ -141,20 +141,4 @@ pub enum Texture {
     SolidColor(SolidColor),
     Checkerboard(Checkerboard),
     Image(Image),
-}
-
-pub fn solid(albedo: Color) -> Arc<Texture> {
-    Arc::new(Texture::SolidColor(SolidColor { albedo }))
-}
-
-pub fn checkerboard(inv_scale: f32, even: Arc<Texture>, solid: Arc<Texture>) -> Arc<Texture> {
-    Arc::new(Texture::Checkerboard(Checkerboard::new(
-        inv_scale, even, solid,
-    )))
-}
-
-pub fn image(path: impl AsRef<Path>) -> Arc<Texture> {
-    Arc::new(Texture::Image(
-        Image::load(path).expect("could not load image"),
-    ))
 }

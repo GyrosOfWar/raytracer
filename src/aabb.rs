@@ -1,9 +1,7 @@
-use crate::{
-    object::Hittable,
-    range::Range,
-    ray::Ray,
-    vec3::{Axis, Point3, Point3Ext, Vec3Ext},
-};
+use crate::object::Hittable;
+use crate::range::Range;
+use crate::ray::Ray;
+use crate::vec3::{Axis, Point3, Point3Ext, Vec3Ext};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Aabb {
@@ -18,7 +16,6 @@ impl Aabb {
         y: Range::EMPTY,
         z: Range::EMPTY,
     };
-
     #[allow(unused)]
     pub const UNIVERSE: Aabb = Aabb {
         x: Range::UNIVERSE,

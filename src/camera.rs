@@ -1,39 +1,6 @@
-use std::time::Instant;
-
-use crate::{
-    material::{ScatterResult, Scatterable},
-    vec3::Color,
-};
-use clap::ValueEnum;
-use image::{DynamicImage, Rgb32FImage, RgbImage};
-use indicatif::ParallelProgressIterator;
-use num_traits::Zero;
-use rayon::prelude::*;
-use tracing::info;
-
-use crate::{
-    object::Hittable,
-    random::random,
-    range::Range,
-    ray::Ray,
-    vec3::{self, Point3, Vec3},
-};
-
-#[derive(Debug, ValueEnum, Clone, Copy)]
-pub enum RenderMode {
-    Sequential,
-    Parallel,
-    ParallelChunks,
-}
-
-fn linear_to_gamma(linear_component: f32) -> f32 {
-    if linear_component > 0.0 {
-        linear_component.sqrt()
-    } else {
-        0.0
-    }
-}
-
+use crate::random::random;
+use crate::ray::Ray;
+use crate::vec3::{self, Color, Point3, Vec3};
 #[derive(Debug)]
 pub struct CameraParams {
     pub image_size: (usize, usize),
@@ -141,38 +108,9 @@ impl Camera {
         }
     }
 
-    fn ray_color(&self, ray: &Ray, depth: usize, world: &impl Hittable) -> Color {
-        if depth == 0 {
-            return Vec3::zero();
-        }
-
-        let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
-        match intersection {
-            Some(hit) => {
-                let emitted_color = hit.material.emit(hit.tex_coords, hit.point);
-
-                match hit.material.scatter(ray, &hit) {
-                    Some(ScatterResult {
-                        attenuation,
-                        scattered,
-                    }) => {
-                        let scattered_color = attenuation.component_mul(&self.ray_color(
-                            &scattered,
-                            depth - 1,
-                            world,
-                        ));
-                        emitted_color + scattered_color
-                    }
-                    None => emitted_color,
-                }
-            }
-            None => self.background_color,
-        }
-    }
-
     /// Construct a camera ray originating from the origin and directed at randomly sampled
     /// point around the pixel location `(i, j)`.
-    fn get_ray(&self, i: usize, j: usize) -> Ray {
+    pub fn get_ray(&self, i: u32, j: u32) -> Ray {
         let offset = self.sample_square();
         let pixel_sample = self.pixel_00_loc
             + (self.pixel_delta_u * (i as f32 + offset.x))
@@ -197,89 +135,5 @@ impl Camera {
     // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
     fn sample_square(&self) -> Vec3<f32> {
         Vec3::new(random() - 0.5, random() - 0.5, 0.0)
-    }
-
-    fn render_parallel(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
-        let threads = rayon::current_num_threads();
-        let pixel_count = self.image_height * self.image_width;
-        info!("rendering in parallel with {threads} threads");
-        (0..pixel_count)
-            .into_par_iter()
-            .progress_count(pixel_count as u64)
-            .flat_map(|index| {
-                let i = index % self.image_width;
-                let j = index / self.image_width;
-                let mut color = Vec3::zero();
-                for _ in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(i, j);
-                    color += self.ray_color(&ray, self.max_depth, world);
-                }
-                let result = color * pixel_samples_scale;
-                [result.x, result.y, result.z]
-            })
-            .map(linear_to_gamma)
-            .collect()
-    }
-
-    fn render_parallel_chunks(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
-        let chunk_size = 4096;
-        let pixel_count = self.image_height * self.image_width;
-        let pixels: Vec<_> = (0..pixel_count).collect();
-        pixels
-            .par_chunks(chunk_size)
-            .flat_map(|chunk| {
-                let mut pixels = vec![];
-                for index in chunk {
-                    let i = index % self.image_width;
-                    let j = index / self.image_width;
-                    let mut color = Vec3::zero();
-                    for _ in 0..self.samples_per_pixel {
-                        let ray = self.get_ray(i, j);
-                        color += self.ray_color(&ray, self.max_depth, world);
-                    }
-                    let result = color * pixel_samples_scale;
-                    pixels.extend([result.x, result.y, result.z]);
-                }
-
-                pixels
-            })
-            .collect()
-    }
-
-    fn render_sequential(&self, pixel_samples_scale: f32, world: &impl Hittable) -> Vec<f32> {
-        let mut pixels = Vec::with_capacity(self.image_height * self.image_width * 3);
-        for j in 0..self.image_height {
-            for i in 0..self.image_width {
-                let mut color = Vec3::zero();
-                for _ in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(i, j);
-                    color += self.ray_color(&ray, self.max_depth, world);
-                }
-                let result = color * pixel_samples_scale;
-                pixels.push(linear_to_gamma(result.x));
-                pixels.push(linear_to_gamma(result.y));
-                pixels.push(linear_to_gamma(result.z));
-            }
-        }
-        pixels
-    }
-
-    pub fn render(&self, world: &impl Hittable, mode: RenderMode) -> RgbImage {
-        let pixel_samples_scale = 1.0 / self.samples_per_pixel as f32;
-
-        let start = Instant::now();
-        let pixels = match mode {
-            RenderMode::Parallel => self.render_parallel(pixel_samples_scale, world),
-            RenderMode::Sequential => self.render_sequential(pixel_samples_scale, world),
-            RenderMode::ParallelChunks => self.render_parallel_chunks(pixel_samples_scale, world),
-        };
-        let duration = start.elapsed();
-
-        info!("rendering took {duration:?}");
-        let image =
-            Rgb32FImage::from_vec(self.image_width as u32, self.image_height as u32, pixels)
-                .expect("dimensions must match");
-
-        DynamicImage::from(image).into_rgb8()
     }
 }

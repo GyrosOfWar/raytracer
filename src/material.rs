@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use crate::{
-    object::HitRecord,
-    random::random,
-    ray::Ray,
-    texture::{HasColorValue, Texture, TextureCoordinates},
-    vec3::{self, random::gen_unit_vector, reflect, refract, Color, Point3, Vec3, Vec3Ext},
-};
 use enum_dispatch::enum_dispatch;
+
+use crate::object::HitRecord;
+use crate::random::random;
+use crate::ray::Ray;
+use crate::texture::{HasColorValue, Texture, TextureCoordinates};
+use crate::vec3::random::gen_unit_vector;
+use crate::vec3::{self, reflect, refract, Color, Point3, Vec3, Vec3Ext};
 
 pub struct ScatterResult {
     pub attenuation: Color,
@@ -166,12 +166,9 @@ impl Scatterable for TrowbridgeReitz {
 pub mod helpers {
     use std::sync::Arc;
 
-    use crate::{
-        texture::{solid, SolidColor, Texture},
-        vec3::{Color, Vec3},
-    };
-
-    use super::{Dielectric, DiffuseLight, Lambertian, Material, Metal, Mix};
+    use super::{Lambertian, Material};
+    use crate::texture::{SolidColor, Texture};
+    use crate::vec3::Vec3;
 
     pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
         Arc::new(Material::Lambertian(Lambertian {
@@ -181,29 +178,5 @@ pub mod helpers {
 
     pub fn lambertian_texture(texture: Arc<Texture>) -> Arc<Material> {
         Arc::new(Material::Lambertian(Lambertian { texture }))
-    }
-
-    pub fn metal(albedo: Vec3<f32>, fuzz: f32) -> Arc<Material> {
-        Arc::new(Material::Metal(Metal { albedo, fuzz }))
-    }
-
-    pub fn dielectric(index: f32) -> Arc<Material> {
-        Arc::new(Material::Dielectric(Dielectric {
-            refraction_index: index,
-        }))
-    }
-
-    pub fn diffuse_light(color: Color) -> Arc<Material> {
-        Arc::new(Material::DiffuseLight(DiffuseLight {
-            texture: solid(color),
-        }))
-    }
-
-    pub fn mix(left: Arc<Material>, right: Arc<Material>, factor: f32) -> Arc<Material> {
-        Arc::new(Material::Mix(Mix {
-            left,
-            right,
-            factor,
-        }))
     }
 }

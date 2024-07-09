@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.8", features = ["derive"] }
+color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
 gltf = { version = "1.4.1", features = ["KHR_texture_transform"] }
 image = "0.25.1"

@@ -6,8 +6,8 @@ pub struct Range {
 
 impl Range {
     pub const EMPTY: Range = Range::new(f32::INFINITY, f32::NEG_INFINITY);
-    pub const UNIVERSE: Range = Range::new(f32::NEG_INFINITY, f32::INFINITY);
     pub const UNIT: Range = Range::new(0.0, 1.0);
+    pub const UNIVERSE: Range = Range::new(f32::NEG_INFINITY, f32::INFINITY);
 
     pub const fn new(min: f32, max: f32) -> Self {
         Range { min, max }

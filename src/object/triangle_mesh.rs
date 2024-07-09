@@ -1,23 +1,20 @@
-use std::{error::Error, path::Path, sync::Arc};
+use std::error::Error;
+use std::path::Path;
+use std::sync::Arc;
 
 use builders::default_normal;
 use gltf::mesh::Mode;
 use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::info;
 
-use crate::{
-    aabb::Aabb,
-    material::{
-        helpers::{lambertian, lambertian_texture},
-        Material,
-    },
-    range::Range,
-    ray::Ray,
-    texture::{Image, Texture, TextureCoordinates},
-    vec3::{Color, Point3, Vec3},
-};
-
 use super::{HitRecord, Hittable, Object};
+use crate::aabb::Aabb;
+use crate::material::helpers::{lambertian, lambertian_texture};
+use crate::material::Material;
+use crate::range::Range;
+use crate::ray::Ray;
+use crate::texture::{Image, Texture, TextureCoordinates};
+use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
 struct TriangleMeshData {
@@ -186,123 +183,13 @@ impl Hittable for TriangleRef {
     }
 }
 
-fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage, Box<dyn Error>> {
-    use gltf::image::Format;
-
-    let image = match image.format {
-        Format::R8 => DynamicImage::from(
-            ImageBuffer::<Luma<u8>, _>::from_raw(image.width, image.height, image.pixels)
-                .expect("failed to construct image"),
-        ),
-        Format::R8G8 => DynamicImage::from(
-            ImageBuffer::<LumaA<u8>, _>::from_raw(image.width, image.height, image.pixels)
-                .expect("failed to construct image"),
-        ),
-        Format::R8G8B8 => DynamicImage::from(
-            ImageBuffer::<Rgb<u8>, _>::from_raw(image.width, image.height, image.pixels)
-                .expect("failed to construct image"),
-        ),
-        Format::R8G8B8A8 => DynamicImage::from(
-            ImageBuffer::<Rgba<u8>, _>::from_raw(image.width, image.height, image.pixels)
-                .expect("failed to construct image"),
-        ),
-        _ => panic!(
-            "unsupported image format {:?} for image {}",
-            image.format, name
-        ),
-    };
-
-    Ok(image)
-}
-
-pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Error>> {
-    let (gltf, buffers, images) = gltf::import(path)?;
-    let mut meshes = Vec::new();
-
-    for source_mesh in gltf.meshes() {
-        info!("loading mesh {:?}", source_mesh.name());
-        let mut vertices = Vec::new();
-        let mut face_indices = Vec::new();
-        let mut normals = Vec::new();
-        let mut uv = Vec::new();
-        let primitive = source_mesh
-            .primitives()
-            .filter(|p| p.mode() == Mode::Triangles)
-            .nth(0)
-            .expect("mesh must have at least one triangles primitive");
-
-        let reader = primitive.reader(|b| Some(&buffers[b.index()]));
-        let material = primitive.material();
-        let material = if let Some(texture) = material.pbr_metallic_roughness().base_color_texture()
-        {
-            let idx = texture.texture().source().index();
-            let image = images[idx].clone();
-            let image = load_image(image, texture.texture().name().unwrap_or("<no name>"))?;
-            lambertian_texture(Arc::new(Texture::Image(Image::new(image))))
-        } else {
-            let color = material.pbr_metallic_roughness().base_color_factor();
-            lambertian(Vec3::from([color[0], color[1], color[2]]))
-        };
-
-        if let Some(positions) = reader.read_positions() {
-            vertices.extend(positions.map(|p| Point3::from(p)));
-        }
-
-        if let Some(indices) = reader.read_indices() {
-            let indices: Vec<_> = indices.into_u32().collect();
-            for chunk in indices.chunks(3) {
-                face_indices.push((chunk[0], chunk[1], chunk[2]));
-            }
-        }
-
-        if let Some(normals_iter) = reader.read_normals() {
-            normals.extend(normals_iter.map(|n| Vec3::from(n)));
-        }
-
-        if let Some(tex_coords) = reader.read_tex_coords(0) {
-            let tex_coords: Vec<_> = tex_coords.into_f32().collect();
-            uv.extend(
-                tex_coords
-                    .into_iter()
-                    .map(|uv| TextureCoordinates::from_array(uv)),
-            )
-        }
-        info!(
-            "loaded mesh {} with {} vertices, {} faces, {} normals and {} texture coordinates",
-            source_mesh.name().unwrap_or("<no name>"),
-            vertices.len(),
-            face_indices.len(),
-            normals.len(),
-            uv.len(),
-        );
-        info!("assigned material {material:?}");
-
-        meshes.push(TriangleMesh::new(
-            vertices,
-            face_indices,
-            normals,
-            uv,
-            material,
-        ));
-    }
-
-    Ok(meshes
-        .into_iter()
-        .flat_map(|m| m.faces().collect::<Vec<_>>())
-        .map(|f| Object::TriangleRef(f))
-        .collect())
-}
-
 pub mod builders {
     use std::sync::Arc;
 
-    use crate::{
-        material::Material,
-        object::Object,
-        vec3::{Point3, Vec3},
-    };
-
     use super::TriangleMesh;
+    use crate::material::Material;
+    use crate::object::Object;
+    use crate::vec3::{Point3, Vec3};
 
     pub fn default_normal(v0: Point3<f32>, v1: Point3<f32>, v2: Point3<f32>) -> Vec3<f32> {
         let e1 = v1 - v0;

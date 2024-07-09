@@ -55,9 +55,8 @@ impl Point3Ext for Point3<f32> {
 }
 
 pub mod random {
-    use crate::random::{random, random_range};
-
     use super::Vec3;
+    use crate::random::{random, random_range};
 
     pub fn gen() -> Vec3<f32> {
         Vec3::new(random(), random(), random())
