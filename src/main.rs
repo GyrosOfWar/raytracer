@@ -57,7 +57,7 @@ fn main() -> Result<()> {
     );
     info!("rendering with configuration {args:#?}");
 
-    let zoom = 100.0;
+    let zoom = 0.01;
 
     let camera = Camera::new(CameraParams {
         look_from: Point3::new(2.0 * zoom, 1.5 * zoom, -3.0 * zoom),

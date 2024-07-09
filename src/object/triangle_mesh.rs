@@ -5,7 +5,6 @@ use nalgebra::Projective3;
 
 use super::{HitRecord, Hittable};
 use crate::aabb::Aabb;
-use crate::material::helpers::{lambertian, lambertian_texture};
 use crate::material::Material;
 use crate::range::Range;
 use crate::ray::Ray;
@@ -20,6 +19,7 @@ struct TriangleMeshData {
     uv: Box<[TextureCoordinates]>,
     material: Arc<Material>,
     transform: Projective3<f32>,
+    normal_transform: Projective3<f32>,
 }
 
 impl TriangleMeshData {
@@ -31,6 +31,12 @@ impl TriangleMeshData {
         material: Arc<Material>,
         transform: Projective3<f32>,
     ) -> Self {
+        let normal_transform = transform
+            .matrix()
+            .transpose()
+            .try_inverse()
+            .expect("transform must be invertible");
+
         TriangleMeshData {
             vertices: vertices.into_boxed_slice(),
             face_indices: face_indices.into_boxed_slice(),
@@ -38,11 +44,22 @@ impl TriangleMeshData {
             uv: uv.into_boxed_slice(),
             material,
             transform,
+            normal_transform: Projective3::from_matrix_unchecked(normal_transform),
         }
     }
 
     pub fn vertex(&self, index: u32) -> Point3<f32> {
         self.transform * self.vertices[index as usize]
+    }
+
+    pub fn normal(&self, index: u32) -> Option<Vec3<f32>> {
+        self.normals
+            .get(index as usize)
+            .map(|n| self.normal_transform * n)
+    }
+
+    pub fn uv(&self, index: u32) -> TextureCoordinates {
+        self.uv[index as usize]
     }
 }
 
@@ -70,7 +87,6 @@ impl TriangleMesh {
         TriangleRef {
             mesh: self.data.clone(),
             index,
-            material: self.data.material.clone(),
         }
     }
 
@@ -85,9 +101,9 @@ impl TriangleMesh {
 
 #[derive(Debug)]
 pub struct TriangleRef {
+    // TODO this could eventually be replaced by an index to some global storage for vertex data
     mesh: Arc<TriangleMeshData>,
     index: u32,
-    material: Arc<Material>,
 }
 
 impl TriangleRef {
@@ -103,11 +119,11 @@ impl TriangleRef {
     pub fn normals(&self) -> Option<(Vec3<f32>, Vec3<f32>, Vec3<f32>)> {
         let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
         match (
-            self.mesh.normals.get(v0 as usize),
-            self.mesh.normals.get(v1 as usize),
-            self.mesh.normals.get(v2 as usize),
+            self.mesh.normal(v0),
+            self.mesh.normal(v1),
+            self.mesh.normal(v2),
         ) {
-            (Some(a), Some(b), Some(c)) => Some((*a, *b, *c)),
+            (Some(a), Some(b), Some(c)) => Some((a, b, c)),
             _ => None,
         }
     }
@@ -117,9 +133,9 @@ impl TriangleRef {
             TextureCoordinates::default()
         } else {
             let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
-            let uv0 = self.mesh.uv[v0 as usize];
-            let uv1 = self.mesh.uv[v1 as usize];
-            let uv2 = self.mesh.uv[v2 as usize];
+            let uv0 = self.mesh.uv(v0);
+            let uv1 = self.mesh.uv(v1);
+            let uv2 = self.mesh.uv(v2);
             TextureCoordinates::tri_lerp(uv0, uv1, uv2, a, b)
         }
     }
@@ -171,13 +187,13 @@ impl Hittable for TriangleRef {
             normal,
             ray.evaluate(t),
             t,
-            self.material.clone(),
+            self.mesh.material.clone(),
             uv,
         ))
     }
 
     fn bounding_box(&self) -> Aabb {
-        // TODO cache this?
+        // TODO don't rotate the bbox?
         let (v0, v1, v2) = self.vertices();
         Aabb::from_boxes(Aabb::from_points(v0, v1), Aabb::from_points(v2, v2))
     }
