@@ -1,6 +1,9 @@
 use std::time::Instant;
 
-use crate::material::{ScatterResult, Scatterable};
+use crate::{
+    material::{ScatterResult, Scatterable},
+    vec3::Color,
+};
 use clap::ValueEnum;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ParallelProgressIterator;
@@ -41,7 +44,7 @@ pub struct CameraParams {
     pub focus_dist: f32,
     pub vertical_fov: f32,
     pub max_depth: usize,
-    pub background_color: Point3<f32>,
+    pub background_color: Color,
 }
 
 impl Default for CameraParams {
@@ -49,13 +52,13 @@ impl Default for CameraParams {
         Self {
             image_size: (1280, 720),
             samples_per_pixel: 100,
-            look_at: Point3::zero(),
+            look_at: Point3::default(),
             look_from: Point3::new(0.0, 0.0, -1.0),
             defocus_angle: 0.0,
             focus_dist: 10.0,
             vertical_fov: 90.0,
             max_depth: 50,
-            background_color: Point3::new(0.5, 0.5, 0.5),
+            background_color: Color::new(0.5, 0.5, 0.5),
         }
     }
 }
@@ -72,7 +75,7 @@ pub struct Camera {
     defocus_disk_v: Vec3<f32>,
     defocus_angle: f32,
     max_depth: usize,
-    background_color: Point3<f32>,
+    background_color: Color,
 }
 
 impl Camera {
@@ -103,9 +106,9 @@ impl Camera {
         let viewport_width = viewport_height * (width as f32 / height as f32);
 
         // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
-        let w = (look_from - look_at).unit();
-        let u = v_up.cross(w).unit();
-        let v = w.cross(u);
+        let w = (look_from - look_at).normalize();
+        let u = v_up.cross(&w).normalize();
+        let v = w.cross(&u);
 
         let camera_center = look_from;
         let viewport_u = u * viewport_width;
@@ -138,7 +141,7 @@ impl Camera {
         }
     }
 
-    fn ray_color(&self, ray: &Ray<f32>, depth: usize, world: &impl Hittable) -> Vec3<f32> {
+    fn ray_color(&self, ray: &Ray, depth: usize, world: &impl Hittable) -> Color {
         if depth == 0 {
             return Vec3::zero();
         }
@@ -153,8 +156,11 @@ impl Camera {
                         attenuation,
                         scattered,
                     }) => {
-                        let scattered_color =
-                            attenuation * self.ray_color(&scattered, depth - 1, world);
+                        let scattered_color = attenuation.component_mul(&self.ray_color(
+                            &scattered,
+                            depth - 1,
+                            world,
+                        ));
                         emitted_color + scattered_color
                     }
                     None => emitted_color,
@@ -166,7 +172,7 @@ impl Camera {
 
     /// Construct a camera ray originating from the origin and directed at randomly sampled
     /// point around the pixel location `(i, j)`.
-    fn get_ray(&self, i: usize, j: usize) -> Ray<f32> {
+    fn get_ray(&self, i: usize, j: usize) -> Ray {
         let offset = self.sample_square();
         let pixel_sample = self.pixel_00_loc
             + (self.pixel_delta_u * (i as f32 + offset.x))
@@ -183,7 +189,7 @@ impl Camera {
     }
 
     /// Returns a random point in the camera defocus disk.
-    fn defocus_disk_sample(&self) -> Vec3<f32> {
+    fn defocus_disk_sample(&self) -> Point3<f32> {
         let p = vec3::random::gen_unit_disk();
         self.center + (self.defocus_disk_u * p.x) + (self.defocus_disk_v * p.y)
     }

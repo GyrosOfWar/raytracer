@@ -18,7 +18,7 @@ impl World {
 }
 
 impl Hittable for World {
-    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
         let mut record = None;
         let mut closest_so_far = hit_range.max;
 

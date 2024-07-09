@@ -39,14 +39,14 @@ pub struct HitRecord {
 
 impl HitRecord {
     pub fn new(
-        ray: &Ray<f32>,
+        ray: &Ray,
         outward_normal: Vec3<f32>,
         point: Point3<f32>,
         distance: f32,
         material: Arc<Material>,
         tex_coords: TextureCoordinates,
     ) -> Self {
-        let front_facing = ray.direction.dot(outward_normal) < 0.0;
+        let front_facing = ray.direction.dot(&outward_normal) < 0.0;
         let normal = if front_facing {
             outward_normal
         } else {
@@ -66,7 +66,7 @@ impl HitRecord {
 
 #[enum_dispatch]
 pub trait Hittable: Send + Sync {
-    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord>;
 
     fn bounding_box(&self) -> Aabb;
 
@@ -84,13 +84,17 @@ pub enum Object {
 
 #[cfg(test)]
 mod tests {
-    use crate::{material::helpers::metal, object::Hittable, vec3::Point3};
+    use crate::{
+        material::helpers::metal,
+        object::Hittable,
+        vec3::{Point3, Vec3},
+    };
 
     use super::Sphere;
 
     #[test]
     fn get_sphere_bbox() {
-        let material = metal(Point3::new(0.5, 0.1, 0.7), 0.2);
+        let material = metal(Vec3::new(0.5, 0.1, 0.7), 0.2);
         let sphere = Sphere::new(Point3::new(0.0, 0.0, 0.0), 2.0, material);
         let bbox = sphere.bounding_box();
         assert_eq!(bbox.x.min, -2.0);

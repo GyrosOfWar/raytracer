@@ -54,11 +54,11 @@ fn get_uv(p: Point3<f32>) -> TextureCoordinates {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
         let oc = self.center - ray.origin;
-        let a = ray.direction.length_squared();
-        let h = ray.direction.dot(oc);
-        let c = oc.length_squared() - self.radius * self.radius;
+        let a = ray.direction.norm_squared();
+        let h = ray.direction.dot(&oc);
+        let c = oc.norm_squared() - self.radius * self.radius;
         let discriminant = h * h - a * c;
 
         if discriminant < 0.0 {

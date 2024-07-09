@@ -5,12 +5,12 @@ use crate::{
     random::random,
     ray::Ray,
     texture::{HasColorValue, Texture, TextureCoordinates},
-    vec3::{self, random::gen_unit_vector, reflect, refract, Point3, Vec3},
+    vec3::{self, random::gen_unit_vector, reflect, refract, Color, Point3, Vec3, Vec3Ext},
 };
 use enum_dispatch::enum_dispatch;
 
 pub struct ScatterResult {
-    pub attenuation: Vec3<f32>,
+    pub attenuation: Color,
     pub scattered: Ray,
 }
 
@@ -27,9 +27,9 @@ impl ScatterResult {
 pub trait Scatterable {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult>;
 
-    fn emit(&self, _: TextureCoordinates, _: Point3<f32>) -> Point3<f32> {
+    fn emit(&self, _: TextureCoordinates, _: Point3<f32>) -> Color {
         // default material does not emit anything
-        Point3::default()
+        Vec3::default()
     }
 }
 
@@ -53,7 +53,7 @@ impl Scatterable for Lambertian {
 
 #[derive(Debug)]
 pub struct Metal {
-    pub albedo: Vec3<f32>,
+    pub albedo: Color,
     pub fuzz: f32,
 }
 
@@ -81,8 +81,8 @@ impl Scatterable for Dielectric {
             self.refraction_index
         };
 
-        let unit_direction = ray.direction.unit();
-        let cos_theta = (-unit_direction).dot(hit.normal).min(1.0);
+        let unit_direction = ray.direction.normalize();
+        let cos_theta = (-unit_direction).dot(&hit.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = ri * sin_theta > 1.0;
@@ -116,7 +116,7 @@ impl Scatterable for DiffuseLight {
         None
     }
 
-    fn emit(&self, uv: TextureCoordinates, point: Point3<f32>) -> Point3<f32> {
+    fn emit(&self, uv: TextureCoordinates, point: Point3<f32>) -> Color {
         self.texture.value_at(uv, point)
     }
 }
@@ -168,7 +168,7 @@ pub mod helpers {
 
     use crate::{
         texture::{solid, SolidColor, Texture},
-        vec3::{Point3, Vec3},
+        vec3::{Color, Vec3},
     };
 
     use super::{Dielectric, DiffuseLight, Lambertian, Material, Metal, Mix};
@@ -193,7 +193,7 @@ pub mod helpers {
         }))
     }
 
-    pub fn diffuse_light(color: Point3<f32>) -> Arc<Material> {
+    pub fn diffuse_light(color: Color) -> Arc<Material> {
         Arc::new(Material::DiffuseLight(DiffuseLight {
             texture: solid(color),
         }))

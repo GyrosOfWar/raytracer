@@ -2,7 +2,7 @@ use std::{error::Error, path::Path, sync::Arc};
 
 use builders::default_normal;
 use gltf::mesh::Mode;
-use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, RgbImage, Rgba, RgbaImage};
+use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::info;
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     range::Range,
     ray::Ray,
     texture::{Image, Texture, TextureCoordinates},
-    vec3::{Point3, Vec3},
+    vec3::{Color, Point3, Vec3},
 };
 
 use super::{HitRecord, Hittable, Object};
@@ -65,20 +65,12 @@ impl TriangleMesh {
         }
     }
 
-    pub fn vertex(&self, index: u32) -> Point3<f32> {
-        self.data.vertices[index as usize]
-    }
-
     pub fn face(&self, index: u32) -> TriangleRef {
         TriangleRef {
             mesh: self.data.clone(),
             index,
             material: self.data.material.clone(),
         }
-    }
-
-    pub fn vertices(&self) -> impl Iterator<Item = &Point3<f32>> {
-        self.data.vertices.iter()
     }
 
     pub fn faces(&self) -> impl Iterator<Item = TriangleRef> + '_ {
@@ -133,14 +125,14 @@ impl TriangleRef {
 }
 
 impl Hittable for TriangleRef {
-    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
         let (v0, v1, v2) = self.vertices();
 
         // Möller-Trumbore algorithm
         let e1 = v1 - v0;
         let e2 = v2 - v0;
-        let p = ray.direction.cross(e2);
-        let det = e1.dot(p);
+        let p = ray.direction.cross(&e2);
+        let det = e1.dot(&p);
 
         if det.abs() < 1e-6 {
             return None;
@@ -148,19 +140,19 @@ impl Hittable for TriangleRef {
 
         let inv_det = 1.0 / det;
         let t = ray.origin - v0;
-        let u = t.dot(p) * inv_det;
+        let u = t.dot(&p) * inv_det;
 
         if u < 0.0 || u > 1.0 {
             return None;
         }
 
-        let q = t.cross(e1);
-        let v = ray.direction.dot(q) * inv_det;
+        let q = t.cross(&e1);
+        let v = ray.direction.dot(&q) * inv_det;
         if v < 0.0 || u + v > 1.0 {
             return None;
         }
 
-        let t = e2.dot(q) * inv_det;
+        let t = e2.dot(&q) * inv_det;
         if !hit_range.contains(t) {
             return None;
         }
@@ -224,7 +216,7 @@ fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage, Box<
 }
 
 pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Error>> {
-    let (gltf, buffers, mut images) = gltf::import(path)?;
+    let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
 
     for source_mesh in gltf.meshes() {
@@ -249,11 +241,11 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
             lambertian_texture(Arc::new(Texture::Image(Image::new(image))))
         } else {
             let color = material.pbr_metallic_roughness().base_color_factor();
-            lambertian(Point3::from_slice(&color))
+            lambertian(Vec3::from([color[0], color[1], color[2]]))
         };
 
         if let Some(positions) = reader.read_positions() {
-            vertices.extend(positions.map(|p| Point3::from_array(p)));
+            vertices.extend(positions.map(|p| Point3::from(p)));
         }
 
         if let Some(indices) = reader.read_indices() {
@@ -264,7 +256,7 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
         }
 
         if let Some(normals_iter) = reader.read_normals() {
-            normals.extend(normals_iter.map(|n| Vec3::from_array(n)));
+            normals.extend(normals_iter.map(|n| Vec3::from(n)));
         }
 
         if let Some(tex_coords) = reader.read_tex_coords(0) {
@@ -316,7 +308,7 @@ pub mod builders {
         let e1 = v1 - v0;
         let e2 = v2 - v0;
 
-        e1.cross(e2).unit()
+        e1.cross(&e2).normalize()
     }
 
     pub fn quad(

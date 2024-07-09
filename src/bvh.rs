@@ -79,7 +79,7 @@ impl BvhNode {
 }
 
 impl Hittable for BvhNode {
-    fn hit(&self, ray: &Ray<f32>, hit_range: Range) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
         if !self.bbox.hit(ray, hit_range) {
             return None;
         }

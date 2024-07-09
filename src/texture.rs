@@ -3,7 +3,10 @@ use std::{fmt, path::Path, sync::Arc};
 use enum_dispatch::enum_dispatch;
 use image::{DynamicImage, GenericImageView, ImageError};
 
-use crate::{range::Range, vec3::Point3};
+use crate::{
+    range::Range,
+    vec3::{Color, Point3, Vec3},
+};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TextureCoordinates {
@@ -33,16 +36,16 @@ impl TextureCoordinates {
 
 #[enum_dispatch]
 pub trait HasColorValue: Send + Sync {
-    fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Point3<f32>;
+    fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Color;
 }
 
 #[derive(Debug)]
 pub struct SolidColor {
-    pub albedo: Point3<f32>,
+    pub albedo: Color,
 }
 
 impl HasColorValue for SolidColor {
-    fn value_at(&self, _: TextureCoordinates, _: Point3<f32>) -> Point3<f32> {
+    fn value_at(&self, _: TextureCoordinates, _: Point3<f32>) -> Color {
         self.albedo
     }
 }
@@ -65,7 +68,7 @@ impl Checkerboard {
 }
 
 impl HasColorValue for Checkerboard {
-    fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Point3<f32> {
+    fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Color {
         let x = (self.inv_scale * p.x).floor() as i64;
         let y = (self.inv_scale * p.y).floor() as i64;
         let z = (self.inv_scale * p.z).floor() as i64;
@@ -110,9 +113,9 @@ impl From<DynamicImage> for Image {
 }
 
 impl HasColorValue for Image {
-    fn value_at(&self, coords: TextureCoordinates, _: Point3<f32>) -> Point3<f32> {
+    fn value_at(&self, coords: TextureCoordinates, _: Point3<f32>) -> Color {
         if self.image.height() == 0 {
-            return Point3::new(0.0, 1.0, 1.0);
+            return Vec3::new(0.0, 1.0, 1.0);
         }
         let mut coords = coords.clamp01();
         // Flip V to image coordinates
@@ -123,7 +126,8 @@ impl HasColorValue for Image {
         let j = ((coords.v * self.image.height() as f32) as u32).min(self.image.height() - 1);
         let pixel = self.image.get_pixel(i, j);
         let color_scale = 1.0 / 255.0;
-        Point3::new(
+
+        Vec3::new(
             pixel.0[0] as f32 * color_scale,
             pixel.0[1] as f32 * color_scale,
             pixel.0[2] as f32 * color_scale,
@@ -139,7 +143,7 @@ pub enum Texture {
     Image(Image),
 }
 
-pub fn solid(albedo: Point3<f32>) -> Arc<Texture> {
+pub fn solid(albedo: Color) -> Arc<Texture> {
     Arc::new(Texture::SolidColor(SolidColor { albedo }))
 }
 

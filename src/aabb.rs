@@ -2,7 +2,7 @@ use crate::{
     object::Hittable,
     range::Range,
     ray::Ray,
-    vec3::{Axis, Point3},
+    vec3::{Axis, Point3, Point3Ext, Vec3Ext},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -95,7 +95,7 @@ impl Aabb {
         self
     }
 
-    pub fn hit(&self, ray: &Ray<f32>, mut hit_range: Range) -> bool {
+    pub fn hit(&self, ray: &Ray, mut hit_range: Range) -> bool {
         let ray_origin = ray.origin;
         let ray_direction = ray.direction;
 

@@ -6,7 +6,7 @@ use clap::Parser;
 use object::{triangle_mesh, Hittable, Object};
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
-use vec3::Point3;
+use vec3::{Color, Point3};
 
 mod aabb;
 mod bvh;
@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let camera = Camera::new(CameraParams {
         look_from: Point3::new(2.0 * zoom, 1.5 * zoom, -3.0 * zoom),
-        background_color: Point3::new(0.5, 0.5, 0.5),
+        background_color: Color::new(0.5, 0.5, 0.5),
         samples_per_pixel: 100,
         ..Default::default()
     });
