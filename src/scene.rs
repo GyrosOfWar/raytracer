@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use gltf::mesh::Mode;
 use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
+use nalgebra::Projective3;
 use tracing::info;
 
 use crate::bvh::BvhNode;
@@ -60,6 +61,8 @@ fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage> {
 pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<SceneDescription> {
     let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
+
+    // TODO need to iterate over the nodes to also get the transformations
 
     for source_mesh in gltf.meshes() {
         info!("loading mesh {:?}", source_mesh.name());
@@ -119,12 +122,15 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<SceneDescription> {
         );
         info!("assigned material {material:?}");
 
+        let transform = Projective3::identity();
+
         meshes.push(TriangleMesh::new(
             vertices,
             face_indices,
             normals,
             uv,
             material,
+            transform,
         ));
     }
 

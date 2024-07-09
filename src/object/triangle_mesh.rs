@@ -1,19 +1,15 @@
-use std::error::Error;
-use std::path::Path;
 use std::sync::Arc;
 
 use builders::default_normal;
-use gltf::mesh::Mode;
-use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
-use tracing::info;
+use nalgebra::Projective3;
 
-use super::{HitRecord, Hittable, Object};
+use super::{HitRecord, Hittable};
 use crate::aabb::Aabb;
 use crate::material::helpers::{lambertian, lambertian_texture};
 use crate::material::Material;
 use crate::range::Range;
 use crate::ray::Ray;
-use crate::texture::{Image, Texture, TextureCoordinates};
+use crate::texture::TextureCoordinates;
 use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
@@ -23,6 +19,7 @@ struct TriangleMeshData {
     normals: Box<[Vec3<f32>]>,
     uv: Box<[TextureCoordinates]>,
     material: Arc<Material>,
+    transform: Projective3<f32>,
 }
 
 impl TriangleMeshData {
@@ -32,6 +29,7 @@ impl TriangleMeshData {
         normals: Vec<Vec3<f32>>,
         uv: Vec<TextureCoordinates>,
         material: Arc<Material>,
+        transform: Projective3<f32>,
     ) -> Self {
         TriangleMeshData {
             vertices: vertices.into_boxed_slice(),
@@ -39,7 +37,12 @@ impl TriangleMeshData {
             normals: normals.into_boxed_slice(),
             uv: uv.into_boxed_slice(),
             material,
+            transform,
         }
+    }
+
+    pub fn vertex(&self, index: u32) -> Point3<f32> {
+        self.transform * self.vertices[index as usize]
     }
 }
 
@@ -55,8 +58,9 @@ impl TriangleMesh {
         normals: Vec<Vec3<f32>>,
         uv: Vec<TextureCoordinates>,
         material: Arc<Material>,
+        transform: Projective3<f32>,
     ) -> Self {
-        let data = TriangleMeshData::new(vertices, face_indices, normals, uv, material);
+        let data = TriangleMeshData::new(vertices, face_indices, normals, uv, material, transform);
         TriangleMesh {
             data: Arc::new(data),
         }
@@ -90,9 +94,9 @@ impl TriangleRef {
     pub fn vertices(&self) -> (Point3<f32>, Point3<f32>, Point3<f32>) {
         let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
         (
-            self.mesh.vertices[v0 as usize],
-            self.mesh.vertices[v1 as usize],
-            self.mesh.vertices[v2 as usize],
+            self.mesh.vertex(v0),
+            self.mesh.vertex(v1),
+            self.mesh.vertex(v2),
         )
     }
 
@@ -186,6 +190,8 @@ impl Hittable for TriangleRef {
 pub mod builders {
     use std::sync::Arc;
 
+    use nalgebra::Projective3;
+
     use super::TriangleMesh;
     use crate::material::Material;
     use crate::object::Object;
@@ -211,6 +217,7 @@ pub mod builders {
             vec![],
             vec![],
             material,
+            Projective3::identity(),
         );
 
         mesh.faces().map(Object::TriangleRef).collect()
