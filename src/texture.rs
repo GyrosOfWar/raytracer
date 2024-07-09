@@ -1,7 +1,7 @@
 use std::{fmt, path::Path, sync::Arc};
 
 use enum_dispatch::enum_dispatch;
-use image::{DynamicImage, GenericImageView, ImageError, RgbImage};
+use image::{DynamicImage, GenericImageView, ImageError};
 
 use crate::{range::Range, vec3::Point3};
 

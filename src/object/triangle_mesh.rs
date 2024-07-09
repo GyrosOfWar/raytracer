@@ -228,6 +228,7 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
     let mut meshes = Vec::new();
 
     for source_mesh in gltf.meshes() {
+        info!("loading mesh {:?}", source_mesh.name());
         let mut vertices = Vec::new();
         let mut face_indices = Vec::new();
         let mut normals = Vec::new();
@@ -243,7 +244,7 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<Vec<Object>, Box<dyn Err
         let material = if let Some(texture) = material.pbr_metallic_roughness().base_color_texture()
         {
             let idx = texture.texture().source().index();
-            let image = images.remove(idx);
+            let image = images[idx].clone();
             let image = load_image(image, texture.texture().name().unwrap_or("<no name>"))?;
             lambertian_texture(Arc::new(Texture::Image(Image::new(image))))
         } else {
