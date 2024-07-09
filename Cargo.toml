@@ -10,6 +10,7 @@ gltf = { version = "1.4.1", features = ["KHR_texture_transform"] }
 image = "0.25.1"
 indicatif = { version = "0.17.8", features = ["rayon"] }
 libc = "0.2.155"
+nalgebra = "0.33.0"
 num-traits = "0.2.19"
 ordered-float = "4.2.0"
 rand = { version = "0.8.5", features = ["small_rng"] }

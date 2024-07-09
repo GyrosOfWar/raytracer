@@ -1,19 +1,17 @@
-use num_traits::Float;
-
 use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
-pub struct Ray<T: Float> {
-    pub origin: Point3<T>,
-    pub direction: Vec3<T>,
+pub struct Ray {
+    pub origin: Point3<f32>,
+    pub direction: Vec3<f32>,
 }
 
-impl<T: Float> Ray<T> {
-    pub fn new(origin: Point3<T>, direction: Vec3<T>) -> Self {
+impl Ray {
+    pub fn new(origin: Point3<f32>, direction: Vec3<f32>) -> Self {
         Ray { origin, direction }
     }
 
-    pub fn evaluate(&self, t: T) -> Point3<T> {
+    pub fn evaluate(&self, t: f32) -> Point3<f32> {
         self.origin + (self.direction * t)
     }
 }

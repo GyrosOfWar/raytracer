@@ -1,8 +1,5 @@
 use std::sync::Arc;
 
-use enum_dispatch::enum_dispatch;
-use num_traits::Zero;
-
 use crate::{
     object::HitRecord,
     random::random,
@@ -10,10 +7,11 @@ use crate::{
     texture::{HasColorValue, Texture, TextureCoordinates},
     vec3::{self, random::gen_unit_vector, reflect, refract, Point3, Vec3},
 };
+use enum_dispatch::enum_dispatch;
 
 pub struct ScatterResult {
     pub attenuation: Vec3<f32>,
-    pub scattered: Ray<f32>,
+    pub scattered: Ray,
 }
 
 impl ScatterResult {
@@ -27,11 +25,11 @@ impl ScatterResult {
 
 #[enum_dispatch]
 pub trait Scatterable {
-    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult>;
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult>;
 
     fn emit(&self, _: TextureCoordinates, _: Point3<f32>) -> Point3<f32> {
         // default material does not emit anything
-        Point3::zero()
+        Point3::default()
     }
 }
 
@@ -41,7 +39,7 @@ pub struct Lambertian {
 }
 
 impl Scatterable for Lambertian {
-    fn scatter(&self, _ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
         let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
         if scatter_direction.near_zero() {
             scatter_direction = hit.normal;
@@ -60,9 +58,9 @@ pub struct Metal {
 }
 
 impl Scatterable for Metal {
-    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
         let reflected = reflect(ray.direction, hit.normal);
-        let reflected = reflected.unit() + (gen_unit_vector() * self.fuzz);
+        let reflected = reflected.normalize() + (gen_unit_vector() * self.fuzz);
         Some(ScatterResult {
             scattered: Ray::new(hit.point, reflected),
             attenuation: self.albedo,
@@ -76,7 +74,7 @@ pub struct Dielectric {
 }
 
 impl Scatterable for Dielectric {
-    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
         let ri = if hit.front_facing {
             1.0 / self.refraction_index
         } else {
@@ -114,7 +112,7 @@ pub struct DiffuseLight {
 }
 
 impl Scatterable for DiffuseLight {
-    fn scatter(&self, _: &Ray<f32>, _: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, _: &Ray, _: &HitRecord) -> Option<ScatterResult> {
         None
     }
 
@@ -142,7 +140,7 @@ pub struct Mix {
 }
 
 impl Scatterable for Mix {
-    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
         let left = self.left.scatter(ray, hit);
         let right = self.right.scatter(ray, hit);
         match (left, right) {
@@ -160,7 +158,7 @@ pub struct TrowbridgeReitz {
 }
 
 impl Scatterable for TrowbridgeReitz {
-    fn scatter(&self, ray: &Ray<f32>, hit: &HitRecord) -> Option<ScatterResult> {
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
         todo!()
     }
 }
