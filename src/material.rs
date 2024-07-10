@@ -3,9 +3,9 @@ use std::sync::Arc;
 use enum_dispatch::enum_dispatch;
 
 use crate::object::HitRecord;
-use crate::random::random;
+use crate::random::{self, random};
 use crate::ray::Ray;
-use crate::texture::{HasColorValue, Texture, TextureCoordinates};
+use crate::texture::{HasColorValue, SolidColor, Texture, TextureCoordinates};
 use crate::vec3::random::gen_unit_vector;
 use crate::vec3::{self, reflect, refract, Color, Point3, Vec3, Vec3Ext};
 
@@ -16,9 +16,10 @@ pub struct ScatterResult {
 
 impl ScatterResult {
     pub fn mix(self, other: ScatterResult, factor: f32) -> ScatterResult {
+        let scattered = random::choose(self.scattered, other.scattered, factor);
         ScatterResult {
             attenuation: self.attenuation * factor + other.attenuation * (1.0 - factor),
-            scattered: self.scattered,
+            scattered,
         }
     }
 }
@@ -53,7 +54,7 @@ impl Scatterable for Lambertian {
 
 #[derive(Debug)]
 pub struct Metal {
-    pub albedo: Color,
+    pub texture: Arc<Texture>,
     pub fuzz: f32,
 }
 
@@ -63,7 +64,7 @@ impl Scatterable for Metal {
         let reflected = reflected.normalize() + (gen_unit_vector() * self.fuzz);
         Some(ScatterResult {
             scattered: Ray::new(hit.point, reflected),
-            attenuation: self.albedo,
+            attenuation: self.texture.value_at(hit.tex_coords, hit.point),
         })
     }
 }
@@ -132,22 +133,58 @@ pub enum Material {
     TrowbridgeReitz(TrowbridgeReitz),
 }
 
+impl Material {
+    pub fn lambertian(albedo: Vec3) -> Arc<Material> {
+        Arc::new(Material::Lambertian(Lambertian {
+            texture: Arc::new(Texture::SolidColor(SolidColor { albedo })),
+        }))
+    }
+
+    pub fn lambertian_texture(texture: Arc<Texture>) -> Arc<Material> {
+        Arc::new(Material::Lambertian(Lambertian { texture }))
+    }
+
+    pub fn metal(texture: Arc<Texture>, fuzz: f32) -> Arc<Material> {
+        Arc::new(Material::Metal(Metal { texture, fuzz }))
+    }
+
+    pub fn mix(left: Arc<Material>, right: Arc<Material>, factor: f32) -> Arc<Material> {
+        Arc::new(Material::Mix(Mix {
+            left,
+            right,
+            factor,
+        }))
+    }
+
+    pub fn dielectric(refraction_index: f32) -> Arc<Material> {
+        Arc::new(Material::Dielectric(Dielectric { refraction_index }))
+    }
+}
+
 #[derive(Debug)]
 pub struct Mix {
     pub left: Arc<Material>,
     pub right: Arc<Material>,
+    // TODO actually, the mix factor could also be a texture
     pub factor: f32,
 }
 
 impl Scatterable for Mix {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
-        let left = self.left.scatter(ray, hit);
-        let right = self.right.scatter(ray, hit);
-        match (left, right) {
-            (Some(l), Some(r)) => Some(l.mix(r, self.factor)),
-            (None, Some(r)) => Some(r),
-            (Some(l), None) => Some(l),
-            (None, None) => None,
+        match self.factor {
+            1.0 => self.right.scatter(ray, hit),
+            0.0 => self.left.scatter(ray, hit),
+            _ => {
+                // FIXME
+                let left = self.left.scatter(ray, hit);
+                let right = self.right.scatter(ray, hit);
+                match (left, right) {
+                    (Some(l), Some(r)) => Some(l.mix(r, self.factor)),
+                    (None, Some(r)) => Some(r),
+                    (Some(l), None) => Some(l),
+                    (None, None) => None,
+                }
+            }
         }
     }
 }
@@ -160,23 +197,5 @@ pub struct TrowbridgeReitz {
 impl Scatterable for TrowbridgeReitz {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
         todo!()
-    }
-}
-
-pub mod helpers {
-    use std::sync::Arc;
-
-    use super::{Lambertian, Material};
-    use crate::texture::{SolidColor, Texture};
-    use crate::vec3::Vec3;
-
-    pub fn lambertian(albedo: Vec3) -> Arc<Material> {
-        Arc::new(Material::Lambertian(Lambertian {
-            texture: Arc::new(Texture::SolidColor(SolidColor { albedo })),
-        }))
-    }
-
-    pub fn lambertian_texture(texture: Arc<Texture>) -> Arc<Material> {
-        Arc::new(Material::Lambertian(Lambertian { texture }))
     }
 }

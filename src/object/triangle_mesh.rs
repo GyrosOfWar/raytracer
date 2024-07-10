@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use builders::default_normal;
-
 use super::{HitRecord, Hittable};
 use crate::aabb::Aabb;
 use crate::material::Material;
@@ -187,36 +185,9 @@ impl Hittable for TriangleRef {
     }
 }
 
-pub mod builders {
-    use std::sync::Arc;
+fn default_normal(v0: Point3, v1: Point3, v2: Point3) -> Vec3 {
+    let e1 = v1 - v0;
+    let e2 = v2 - v0;
 
-    use super::TriangleMesh;
-    use crate::material::Material;
-    use crate::object::Object;
-    use crate::vec3::{Point3, Vec3};
-
-    pub fn default_normal(v0: Point3, v1: Point3, v2: Point3) -> Vec3 {
-        let e1 = v1 - v0;
-        let e2 = v2 - v0;
-
-        e1.cross(e2).normalize()
-    }
-
-    pub fn quad(
-        p1: Point3,
-        p2: Point3,
-        p3: Point3,
-        p4: Point3,
-        material: Arc<Material>,
-    ) -> Vec<Object> {
-        let mesh = TriangleMesh::new(
-            vec![p1, p2, p3, p4],
-            vec![(0, 1, 2), (1, 2, 3)],
-            vec![],
-            vec![],
-            material,
-        );
-
-        mesh.faces().map(Object::TriangleRef).collect()
-    }
+    e1.cross(e2).normalize()
 }

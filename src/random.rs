@@ -20,6 +20,15 @@ mod rand {
     pub fn random_int(min: i32, max: i32) -> i32 {
         RNG.with_borrow_mut(|r| r.gen_range(min..max))
     }
+
+    pub fn choose<T>(a: T, b: T, factor: f32) -> T {
+        let n = random();
+        if n < factor {
+            a
+        } else {
+            b
+        }
+    }
 }
 
 #[allow(unused)]
@@ -51,4 +60,8 @@ pub fn random_range(min: f32, max: f32) -> f32 {
 
 pub fn random_int(min: i32, max: i32) -> i32 {
     rand::random_int(min, max)
+}
+
+pub fn choose<T>(a: T, b: T, factor: f32) -> T {
+    rand::choose(a, b, factor)
 }

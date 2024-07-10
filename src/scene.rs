@@ -8,10 +8,10 @@ use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::{debug, info};
 
 use crate::bvh::BvhNode;
-use crate::material::helpers::{lambertian, lambertian_texture};
+use crate::material::Material;
 use crate::object::triangle_mesh::TriangleMesh;
 use crate::object::{Object, World};
-use crate::texture::{Image, Texture, TextureCoordinates};
+use crate::texture::{Image, SolidColor, Texture, TextureCoordinates};
 use crate::vec3::{Color, Point3, Vec3};
 use crate::Result;
 
@@ -91,15 +91,30 @@ fn read_mesh(
 
     let reader = primitive.reader(|b| Some(&buffers[b.index()]));
     let material = primitive.material();
-    let material = if let Some(texture) = material.pbr_metallic_roughness().base_color_texture() {
-        let idx = texture.texture().source().index();
-        let image = images[idx].clone();
-        let image = load_image(image, texture.texture().name().unwrap_or("<no name>"))?;
-        lambertian_texture(Arc::new(Texture::Image(Image::new(image))))
-    } else {
-        let color = material.pbr_metallic_roughness().base_color_factor();
-        lambertian(Vec3::from([color[0], color[1], color[2]]))
-    };
+
+    let color_texture =
+        if let Some(texture) = material.pbr_metallic_roughness().base_color_texture() {
+            let idx = texture.texture().source().index();
+            let image = images[idx].clone();
+            let image = load_image(image, texture.texture().name().unwrap_or("<no name>"))?;
+            Arc::new(Texture::Image(Image::new(image)))
+        } else {
+            let color = material.pbr_metallic_roughness().base_color_factor();
+            Arc::new(Texture::SolidColor(SolidColor {
+                albedo: Vec3::new(color[0], color[1], color[2]),
+            }))
+        };
+
+    let metalness = material.pbr_metallic_roughness().metallic_factor();
+    // ehhh not correct but let's go with it for now
+    let fuzz = material.pbr_metallic_roughness().roughness_factor();
+
+    // TODO actual PBR shader
+    let material = Material::mix(
+        Material::lambertian_texture(color_texture.clone()),
+        Material::metal(color_texture, fuzz),
+        metalness,
+    );
 
     if let Some(positions) = reader.read_positions() {
         let positions: Vec<_> = positions.collect();
@@ -197,7 +212,7 @@ pub fn load_from_gltf(
         Object::BvhNode(BvhNode::from(objects))
     };
 
-    info!("cameras: {cameras:#?}");
+    debug!("cameras: {cameras:#?}");
 
     Ok(SceneDescription {
         root_object,

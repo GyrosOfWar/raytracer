@@ -84,6 +84,8 @@ fn main() -> Result<()> {
     } else {
         let renderer = Renderer::new(camera, scene);
         renderer.render_progressive(args.output, 256)?;
+        // let image = renderer.render(256);
+        // image.save(&args.output)?;
     }
 
     Ok(())

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::time::Instant;
 
 use clap::ValueEnum;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
@@ -58,22 +59,62 @@ impl Renderer {
         }
     }
 
+    pub fn render(&self, square_size: usize) -> RgbImage {
+        let start = Instant::now();
+
+        let sample_scale = 1.0 / self.scene.render.samples_per_pixel as f32;
+        let width = self.scene.render.image_width;
+        let height = self.scene.render.image_height;
+        let pixel_count = width * height;
+        let pixels: Vec<_> = (0..pixel_count).collect();
+        let pixels = pixels
+            .par_chunks(square_size * square_size)
+            .flat_map(|chunk| {
+                let mut pixels = vec![];
+                for index in chunk {
+                    let i = index % width;
+                    let j = index / width;
+                    let mut color = Vec3::ZERO;
+                    for _ in 0..self.scene.render.samples_per_pixel {
+                        let ray = self.camera.get_ray(i, j);
+                        color += self.ray_color(
+                            &ray,
+                            self.scene.render.max_depth,
+                            &self.scene.root_object,
+                        );
+                    }
+                    let result = color * sample_scale;
+                    pixels.extend([result.x, result.y, result.z]);
+                }
+
+                pixels
+            })
+            .collect();
+        let elapsed = start.elapsed();
+        info!("Rendering took {elapsed:?}");
+
+        self.pixels_to_image(pixels)
+    }
+
     pub fn render_progressive(
         &self,
         destination: impl AsRef<Path>,
-        chunk_size_sqrt: usize,
+        square_size: usize,
     ) -> Result<()> {
+        let start = Instant::now();
         let pixel_count = self.scene.render.image_height * self.scene.render.image_width;
-        let mut aggregate_image = vec![0.0; (pixel_count * 3) as usize];
+        let image_size = (pixel_count * 3) as usize;
+
+        let mut aggregate_image = vec![0.0; image_size];
 
         let sample_count = self.scene.render.samples_per_pixel;
-        let chunk_size = chunk_size_sqrt * chunk_size_sqrt;
+        let chunk_size = square_size * square_size;
 
         // TODO variable step size like in pbrt
         for current_sample in (1..=sample_count).progress_count(sample_count as u64) {
             let sample_scale = 1.0 / current_sample as f32;
-            let pixels: Vec<_> = (0..pixel_count).collect();
-            let result: Vec<_> = pixels
+            let chunks: Vec<_> = (0..pixel_count).collect();
+            let result: Vec<_> = chunks
                 .par_chunks(chunk_size)
                 .flat_map(|chunk| {
                     let mut pixels = vec![];
@@ -102,6 +143,8 @@ impl Renderer {
             let image = self.pixels_to_image(intermediate_image);
             image.save(&destination)?;
         }
+        let elapsed = start.elapsed();
+        info!("Rendering took {elapsed:?}");
 
         Ok(())
     }
@@ -123,5 +166,20 @@ fn linear_to_gamma(linear_component: f32) -> f32 {
         linear_component.sqrt()
     } else {
         0.0
+    }
+}
+
+// TODO
+struct SampleIter {
+    sample_count: usize,
+    current_count: usize,
+}
+
+impl SampleIter {
+    pub fn new(sample_count: usize) -> Self {
+        SampleIter {
+            sample_count,
+            current_count: 0,
+        }
     }
 }
