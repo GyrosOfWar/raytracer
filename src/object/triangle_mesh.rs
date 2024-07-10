@@ -178,7 +178,6 @@ impl Hittable for TriangleRef {
     }
 
     fn bounding_box(&self) -> Aabb {
-        // TODO don't rotate the bbox?
         let (v0, v1, v2) = self.vertices();
         Aabb::from_boxes(Aabb::from_points(v0, v1), Aabb::from_points(v2, v2))
     }

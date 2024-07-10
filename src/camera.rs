@@ -1,39 +1,9 @@
 use crate::random::random;
 use crate::ray::Ray;
-use crate::vec3::{self, Color, Point3, Vec3};
-#[derive(Debug)]
-pub struct CameraParams {
-    pub image_size: (usize, usize),
-    pub samples_per_pixel: usize,
-    pub look_at: Point3,
-    pub look_from: Point3,
-    pub defocus_angle: f32,
-    pub focus_dist: f32,
-    pub vertical_fov: f32,
-    pub max_depth: usize,
-    pub background_color: Color,
-}
-
-impl Default for CameraParams {
-    fn default() -> Self {
-        Self {
-            image_size: (1280, 720),
-            samples_per_pixel: 100,
-            look_at: Point3::default(),
-            look_from: Point3::new(0.0, 0.0, -1.0),
-            defocus_angle: 0.0,
-            focus_dist: 10.0,
-            vertical_fov: 90.0,
-            max_depth: 50,
-            background_color: Color::new(0.5, 0.5, 0.5),
-        }
-    }
-}
+use crate::scene::CameraSettings;
+use crate::vec3::{self, Point3, Vec3};
 
 pub struct Camera {
-    samples_per_pixel: usize,
-    image_width: usize,
-    image_height: usize,
     center: Point3,
     pixel_00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -41,36 +11,20 @@ pub struct Camera {
     defocus_disk_u: Vec3,
     defocus_disk_v: Vec3,
     defocus_angle: f32,
-    max_depth: usize,
-    background_color: Color,
 }
 
 impl Camera {
-    pub fn new(
-        CameraParams {
-            image_size,
-            samples_per_pixel,
-            look_at,
-            look_from,
-            defocus_angle,
-            focus_dist,
-            vertical_fov,
-            max_depth,
-            background_color,
-        }: CameraParams,
-    ) -> Self {
-        assert!(
-            samples_per_pixel >= 1,
-            "must take at least one sample per pixel"
-        );
+    pub fn new(settings: CameraSettings, width: u32, height: u32) -> Self {
+        let v_up = Vec3::Y;
 
-        let v_up = Vec3::new(0.0, 1.0, 0.0);
-
-        let theta = vertical_fov.to_radians();
+        // gltf FoV is already in radians
+        let theta = settings.y_fov;
         let h = (theta / 2.0).tan();
-        let viewport_height = 2.0 * h * focus_dist;
-        let (width, height) = image_size;
+        let viewport_height = 2.0 * h * settings.focus_dist;
         let viewport_width = viewport_height * (width as f32 / height as f32);
+
+        let look_from = settings.transform.transform_point3a(Point3::ZERO);
+        let look_at = settings.transform.transform_point3a(Point3::NEG_Z);
 
         // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
         let w = (look_from - look_at).normalize();
@@ -85,26 +39,22 @@ impl Camera {
         let pixel_delta_v = viewport_v / height as f32;
 
         let viewport_upper_left =
-            camera_center - (w * focus_dist) - viewport_u / 2.0 - viewport_v / 2.0;
+            camera_center - (w * settings.focus_dist) - viewport_u / 2.0 - viewport_v / 2.0;
         let pixel_00_loc = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
-        let defocus_radius = focus_dist * (defocus_angle / 2.0).to_radians().tan();
+        let defocus_radius =
+            settings.focus_dist * (settings.defocus_angle / 2.0).to_radians().tan();
         let defocus_disk_u = u * defocus_radius;
         let defocus_disk_v = v * defocus_radius;
 
         Camera {
-            image_height: height,
-            image_width: width,
             center: camera_center,
             pixel_00_loc,
             pixel_delta_u,
             pixel_delta_v,
-            samples_per_pixel,
             defocus_disk_u,
             defocus_disk_v,
-            defocus_angle,
-            max_depth,
-            background_color,
+            defocus_angle: settings.defocus_angle,
         }
     }
 

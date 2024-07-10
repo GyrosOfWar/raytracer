@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use camera::{Camera, CameraParams};
+use camera::Camera;
 use clap::Parser;
 use object::Hittable;
 use renderer::{RenderMode, Renderer};
+use scene::RenderSettings;
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
-use vec3::{Color, Point3};
 
 mod aabb;
 mod bvh;
@@ -49,22 +49,29 @@ fn main() -> Result<()> {
         .init();
 
     let args = Args::parse();
+    let width = 1280;
+    let height = 720;
 
-    let scene = scene::load_from_gltf(&args.input, args.bvh_disabled)?;
+    let render_settings = RenderSettings {
+        samples_per_pixel: 100,
+        selected_camera: 0,
+        image_width: width,
+        image_height: height,
+        max_depth: 50,
+    };
+
+    let scene = scene::load_from_gltf(&args.input, args.bvh_disabled, render_settings)?;
     info!(
         "extents of the scene: {:?}",
         scene.root_object.bounding_box()
     );
     info!("rendering with configuration {args:#?}");
 
-    let zoom = 0.01;
-
-    let camera = Camera::new(CameraParams {
-        look_from: Point3::new(2.0 * zoom, 1.5 * zoom, -3.0 * zoom),
-        background_color: Color::new(0.5, 0.5, 0.5),
-        samples_per_pixel: 100,
-        ..Default::default()
-    });
+    let camera = Camera::new(
+        scene.cameras[scene.render.selected_camera].clone(),
+        width,
+        height,
+    );
 
     if args.debug {
         if args.bvh_disabled {
@@ -76,8 +83,7 @@ fn main() -> Result<()> {
         }
     } else {
         let renderer = Renderer::new(camera, scene);
-        let image = renderer.render(args.render_mode);
-        image.save(args.output)?;
+        renderer.render_progressive(args.output, 256)?;
     }
 
     Ok(())

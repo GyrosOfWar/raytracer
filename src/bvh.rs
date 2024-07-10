@@ -11,6 +11,10 @@ use crate::object::{get_id, HitRecord, Hittable, Object};
 use crate::range::Range;
 use crate::ray::Ray;
 
+// TODOs
+//  - Experiment with different heuristics for splitting the objects (look at pbrt)
+//  - Store all nodes in a contiguous list instead of a pointer-y tree
+
 #[derive(Debug)]
 pub struct BvhNode {
     left: Arc<Object>,

@@ -2,6 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use glam::{Affine3A, Mat4};
+use gltf::camera::Projection;
 use gltf::mesh::Mode;
 use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::{debug, info};
@@ -16,18 +17,31 @@ use crate::Result;
 
 #[derive(Debug)]
 pub struct SceneDescription {
-    pub image_width: u32,
-    pub image_height: u32,
     pub root_object: Object,
     pub cameras: Vec<CameraSettings>,
-    pub selected_camera: usize,
     pub background_color: Color,
+    pub render: RenderSettings,
+}
+
+#[derive(Debug)]
+pub struct RenderSettings {
+    pub image_width: u32,
+    pub image_height: u32,
+    pub selected_camera: usize,
     pub max_depth: u32,
     pub samples_per_pixel: u32,
 }
 
-#[derive(Debug)]
-pub struct CameraSettings {}
+#[derive(Debug, Clone)]
+pub struct CameraSettings {
+    pub name: Option<String>,
+    pub y_fov: f32,
+    pub z_near: f32,
+    pub z_far: f32,
+    pub transform: Affine3A,
+    pub focus_dist: f32,
+    pub defocus_angle: f32,
+}
 
 fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage> {
     use gltf::image::Format;
@@ -137,10 +151,16 @@ fn read_mesh(
     ))
 }
 
-pub fn load_from_gltf(path: impl AsRef<Path>, bvh_disabled: bool) -> Result<SceneDescription> {
+pub fn load_from_gltf(
+    path: impl AsRef<Path>,
+    bvh_disabled: bool,
+    render_settings: RenderSettings,
+) -> Result<SceneDescription> {
     let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
+    let mut cameras = vec![];
 
+    // TODO this would have to walk the entire scene graph
     for node in gltf.nodes() {
         let matrix = Mat4::from_cols_array_2d(&node.transform().matrix());
         let transform = Affine3A::from_mat4(matrix);
@@ -148,6 +168,20 @@ pub fn load_from_gltf(path: impl AsRef<Path>, bvh_disabled: bool) -> Result<Scen
         if let Some(mesh) = node.mesh() {
             let mesh = read_mesh(&mesh, &buffers, &images, transform)?;
             meshes.push(mesh);
+        }
+
+        if let Some(camera) = node.camera() {
+            if let Projection::Perspective(projection) = camera.projection() {
+                cameras.push(CameraSettings {
+                    name: camera.name().map(From::from),
+                    y_fov: projection.yfov(),
+                    z_near: projection.znear(),
+                    z_far: projection.zfar().unwrap_or(f32::INFINITY),
+                    transform,
+                    focus_dist: 10.0,
+                    defocus_angle: 0.0,
+                });
+            }
         }
     }
 
@@ -163,14 +197,12 @@ pub fn load_from_gltf(path: impl AsRef<Path>, bvh_disabled: bool) -> Result<Scen
         Object::BvhNode(BvhNode::from(objects))
     };
 
+    info!("cameras: {cameras:#?}");
+
     Ok(SceneDescription {
         root_object,
-        image_width: 1280,
-        image_height: 720,
-        max_depth: 50,
-        cameras: vec![],
-        samples_per_pixel: 100,
-        selected_camera: 0,
-        background_color: Vec3::new(0.5, 0.5, 0.5),
+        cameras,
+        background_color: Vec3::new(0.7, 0.7, 0.7),
+        render: render_settings,
     })
 }
