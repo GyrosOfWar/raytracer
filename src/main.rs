@@ -26,7 +26,7 @@ pub type Result<T> = color_eyre::Result<T>;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[clap(short, long)]
+    #[clap(long)]
     pub bvh_disabled: bool,
 
     #[clap(short, long, default_value = "parallel")]
@@ -50,7 +50,7 @@ fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    let scene = scene::load_from_gltf(&args.input)?;
+    let scene = scene::load_from_gltf(&args.input, args.bvh_disabled)?;
     info!(
         "extents of the scene: {:?}",
         scene.root_object.bounding_box()

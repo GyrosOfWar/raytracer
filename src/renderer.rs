@@ -33,7 +33,7 @@ impl Renderer {
 
     fn ray_color(&self, ray: &Ray, depth: u32, world: &impl Hittable) -> Color {
         if depth == 0 {
-            return Vec3::zeros();
+            return Vec3::ZERO;
         }
 
         let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
@@ -46,11 +46,8 @@ impl Renderer {
                         attenuation,
                         scattered,
                     }) => {
-                        let scattered_color = attenuation.component_mul(&self.ray_color(
-                            &scattered,
-                            depth - 1,
-                            world,
-                        ));
+                        let scattered_color =
+                            attenuation * self.ray_color(&scattered, depth - 1, world);
                         emitted_color + scattered_color
                     }
                     None => emitted_color,
@@ -70,7 +67,7 @@ impl Renderer {
             .flat_map(|index| {
                 let i = index % self.scene.image_width;
                 let j = index / self.scene.image_width;
-                let mut color = Vec3::zeros();
+                let mut color = Vec3::ZERO;
                 for _ in 0..self.scene.samples_per_pixel {
                     let ray = self.camera.get_ray(i, j);
                     color += self.ray_color(&ray, self.scene.max_depth, world);
@@ -93,7 +90,7 @@ impl Renderer {
                 for index in chunk {
                     let i = index % self.scene.image_width;
                     let j = index / self.scene.image_width;
-                    let mut color = Vec3::zeros();
+                    let mut color = Vec3::ZERO;
                     for _ in 0..self.scene.samples_per_pixel {
                         let ray = self.camera.get_ray(i, j);
                         color += self.ray_color(&ray, self.scene.max_depth, world);
@@ -112,7 +109,7 @@ impl Renderer {
             Vec::with_capacity((self.scene.image_height * self.scene.image_width * 3) as usize);
         for j in 0..self.scene.image_height {
             for i in 0..self.scene.image_width {
-                let mut color = Vec3::zeros();
+                let mut color = Vec3::ZERO;
                 for _ in 0..self.scene.samples_per_pixel {
                     let ray = self.camera.get_ray(i, j);
                     color += self.ray_color(&ray, self.scene.max_depth, world);

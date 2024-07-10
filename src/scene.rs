@@ -1,15 +1,15 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use glam::{Affine3A, Mat4};
 use gltf::mesh::Mode;
 use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
-use nalgebra::{Matrix4, Projective3};
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::bvh::BvhNode;
 use crate::material::helpers::{lambertian, lambertian_texture};
 use crate::object::triangle_mesh::TriangleMesh;
-use crate::object::Object;
+use crate::object::{Object, World};
 use crate::texture::{Image, Texture, TextureCoordinates};
 use crate::vec3::{Color, Point3, Vec3};
 use crate::Result;
@@ -62,7 +62,7 @@ fn read_mesh(
     source_mesh: &gltf::Mesh,
     buffers: &[gltf::buffer::Data],
     images: &[gltf::image::Data],
-    transform: Projective3<f32>,
+    transform: Affine3A,
 ) -> Result<TriangleMesh> {
     info!("loading mesh {:?}", source_mesh.name());
     let mut vertices = Vec::new();
@@ -88,8 +88,16 @@ fn read_mesh(
     };
 
     if let Some(positions) = reader.read_positions() {
-        vertices.extend(positions.map(|p| Point3::from(p)));
+        let positions: Vec<_> = positions.collect();
+        debug!("untrasformed vertices: {:#?}", &positions);
+        vertices.extend(
+            positions
+                .into_iter()
+                .map(|p| transform.transform_point3a(Point3::from(p))),
+        );
     }
+
+    debug!("transformed vertices {:#?}", &vertices[0..100]);
 
     if let Some(indices) = reader.read_indices() {
         let indices: Vec<_> = indices.into_u32().collect();
@@ -126,17 +134,16 @@ fn read_mesh(
         normals,
         uv,
         material,
-        transform,
     ))
 }
 
-pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<SceneDescription> {
+pub fn load_from_gltf(path: impl AsRef<Path>, bvh_disabled: bool) -> Result<SceneDescription> {
     let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
 
     for node in gltf.nodes() {
-        let matrix = Matrix4::from(node.transform().matrix());
-        let transform = Projective3::from_matrix_unchecked(matrix);
+        let matrix = Mat4::from_cols_array_2d(&node.transform().matrix());
+        let transform = Affine3A::from_mat4(matrix);
 
         if let Some(mesh) = node.mesh() {
             let mesh = read_mesh(&mesh, &buffers, &images, transform)?;
@@ -150,8 +157,14 @@ pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<SceneDescription> {
         .map(|f| Object::TriangleRef(f))
         .collect();
 
+    let root_object = if bvh_disabled {
+        Object::World(World::new(objects))
+    } else {
+        Object::BvhNode(BvhNode::from(objects))
+    };
+
     Ok(SceneDescription {
-        root_object: Object::BvhNode(BvhNode::from(objects)),
+        root_object,
         image_width: 1280,
         image_height: 720,
         max_depth: 50,

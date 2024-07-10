@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use builders::default_normal;
-use nalgebra::Projective3;
 
 use super::{HitRecord, Hittable};
 use crate::aabb::Aabb;
@@ -13,49 +12,36 @@ use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
 struct TriangleMeshData {
-    vertices: Box<[Point3<f32>]>,
+    vertices: Box<[Point3]>,
     face_indices: Box<[(u32, u32, u32)]>,
-    normals: Box<[Vec3<f32>]>,
+    normals: Box<[Vec3]>,
     uv: Box<[TextureCoordinates]>,
     material: Arc<Material>,
-    transform: Projective3<f32>,
-    normal_transform: Projective3<f32>,
 }
 
 impl TriangleMeshData {
     pub fn new(
-        vertices: Vec<Point3<f32>>,
+        vertices: Vec<Point3>,
         face_indices: Vec<(u32, u32, u32)>,
-        normals: Vec<Vec3<f32>>,
+        normals: Vec<Vec3>,
         uv: Vec<TextureCoordinates>,
         material: Arc<Material>,
-        transform: Projective3<f32>,
     ) -> Self {
-        let normal_transform = transform
-            .matrix()
-            .transpose()
-            .try_inverse()
-            .expect("transform must be invertible");
-
         TriangleMeshData {
             vertices: vertices.into_boxed_slice(),
             face_indices: face_indices.into_boxed_slice(),
             normals: normals.into_boxed_slice(),
             uv: uv.into_boxed_slice(),
             material,
-            transform,
-            normal_transform: Projective3::from_matrix_unchecked(normal_transform),
         }
     }
 
-    pub fn vertex(&self, index: u32) -> Point3<f32> {
-        self.transform * self.vertices[index as usize]
+    pub fn vertex(&self, index: u32) -> Point3 {
+        self.vertices[index as usize]
     }
 
-    pub fn normal(&self, index: u32) -> Option<Vec3<f32>> {
-        self.normals
-            .get(index as usize)
-            .map(|n| self.normal_transform * n)
+    pub fn normal(&self, index: u32) -> Option<&Vec3> {
+        self.normals.get(index as usize)
     }
 
     pub fn uv(&self, index: u32) -> TextureCoordinates {
@@ -70,14 +56,13 @@ pub struct TriangleMesh {
 
 impl TriangleMesh {
     pub fn new(
-        vertices: Vec<Point3<f32>>,
+        vertices: Vec<Point3>,
         face_indices: Vec<(u32, u32, u32)>,
-        normals: Vec<Vec3<f32>>,
+        normals: Vec<Vec3>,
         uv: Vec<TextureCoordinates>,
         material: Arc<Material>,
-        transform: Projective3<f32>,
     ) -> Self {
-        let data = TriangleMeshData::new(vertices, face_indices, normals, uv, material, transform);
+        let data = TriangleMeshData::new(vertices, face_indices, normals, uv, material);
         TriangleMesh {
             data: Arc::new(data),
         }
@@ -107,7 +92,7 @@ pub struct TriangleRef {
 }
 
 impl TriangleRef {
-    pub fn vertices(&self) -> (Point3<f32>, Point3<f32>, Point3<f32>) {
+    pub fn vertices(&self) -> (Point3, Point3, Point3) {
         let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
         (
             self.mesh.vertex(v0),
@@ -116,14 +101,14 @@ impl TriangleRef {
         )
     }
 
-    pub fn normals(&self) -> Option<(Vec3<f32>, Vec3<f32>, Vec3<f32>)> {
+    pub fn normals(&self) -> Option<(Vec3, Vec3, Vec3)> {
         let (v0, v1, v2) = self.mesh.face_indices[self.index as usize];
         match (
             self.mesh.normal(v0),
             self.mesh.normal(v1),
             self.mesh.normal(v2),
         ) {
-            (Some(a), Some(b), Some(c)) => Some((a, b, c)),
+            (Some(a), Some(b), Some(c)) => Some((*a, *b, *c)),
             _ => None,
         }
     }
@@ -148,28 +133,28 @@ impl Hittable for TriangleRef {
         // Möller-Trumbore algorithm
         let e1 = v1 - v0;
         let e2 = v2 - v0;
-        let p = ray.direction.cross(&e2);
-        let det = e1.dot(&p);
+        let p = ray.direction.cross(e2);
+        let det = e1.dot(p);
 
-        if det.abs() < 1e-6 {
+        if det.abs() < f32::EPSILON {
             return None;
         }
 
         let inv_det = 1.0 / det;
         let t = ray.origin - v0;
-        let u = t.dot(&p) * inv_det;
+        let u = t.dot(p) * inv_det;
 
         if u < 0.0 || u > 1.0 {
             return None;
         }
 
-        let q = t.cross(&e1);
-        let v = ray.direction.dot(&q) * inv_det;
+        let q = t.cross(e1);
+        let v = ray.direction.dot(q) * inv_det;
         if v < 0.0 || u + v > 1.0 {
             return None;
         }
 
-        let t = e2.dot(&q) * inv_det;
+        let t = e2.dot(q) * inv_det;
         if !hit_range.contains(t) {
             return None;
         }
@@ -206,25 +191,23 @@ impl Hittable for TriangleRef {
 pub mod builders {
     use std::sync::Arc;
 
-    use nalgebra::Projective3;
-
     use super::TriangleMesh;
     use crate::material::Material;
     use crate::object::Object;
     use crate::vec3::{Point3, Vec3};
 
-    pub fn default_normal(v0: Point3<f32>, v1: Point3<f32>, v2: Point3<f32>) -> Vec3<f32> {
+    pub fn default_normal(v0: Point3, v1: Point3, v2: Point3) -> Vec3 {
         let e1 = v1 - v0;
         let e2 = v2 - v0;
 
-        e1.cross(&e2).normalize()
+        e1.cross(e2).normalize()
     }
 
     pub fn quad(
-        p1: Point3<f32>,
-        p2: Point3<f32>,
-        p3: Point3<f32>,
-        p4: Point3<f32>,
+        p1: Point3,
+        p2: Point3,
+        p3: Point3,
+        p4: Point3,
         material: Arc<Material>,
     ) -> Vec<Object> {
         let mesh = TriangleMesh::new(
@@ -233,7 +216,6 @@ pub mod builders {
             vec![],
             vec![],
             material,
-            Projective3::identity(),
         );
 
         mesh.faces().map(Object::TriangleRef).collect()

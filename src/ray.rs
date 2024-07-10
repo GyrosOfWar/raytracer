@@ -2,16 +2,16 @@ use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
 pub struct Ray {
-    pub origin: Point3<f32>,
-    pub direction: Vec3<f32>,
+    pub origin: Point3,
+    pub direction: Vec3,
 }
 
 impl Ray {
-    pub fn new(origin: Point3<f32>, direction: Vec3<f32>) -> Self {
+    pub fn new(origin: Point3, direction: Vec3) -> Self {
         Ray { origin, direction }
     }
 
-    pub fn evaluate(&self, t: f32) -> Point3<f32> {
+    pub fn evaluate(&self, t: f32) -> Point3 {
         self.origin + (self.direction * t)
     }
 }

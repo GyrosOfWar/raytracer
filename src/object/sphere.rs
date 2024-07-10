@@ -10,7 +10,7 @@ use crate::vec3::{Point3, Vec3};
 
 #[derive(Debug)]
 pub struct Sphere {
-    pub center: Point3<f32>,
+    pub center: Point3,
     pub radius: f32,
     pub material: Arc<Material>,
     bounding_box: Aabb,
@@ -18,7 +18,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(center: Point3<f32>, radius: f32, material: Arc<Material>) -> Self {
+    pub fn new(center: Point3, radius: f32, material: Arc<Material>) -> Self {
         let radius_vec = Vec3::new(radius, radius, radius);
         let bounding_box = Aabb::from_points(center - radius_vec, center + radius_vec);
         let id = get_id();
@@ -39,7 +39,7 @@ impl Sphere {
 ///     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
 ///     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
 ///     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
-fn get_uv(p: Point3<f32>) -> TextureCoordinates {
+fn get_uv(p: Point3) -> TextureCoordinates {
     use std::f32::consts::PI;
 
     let theta = (-p.y).acos();
@@ -54,9 +54,9 @@ fn get_uv(p: Point3<f32>) -> TextureCoordinates {
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
         let oc = self.center - ray.origin;
-        let a = ray.direction.norm_squared();
-        let h = ray.direction.dot(&oc);
-        let c = oc.norm_squared() - self.radius * self.radius;
+        let a = ray.direction.length_squared();
+        let h = ray.direction.dot(oc);
+        let c = oc.length_squared() - self.radius * self.radius;
         let discriminant = h * h - a * c;
 
         if discriminant < 0.0 {

@@ -1,7 +1,7 @@
 use crate::object::Hittable;
 use crate::range::Range;
 use crate::ray::Ray;
-use crate::vec3::{Axis, Point3, Point3Ext, Vec3Ext};
+use crate::vec3::{Axis, Point3, Vec3Ext};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Aabb {
@@ -27,7 +27,7 @@ impl Aabb {
         Aabb { x, y, z }.pad_to_minimums()
     }
 
-    pub fn from_points(a: Point3<f32>, b: Point3<f32>) -> Self {
+    pub fn from_points(a: Point3, b: Point3) -> Self {
         let x = if a.x <= b.x {
             Range::new(a.x, b.x)
         } else {

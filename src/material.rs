@@ -27,7 +27,7 @@ impl ScatterResult {
 pub trait Scatterable {
     fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult>;
 
-    fn emit(&self, _: TextureCoordinates, _: Point3<f32>) -> Color {
+    fn emit(&self, _: TextureCoordinates, _: Point3) -> Color {
         // default material does not emit anything
         Vec3::default()
     }
@@ -82,7 +82,7 @@ impl Scatterable for Dielectric {
         };
 
         let unit_direction = ray.direction.normalize();
-        let cos_theta = (-unit_direction).dot(&hit.normal).min(1.0);
+        let cos_theta = (-unit_direction).dot(hit.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = ri * sin_theta > 1.0;
@@ -116,7 +116,7 @@ impl Scatterable for DiffuseLight {
         None
     }
 
-    fn emit(&self, uv: TextureCoordinates, point: Point3<f32>) -> Color {
+    fn emit(&self, uv: TextureCoordinates, point: Point3) -> Color {
         self.texture.value_at(uv, point)
     }
 }
@@ -170,7 +170,7 @@ pub mod helpers {
     use crate::texture::{SolidColor, Texture};
     use crate::vec3::Vec3;
 
-    pub fn lambertian(albedo: Vec3<f32>) -> Arc<Material> {
+    pub fn lambertian(albedo: Vec3) -> Arc<Material> {
         Arc::new(Material::Lambertian(Lambertian {
             texture: Arc::new(Texture::SolidColor(SolidColor { albedo })),
         }))

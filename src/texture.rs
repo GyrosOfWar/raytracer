@@ -36,7 +36,7 @@ impl TextureCoordinates {
 
 #[enum_dispatch]
 pub trait HasColorValue: Send + Sync {
-    fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Color;
+    fn value_at(&self, coords: TextureCoordinates, p: Point3) -> Color;
 }
 
 #[derive(Debug)]
@@ -45,7 +45,7 @@ pub struct SolidColor {
 }
 
 impl HasColorValue for SolidColor {
-    fn value_at(&self, _: TextureCoordinates, _: Point3<f32>) -> Color {
+    fn value_at(&self, _: TextureCoordinates, _: Point3) -> Color {
         self.albedo
     }
 }
@@ -68,7 +68,7 @@ impl Checkerboard {
 }
 
 impl HasColorValue for Checkerboard {
-    fn value_at(&self, coords: TextureCoordinates, p: Point3<f32>) -> Color {
+    fn value_at(&self, coords: TextureCoordinates, p: Point3) -> Color {
         let x = (self.inv_scale * p.x).floor() as i64;
         let y = (self.inv_scale * p.y).floor() as i64;
         let z = (self.inv_scale * p.z).floor() as i64;
@@ -113,7 +113,7 @@ impl From<DynamicImage> for Image {
 }
 
 impl HasColorValue for Image {
-    fn value_at(&self, coords: TextureCoordinates, _: Point3<f32>) -> Color {
+    fn value_at(&self, coords: TextureCoordinates, _: Point3) -> Color {
         if self.image.height() == 0 {
             return Vec3::new(0.0, 1.0, 1.0);
         }

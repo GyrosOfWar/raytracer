@@ -26,8 +26,8 @@ pub fn get_id() -> u32 {
 
 #[derive(Debug)]
 pub struct HitRecord {
-    pub point: Point3<f32>,
-    pub normal: Vec3<f32>,
+    pub point: Point3,
+    pub normal: Vec3,
     pub distance: f32,
     pub front_facing: bool,
     pub material: Arc<Material>,
@@ -37,13 +37,13 @@ pub struct HitRecord {
 impl HitRecord {
     pub fn new(
         ray: &Ray,
-        outward_normal: Vec3<f32>,
-        point: Point3<f32>,
+        outward_normal: Vec3,
+        point: Point3,
         distance: f32,
         material: Arc<Material>,
         tex_coords: TextureCoordinates,
     ) -> Self {
-        let front_facing = ray.direction.dot(&outward_normal) < 0.0;
+        let front_facing = ray.direction.dot(outward_normal) < 0.0;
         let normal = if front_facing {
             outward_normal
         } else {

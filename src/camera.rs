@@ -5,8 +5,8 @@ use crate::vec3::{self, Color, Point3, Vec3};
 pub struct CameraParams {
     pub image_size: (usize, usize),
     pub samples_per_pixel: usize,
-    pub look_at: Point3<f32>,
-    pub look_from: Point3<f32>,
+    pub look_at: Point3,
+    pub look_from: Point3,
     pub defocus_angle: f32,
     pub focus_dist: f32,
     pub vertical_fov: f32,
@@ -34,12 +34,12 @@ pub struct Camera {
     samples_per_pixel: usize,
     image_width: usize,
     image_height: usize,
-    center: Point3<f32>,
-    pixel_00_loc: Point3<f32>,
-    pixel_delta_u: Vec3<f32>,
-    pixel_delta_v: Vec3<f32>,
-    defocus_disk_u: Vec3<f32>,
-    defocus_disk_v: Vec3<f32>,
+    center: Point3,
+    pixel_00_loc: Point3,
+    pixel_delta_u: Vec3,
+    pixel_delta_v: Vec3,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
     defocus_angle: f32,
     max_depth: usize,
     background_color: Color,
@@ -74,8 +74,8 @@ impl Camera {
 
         // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
         let w = (look_from - look_at).normalize();
-        let u = v_up.cross(&w).normalize();
-        let v = w.cross(&u);
+        let u = v_up.cross(w).normalize();
+        let v = w.cross(u);
 
         let camera_center = look_from;
         let viewport_u = u * viewport_width;
@@ -127,13 +127,13 @@ impl Camera {
     }
 
     /// Returns a random point in the camera defocus disk.
-    fn defocus_disk_sample(&self) -> Point3<f32> {
+    fn defocus_disk_sample(&self) -> Point3 {
         let p = vec3::random::gen_unit_disk();
         self.center + (self.defocus_disk_u * p.x) + (self.defocus_disk_v * p.y)
     }
 
     // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
-    fn sample_square(&self) -> Vec3<f32> {
+    fn sample_square(&self) -> Vec3 {
         Vec3::new(random() - 0.5, random() - 0.5, 0.0)
     }
 }
