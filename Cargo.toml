@@ -12,7 +12,10 @@ gltf = { version = "1.4.1", features = [
     "KHR_texture_transform",
     "KHR_materials_emissive_strength",
 ] }
-image = "0.25.1"
+image = { version = "0.25.1", default-features = false, features = [
+    "jpeg",
+    "png",
+] }
 indicatif = { version = "0.17.8", features = ["rayon"] }
 libc = "0.2.155"
 num-traits = "0.2.19"

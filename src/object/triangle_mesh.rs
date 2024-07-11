@@ -8,6 +8,13 @@ use crate::ray::Ray;
 use crate::texture::TextureCoordinates;
 use crate::vec3::{Point3, Vec3};
 
+#[derive(Debug, Clone)]
+enum TriangleMeshMaterial {
+    Single(Arc<Material>),
+    // TODO
+    Multiple,
+}
+
 #[derive(Debug)]
 struct TriangleMeshData {
     vertices: Box<[Point3]>,

@@ -109,6 +109,7 @@ fn read_mesh(
         .nth(0)
         .expect("mesh must have at least one triangles primitive");
 
+    // for primitive in source_mesh.primitives() {
     let reader = primitive.reader(|b| Some(&buffers[b.index()]));
     let material = primitive.material();
     let emissive_factor = Vec3::from(material.emissive_factor());
@@ -176,7 +177,7 @@ fn read_mesh(
         uv.len(),
     );
     info!("assigned material {material:#?}");
-
+    // }
     Ok(TriangleMesh::new(
         vertices,
         face_indices,

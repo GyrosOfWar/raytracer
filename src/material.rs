@@ -8,7 +8,7 @@ use crate::random::{self, random};
 use crate::ray::Ray;
 use crate::texture::{HasColorValue, SolidColor, Texture, TextureCoordinates};
 use crate::vec3::random::gen_unit_vector;
-use crate::vec3::{self, reflect, refract, Color, Point3, Vec3, Vec3Ext};
+use crate::vec3::{self, reflect, refract, Color, Point3, Vec3};
 
 pub struct ScatterResult {
     pub attenuation: Color,
