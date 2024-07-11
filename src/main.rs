@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::path::PathBuf;
 
 use camera::Camera;
@@ -20,6 +21,7 @@ mod ray;
 mod renderer;
 mod scene;
 mod texture;
+mod util;
 mod vec3;
 
 #[global_allocator]
@@ -85,7 +87,7 @@ fn main() -> Result<()> {
     let camera = Camera::new(scene.camera(selected_camera), args.width, args.height);
 
     let renderer = Renderer::new(camera, scene);
-    renderer.render_progressive(args.output, 256)?;
+    renderer.render_progressive(args.output, 128)?;
     // let image = renderer.render(256);
     // image.save(&args.output)?;
 

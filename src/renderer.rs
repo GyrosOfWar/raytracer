@@ -12,6 +12,7 @@ use crate::object::Hittable;
 use crate::range::Range;
 use crate::ray::Ray;
 use crate::scene::SceneDescription;
+use crate::util::{measure, try_measure};
 use crate::vec3::{Color, Vec3};
 use crate::Result;
 
@@ -111,7 +112,8 @@ impl Renderer {
         let chunk_size = square_size * square_size;
 
         // TODO variable step size like in pbrt
-        for current_sample in (1..=sample_count).progress_count(sample_count as u64) {
+        for current_sample in 1..=sample_count {
+            let sample_start = Instant::now();
             let sample_scale = 1.0 / current_sample as f32;
             let chunks: Vec<_> = (0..pixel_count).collect();
             let result: Vec<_> = chunks
@@ -134,14 +136,20 @@ impl Renderer {
                 .map(linear_to_gamma)
                 .collect();
 
-            for (idx, pixel_component) in result.iter().enumerate() {
-                aggregate_image[idx] += *pixel_component;
-            }
+            try_measure("aggregating and saving image", || {
+                for (idx, pixel_component) in result.iter().enumerate() {
+                    aggregate_image[idx] += *pixel_component;
+                }
 
-            let intermediate_image: Vec<_> =
-                aggregate_image.iter().map(|c| c * sample_scale).collect();
-            let image = self.pixels_to_image(intermediate_image);
-            image.save(&destination)?;
+                let intermediate_image: Vec<_> =
+                    aggregate_image.iter().map(|c| c * sample_scale).collect();
+                let image = self.pixels_to_image(intermediate_image);
+                image.save(&destination)?;
+                Ok(())
+            })?;
+
+            let elapsed = sample_start.elapsed();
+            info!("Sample {current_sample} took {elapsed:?}");
         }
         let elapsed = start.elapsed();
         info!("Rendering took {elapsed:?}");

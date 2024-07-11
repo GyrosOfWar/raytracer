@@ -231,10 +231,10 @@ pub fn load_from_gltf(
         Object::World(World::new(objects))
     } else {
         let node = BvhNode::from(objects);
-        let list = FlatBvhTree::from_tree(node);
-        info!("{:#?}", list);
-        todo!()
-        // Object::BvhNode(node)
+        // let list = FlatBvhTree::from_tree(node);
+        // info!("{:#?}", list);
+        // todo!()
+        Object::BvhNode(node)
     };
 
     debug!("cameras: {cameras:#?}");
