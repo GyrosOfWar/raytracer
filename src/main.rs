@@ -1,12 +1,12 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use camera::Camera;
 use clap::Parser;
+use mimalloc::MiMalloc;
 use object::Hittable;
 use renderer::Renderer;
 use scene::RenderSettings;
-use tracing::{error, info};
+use tracing::info;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 mod aabb;
@@ -21,6 +21,9 @@ mod renderer;
 mod scene;
 mod texture;
 mod vec3;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 pub type Result<T> = color_eyre::Result<T>;
 
@@ -81,20 +84,10 @@ fn main() -> Result<()> {
 
     let camera = Camera::new(scene.camera(selected_camera), args.width, args.height);
 
-    if args.debug {
-        if args.bvh_disabled {
-            error!("BVH is disabled, nothing to show.");
-        } else {
-            let root = Arc::new(scene.root_object);
-            bvh::debug::validate_tree(root.clone());
-            bvh::debug::print_tree(root, 0);
-        }
-    } else {
-        let renderer = Renderer::new(camera, scene);
-        renderer.render_progressive(args.output, 256)?;
-        // let image = renderer.render(256);
-        // image.save(&args.output)?;
-    }
+    let renderer = Renderer::new(camera, scene);
+    renderer.render_progressive(args.output, 256)?;
+    // let image = renderer.render(256);
+    // image.save(&args.output)?;
 
     Ok(())
 }

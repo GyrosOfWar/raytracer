@@ -7,7 +7,7 @@ use gltf::mesh::Mode;
 use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::{debug, info};
 
-use crate::bvh::BvhNode;
+use crate::bvh::{BvhNode, FlatBvhTree};
 use crate::material::{DiffuseLight, Material};
 use crate::object::triangle_mesh::TriangleMesh;
 use crate::object::{Object, World};
@@ -230,7 +230,11 @@ pub fn load_from_gltf(
     let root_object = if bvh_disabled {
         Object::World(World::new(objects))
     } else {
-        Object::BvhNode(BvhNode::from(objects))
+        let node = BvhNode::from(objects);
+        let list = FlatBvhTree::from_tree(node);
+        info!("{:#?}", list);
+        todo!()
+        // Object::BvhNode(node)
     };
 
     debug!("cameras: {cameras:#?}");

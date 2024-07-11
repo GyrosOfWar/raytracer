@@ -1,5 +1,4 @@
 use std::cmp::Reverse;
-use std::sync::Arc;
 use std::time::Instant;
 
 use ordered_float::OrderedFloat;
@@ -16,15 +15,103 @@ use crate::ray::Ray;
 //  - Store all nodes in a contiguous list instead of a pointer-y tree
 
 #[derive(Debug)]
+pub enum FlatBvhNode {
+    Leaf {
+        object: Object,
+        bbox: Aabb,
+    },
+    Interior {
+        left: Option<usize>,
+        right: Option<usize>,
+        bbox: Aabb,
+    },
+}
+
+#[derive(Debug)]
+pub struct FlatBvhTree {
+    nodes: Vec<FlatBvhNode>,
+}
+
+fn handle_node(node: Option<Box<Object>>, current_index: &mut usize) -> Option<FlatBvhNode> {
+    if let Some(node) = node {
+        match *node {
+            Object::BvhNode(node) => {
+                let bbox = node.bounding_box();
+                let left = handle_node(node.left, current_index);
+                let left = left.map(|_| {
+                    *current_index += 1;
+                    *current_index
+                });
+                let right = handle_node(node.right, current_index);
+                let right = right.map(|_| {
+                    *current_index += 1;
+                    *current_index
+                });
+                Some(FlatBvhNode::Interior { right, left, bbox })
+            }
+            object => {
+                *current_index += 1;
+                Some(FlatBvhNode::Leaf {
+                    bbox: object.bounding_box(),
+                    object,
+                })
+            }
+        }
+    } else {
+        None
+    }
+}
+
+fn flatten_tree(node: BvhNode, node_list: &mut Vec<FlatBvhNode>, current_index: &mut usize) {
+    if let Some(node) = handle_node(node.left, current_index) {
+        node_list.push(node);
+    }
+
+    if let Some(node) = handle_node(node.right, current_index) {
+        node_list.push(node);
+    }
+}
+
+impl FlatBvhTree {
+    pub fn from_tree(root: BvhNode) -> Self {
+        let mut index = 0;
+        let mut nodes = vec![];
+        flatten_tree(root, &mut nodes, &mut index);
+
+        FlatBvhTree { nodes }
+    }
+}
+
+impl Hittable for FlatBvhTree {
+    fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
+        todo!()
+    }
+
+    fn bounding_box(&self) -> Aabb {
+        self.nodes
+            .get(0)
+            .map(|node| match node {
+                FlatBvhNode::Leaf { bbox, .. } => *bbox,
+                FlatBvhNode::Interior { bbox, .. } => *bbox,
+            })
+            .unwrap_or(Aabb::EMPTY)
+    }
+
+    fn id(&self) -> u32 {
+        0
+    }
+}
+
+#[derive(Debug)]
 pub struct BvhNode {
-    left: Arc<Object>,
-    right: Arc<Object>,
+    left: Option<Box<Object>>,
+    right: Option<Box<Object>>,
     bbox: Aabb,
     id: u32,
 }
 
 impl BvhNode {
-    pub fn new(left: Arc<Object>, right: Arc<Object>, bbox: Aabb) -> Self {
+    pub fn new(left: Option<Box<Object>>, right: Option<Box<Object>>, bbox: Aabb) -> Self {
         let id = get_id();
 
         Self {
@@ -50,14 +137,14 @@ impl BvhNode {
 
         match len {
             1 => {
-                let object = Arc::new(objects.remove(0));
-                BvhNode::new(object.clone(), object, bbox)
+                let object = objects.remove(0);
+                BvhNode::new(Some(Box::new(object)), None, bbox)
             }
             2 => {
-                let left = Arc::new(objects.remove(0));
-                let right = Arc::new(objects.remove(0));
+                let left = Box::new(objects.remove(0));
+                let right = Box::new(objects.remove(0));
 
-                BvhNode::new(left, right, bbox)
+                BvhNode::new(Some(left), Some(right), bbox)
             }
             _ => {
                 objects.par_sort_unstable_by_key(|o| {
@@ -74,8 +161,8 @@ impl BvhNode {
                 );
 
                 BvhNode::new(
-                    Arc::new(Object::BvhNode(left)),
-                    Arc::new(Object::BvhNode(right)),
+                    Some(Box::new(Object::BvhNode(left))),
+                    Some(Box::new(Object::BvhNode(right))),
                     bbox,
                 )
             }
@@ -89,18 +176,25 @@ impl Hittable for BvhNode {
             return None;
         }
 
-        let hit_left = self.left.hit(ray, hit_range);
-        let range = Range::new(
-            hit_range.min,
-            hit_left
-                .as_ref()
-                .map(|h| h.distance)
-                .unwrap_or(hit_range.max),
-        );
+        match (self.left.as_ref(), self.right.as_ref()) {
+            (Some(left), Some(right)) => {
+                let hit_left = left.hit(ray, hit_range);
+                let range = Range::new(
+                    hit_range.min,
+                    hit_left
+                        .as_ref()
+                        .map(|h| h.distance)
+                        .unwrap_or(hit_range.max),
+                );
 
-        let hit_right = self.right.hit(ray, range);
+                let hit_right = right.hit(ray, range);
 
-        hit_right.or(hit_left)
+                hit_right.or(hit_left)
+            }
+            (Some(left), None) => left.hit(ray, hit_range),
+            (None, Some(right)) => right.hit(ray, hit_range),
+            (None, None) => None,
+        }
     }
 
     fn bounding_box(&self) -> Aabb {
@@ -130,66 +224,5 @@ pub mod debug {
             "x = {} {}, y = {} {}, z={} {}",
             bbox.x.min, bbox.x.max, bbox.y.min, bbox.y.max, bbox.z.min, bbox.z.max,
         )
-    }
-
-    pub fn print_tree(object: Arc<Object>, level: usize) {
-        let indent = indent(level);
-        match object.as_ref() {
-            Object::Sphere(s) => {
-                println!(
-                    "{indent}- Sphere (id = {}, bbox = {}) ",
-                    s.id(),
-                    bbox_to_string(&s.bounding_box())
-                );
-            }
-            Object::BvhNode(node) => {
-                println!(
-                    "{indent}- Node (id = {}, bbox = {})",
-                    node.id(),
-                    bbox_to_string(&node.bounding_box())
-                );
-                print_tree(node.left.clone(), level + 1);
-                print_tree(node.right.clone(), level + 1);
-            }
-            Object::TriangleRef(t) => {
-                println!(
-                    "{indent}- TriangleRef (id = {}, bbox = {})",
-                    t.id(),
-                    bbox_to_string(&t.bounding_box())
-                );
-            }
-            Object::World(_) => panic!("World should not be in the tree"),
-        }
-    }
-
-    pub fn validate_tree(object: Arc<Object>) -> bool {
-        // make sure the bounding box contains all the children
-        let bbox = object.bounding_box();
-        let mut valid = true;
-        match object.as_ref() {
-            Object::Sphere(s) => {
-                if !bbox.contains(&s.bounding_box()) {
-                    error!("Sphere {} not contained in parent", s.id());
-                    valid = false;
-                }
-            }
-            Object::BvhNode(node) => {
-                if !bbox.contains(&node.bounding_box()) {
-                    error!("Node {} not contained in parent", node.id());
-                    valid = false;
-                }
-                valid &= validate_tree(node.left.clone());
-                valid &= validate_tree(node.right.clone());
-            }
-            Object::TriangleRef(t) => {
-                if !bbox.contains(&t.bounding_box()) {
-                    error!("TriangleRef {} not contained in parent", t.id());
-                    valid = false;
-                }
-            }
-            Object::World(_) => panic!("World should not be in the tree"),
-        }
-
-        valid
     }
 }

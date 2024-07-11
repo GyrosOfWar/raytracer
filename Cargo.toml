@@ -18,6 +18,7 @@ image = { version = "0.25.1", default-features = false, features = [
 ] }
 indicatif = { version = "0.17.8", features = ["rayon"] }
 libc = "0.2.155"
+mimalloc = "0.1.43"
 num-traits = "0.2.19"
 ordered-float = "4.2.0"
 rand = { version = "0.8.5", features = ["small_rng"] }
