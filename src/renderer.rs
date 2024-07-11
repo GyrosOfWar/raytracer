@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::time::Instant;
 
-use clap::ValueEnum;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ProgressIterator;
 use rayon::prelude::*;
@@ -15,13 +14,6 @@ use crate::ray::Ray;
 use crate::scene::SceneDescription;
 use crate::vec3::{Color, Vec3};
 use crate::Result;
-
-#[derive(Debug, ValueEnum, Clone, Copy)]
-pub enum RenderMode {
-    Sequential,
-    Parallel,
-    ParallelChunks,
-}
 
 pub struct Renderer {
     camera: Camera,
@@ -38,7 +30,7 @@ impl Renderer {
             return Vec3::ZERO;
         }
 
-        let intersection = world.hit(ray, Range::new(0.001, f32::INFINITY));
+        let intersection = world.hit(ray, Range::new(self.camera.z_near, self.camera.z_far));
         match intersection {
             Some(hit) => {
                 let emitted_color = hit.material.emit(hit.tex_coords, hit.point);

@@ -23,6 +23,12 @@ pub struct SceneDescription {
     pub render: RenderSettings,
 }
 
+impl SceneDescription {
+    pub fn camera(&self, index: usize) -> CameraSettings {
+        self.cameras.get(index).cloned().unwrap_or_default()
+    }
+}
+
 #[derive(Debug)]
 pub struct RenderSettings {
     pub image_width: u32,
@@ -41,6 +47,20 @@ pub struct CameraSettings {
     pub transform: Affine3A,
     pub focus_dist: f32,
     pub defocus_angle: f32,
+}
+
+impl Default for CameraSettings {
+    fn default() -> Self {
+        Self {
+            name: Default::default(),
+            y_fov: 80.0f32.to_radians(),
+            z_near: 0.0001,
+            z_far: f32::INFINITY,
+            transform: Affine3A::IDENTITY,
+            focus_dist: 10.0,
+            defocus_angle: 0.0,
+        }
+    }
 }
 
 fn load_image(image: gltf::image::Data, name: &str) -> Result<DynamicImage> {
@@ -155,7 +175,7 @@ fn read_mesh(
         normals.len(),
         uv.len(),
     );
-    info!("assigned material {material:?}");
+    info!("assigned material {material:#?}");
 
     Ok(TriangleMesh::new(
         vertices,

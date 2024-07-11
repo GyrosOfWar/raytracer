@@ -11,6 +11,9 @@ pub struct Camera {
     defocus_disk_u: Vec3,
     defocus_disk_v: Vec3,
     defocus_angle: f32,
+
+    pub z_near: f32,
+    pub z_far: f32,
 }
 
 impl Camera {
@@ -55,6 +58,8 @@ impl Camera {
             defocus_disk_u,
             defocus_disk_v,
             defocus_angle: settings.defocus_angle,
+            z_far: settings.z_far,
+            z_near: settings.z_near,
         }
     }
 

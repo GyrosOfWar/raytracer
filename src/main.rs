@@ -4,7 +4,7 @@ use std::sync::Arc;
 use camera::Camera;
 use clap::Parser;
 use object::Hittable;
-use renderer::{RenderMode, Renderer};
+use renderer::Renderer;
 use scene::RenderSettings;
 use tracing::{error, info};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -29,11 +29,23 @@ pub struct Args {
     #[clap(long)]
     pub bvh_disabled: bool,
 
-    #[clap(short, long, default_value = "parallel")]
-    pub render_mode: RenderMode,
-
     #[clap(long)]
     pub debug: bool,
+
+    #[clap(short, long, default_value = "1280")]
+    pub width: u32,
+
+    #[clap(short, long, default_value = "720")]
+    pub height: u32,
+
+    #[clap(short = 'd', long, default_value = "50")]
+    pub max_depth: u32,
+
+    #[clap(long = "spp", default_value = "100")]
+    pub samples_per_pixel: u32,
+
+    #[clap(short, long, default_value = "0")]
+    pub camera: usize,
 
     pub input: PathBuf,
 
@@ -49,29 +61,25 @@ fn main() -> Result<()> {
         .init();
 
     let args = Args::parse();
-    let width = 1280;
-    let height = 720;
 
     let render_settings = RenderSettings {
-        samples_per_pixel: 100,
-        selected_camera: 0,
-        image_width: width,
-        image_height: height,
-        max_depth: 50,
+        samples_per_pixel: args.samples_per_pixel,
+        selected_camera: args.camera,
+        image_width: args.width,
+        image_height: args.height,
+        max_depth: args.max_depth,
     };
+
+    let selected_camera = render_settings.selected_camera;
 
     let scene = scene::load_from_gltf(&args.input, args.bvh_disabled, render_settings)?;
     info!(
-        "extents of the scene: {:?}",
+        "extents of the scene: {:#?}",
         scene.root_object.bounding_box()
     );
     info!("rendering with configuration {args:#?}");
 
-    let camera = Camera::new(
-        scene.cameras[scene.render.selected_camera].clone(),
-        width,
-        height,
-    );
+    let camera = Camera::new(scene.camera(selected_camera), args.width, args.height);
 
     if args.debug {
         if args.bvh_disabled {
