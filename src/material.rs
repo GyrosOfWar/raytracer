@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
@@ -32,6 +33,11 @@ pub trait Scatterable {
         // default material does not emit anything
         Vec3::default()
     }
+
+    #[allow(unused_variables)]
+    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> f32 {
+        0.0
+    }
 }
 
 #[derive(Debug)]
@@ -41,14 +47,19 @@ pub struct Lambertian {
 
 impl Scatterable for Lambertian {
     fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
-        let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
-        if scatter_direction.near_zero() {
-            scatter_direction = hit.normal;
-        }
+        // let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
+        // if scatter_direction.near_zero() {
+        //     scatter_direction = hit.normal;
+        // }
+        let scatter_direction = vec3::random::gen_on_hemisphere(hit.normal);
         Some(ScatterResult {
             scattered: Ray::new(hit.point, scatter_direction),
             attenuation: self.texture.value_at(hit.tex_coords, hit.point),
         })
+    }
+
+    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> f32 {
+        1.0 / (2.0 * PI)
     }
 }
 
@@ -110,6 +121,7 @@ fn reflectance(cosine: f32, refraction_index: f32) -> f32 {
 #[derive(Debug)]
 pub struct DiffuseLight {
     pub texture: Arc<Texture>,
+    pub strength: f32,
 }
 
 impl Scatterable for DiffuseLight {
@@ -118,7 +130,7 @@ impl Scatterable for DiffuseLight {
     }
 
     fn emit(&self, uv: TextureCoordinates, point: Point3) -> Color {
-        self.texture.value_at(uv, point)
+        self.texture.value_at(uv, point) * self.strength
     }
 }
 

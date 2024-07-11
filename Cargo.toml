@@ -8,7 +8,10 @@ clap = { version = "4.5.8", features = ["derive"] }
 color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
 glam = "0.28.0"
-gltf = { version = "1.4.1", features = ["KHR_texture_transform"] }
+gltf = { version = "1.4.1", features = [
+    "KHR_texture_transform",
+    "KHR_materials_emissive_strength",
+] }
 image = "0.25.1"
 indicatif = { version = "0.17.8", features = ["rayon"] }
 libc = "0.2.155"

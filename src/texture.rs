@@ -142,3 +142,13 @@ pub enum Texture {
     Checkerboard(Checkerboard),
     Image(Image),
 }
+
+impl Texture {
+    pub fn solid_color(albedo: Color) -> Arc<Self> {
+        Arc::new(Texture::SolidColor(SolidColor { albedo }))
+    }
+
+    pub fn image(image: DynamicImage) -> Arc<Self> {
+        Arc::new(Texture::Image(Image::new(image)))
+    }
+}

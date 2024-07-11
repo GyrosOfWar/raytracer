@@ -40,8 +40,16 @@ impl Renderer {
                         attenuation,
                         scattered,
                     }) => {
-                        let scattered_color =
-                            attenuation * self.ray_color(&scattered, depth - 1, world);
+                        let scattering_pdf = hit.material.scattering_pdf(ray, &hit, &scattered);
+                        let pdf = scattering_pdf;
+                        let scattered_color = if pdf != 0.0 {
+                            (attenuation
+                                * scattering_pdf
+                                * self.ray_color(&scattered, depth - 1, world))
+                                / pdf
+                        } else {
+                            attenuation * self.ray_color(&scattered, depth - 1, world)
+                        };
                         emitted_color + scattered_color
                     }
                     None => emitted_color,
@@ -161,14 +169,15 @@ fn linear_to_gamma(linear_component: f32) -> f32 {
     }
 }
 
-// TODO
+// TODO increment by 1 for the first 5 samples, then by incremeents of 5 until the end
+// needs to yield a list of numbers each step
 struct SampleIter {
-    sample_count: usize,
-    current_count: usize,
+    sample_count: u32,
+    current_count: u32,
 }
 
 impl SampleIter {
-    pub fn new(sample_count: usize) -> Self {
+    pub fn new(sample_count: u32) -> Self {
         SampleIter {
             sample_count,
             current_count: 0,

@@ -8,7 +8,7 @@ use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::{debug, info};
 
 use crate::bvh::BvhNode;
-use crate::material::Material;
+use crate::material::{DiffuseLight, Material};
 use crate::object::triangle_mesh::TriangleMesh;
 use crate::object::{Object, World};
 use crate::texture::{Image, SolidColor, Texture, TextureCoordinates};
@@ -111,6 +111,7 @@ fn read_mesh(
 
     let reader = primitive.reader(|b| Some(&buffers[b.index()]));
     let material = primitive.material();
+    let emissive_factor = Vec3::from(material.emissive_factor());
 
     let color_texture =
         if let Some(texture) = material.pbr_metallic_roughness().base_color_texture() {
@@ -125,16 +126,15 @@ fn read_mesh(
             }))
         };
 
-    let metalness = material.pbr_metallic_roughness().metallic_factor();
-    // ehhh not correct but let's go with it for now
-    let fuzz = material.pbr_metallic_roughness().roughness_factor();
-
     // TODO actual PBR shader
-    let material = Material::mix(
-        Material::lambertian_texture(color_texture.clone()),
-        Material::metal(color_texture, fuzz),
-        metalness,
-    );
+    let material = if emissive_factor != Vec3::ZERO {
+        Arc::new(Material::DiffuseLight(DiffuseLight {
+            texture: Texture::solid_color(Vec3::ONE),
+            strength: material.emissive_strength().unwrap_or(1.0),
+        }))
+    } else {
+        Material::lambertian_texture(color_texture)
+    };
 
     if let Some(positions) = reader.read_positions() {
         let positions: Vec<_> = positions.collect();
@@ -237,7 +237,7 @@ pub fn load_from_gltf(
     Ok(SceneDescription {
         root_object,
         cameras,
-        background_color: Vec3::new(0.7, 0.7, 0.7),
+        background_color: Vec3::ZERO,
         render: render_settings,
     })
 }
