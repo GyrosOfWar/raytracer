@@ -111,7 +111,6 @@ impl Renderer {
         let sample_count = self.scene.render.samples_per_pixel;
         let chunk_size = square_size * square_size;
 
-        // TODO variable step size like in pbrt
         for current_sample in 1..=sample_count {
             let sample_start = Instant::now();
             let sample_scale = 1.0 / current_sample as f32;
@@ -135,19 +134,17 @@ impl Renderer {
                 })
                 .map(linear_to_gamma)
                 .collect();
-
-            try_measure("aggregating and saving image", || {
-                for (idx, pixel_component) in result.iter().enumerate() {
-                    aggregate_image[idx] += *pixel_component;
-                }
-
+            assert_eq!(result.len(), image_size, "result length mismatch");
+            for (idx, pixel_component) in result.iter().enumerate() {
+                aggregate_image[idx] += *pixel_component;
+            }
+            if should_save_image(current_sample, sample_count) {
                 let intermediate_image: Vec<_> =
                     aggregate_image.iter().map(|c| c * sample_scale).collect();
                 let image = self.pixels_to_image(intermediate_image);
                 image.save(&destination)?;
-                Ok(())
-            })?;
-
+                info!("Saved image after sample {}", current_sample);
+            }
             let elapsed = sample_start.elapsed();
             info!("Sample {current_sample} took {elapsed:?}");
         }
@@ -177,18 +174,8 @@ fn linear_to_gamma(linear_component: f32) -> f32 {
     }
 }
 
-// TODO increment by 1 for the first 5 samples, then by incremeents of 5 until the end
-// needs to yield a list of numbers each step
-struct SampleIter {
-    sample_count: u32,
-    current_count: u32,
-}
+fn should_save_image(current_sample: u32, sample_count: u32) -> bool {
+    let save_interval = 16;
 
-impl SampleIter {
-    pub fn new(sample_count: u32) -> Self {
-        SampleIter {
-            sample_count,
-            current_count: 0,
-        }
-    }
+    current_sample <= 5 || current_sample % save_interval == 0 || current_sample == sample_count
 }

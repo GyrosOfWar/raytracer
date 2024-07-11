@@ -87,9 +87,6 @@ fn main() -> Result<()> {
     let camera = Camera::new(scene.camera(selected_camera), args.width, args.height);
 
     let renderer = Renderer::new(camera, scene);
-    renderer.render_progressive(args.output, 128)?;
-    // let image = renderer.render(256);
-    // image.save(&args.output)?;
-
+    renderer.render_progressive(args.output, 16)?;
     Ok(())
 }
