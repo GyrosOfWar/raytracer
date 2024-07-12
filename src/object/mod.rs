@@ -79,3 +79,15 @@ pub enum Object {
     World(World),
     TriangleRef(TriangleRef),
 }
+
+impl Object {
+    pub fn len(&self) -> usize {
+        match self {
+            Object::Sphere(_) => 1,
+            Object::BvhNode(node) => node.len(),
+            Object::FlatBvhTree(tree) => tree.len(),
+            Object::World(world) => world.objects.len(),
+            Object::TriangleRef(_) => 1,
+        }
+    }
+}

@@ -1,4 +1,5 @@
 use std::cmp::Reverse;
+use std::mem::MaybeUninit;
 use std::time::Instant;
 
 use ordered_float::OrderedFloat;
@@ -133,26 +134,50 @@ fn handle_node(
     }
 }
 
-fn flatten_tree(node: BvhNode, node_list: &mut Vec<FlatBvhNode>, current_index: &mut usize) {
-    handle_node(
-        Some(Box::new(Object::BvhNode(node))),
-        node_list,
-        current_index,
-    );
+fn flatten_tree(node: BvhNode, node_list: &mut Vec<MaybeUninit<FlatBvhNode>>, offset: &mut usize) {
+    /*    LinearBVHNode *linearNode = &nodes[*offset];
+    linearNode->bounds = node->bounds;
+    int nodeOffset = (*offset)++;
+    if (node->nPrimitives > 0) {
+        CHECK(!node->children[0] && !node->children[1]);
+        CHECK_LT(node->nPrimitives, 65536);
+        linearNode->primitivesOffset = node->firstPrimOffset;
+        linearNode->nPrimitives = node->nPrimitives;
+    } else {
+        // Create interior flattened BVH node
+        linearNode->axis = node->splitAxis;
+        linearNode->nPrimitives = 0;
+        flattenBVH(node->children[0], offset);
+        linearNode->secondChildOffset = flattenBVH(node->children[1], offset);
+    }
+    return nodeOffset;
+     */
+
+    let linear_node = &node_list[*offset];
+    *offset += 1;
+    let node_offset = *offset;
 }
 
 impl FlatBvhTree {
     pub fn from_tree(root: BvhNode) -> Self {
         let mut index = 0;
-        let mut nodes = vec![];
+        let mut nodes = Vec::with_capacity(root.len());
+        for _ in 0..root.len() {
+            nodes.push(MaybeUninit::uninit());
+        }
         flatten_tree(root, &mut nodes, &mut index);
 
-        FlatBvhTree { nodes }
+        todo!()
+        // FlatBvhTree { nodes }
     }
 
     pub fn is_valid(&self) -> bool {
         let root_node_is_interior = self.nodes.len() > 1 && self.nodes[0].is_interior();
         root_node_is_interior && self.nodes[0].is_valid(&self.nodes, 0)
+    }
+
+    pub fn len(&self) -> usize {
+        self.nodes.len()
     }
 }
 
@@ -178,6 +203,9 @@ impl Hittable for FlatBvhTree {
     }
 }
 
+// TODO refactor: turn into enum with interior and leaf nodes
+// Leaf nodes contain the Box<Object> and the bounding box
+// Interior nodes contain the left and right children (Box<BvhNode>) and the bounding box
 #[derive(Debug)]
 pub struct BvhNode {
     left: Option<Box<Object>>,
@@ -250,6 +278,15 @@ impl BvhNode {
                     bbox,
                 )
             }
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match (self.left.as_ref(), self.right.as_ref()) {
+            (Some(left), Some(right)) => left.len() + right.len(),
+            (Some(left), None) => left.len(),
+            (None, Some(right)) => right.len(),
+            (None, None) => 1,
         }
     }
 }
