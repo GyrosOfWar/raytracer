@@ -1,20 +1,23 @@
-#![allow(unused)]
+// #![allow(unused)]
 use std::path::PathBuf;
 
+use bvh::BvhType;
 use camera::Camera;
 use clap::Parser;
 use mimalloc::MiMalloc;
 use object::Hittable;
 use renderer::Renderer;
 use scene::RenderSettings;
-use tracing::info;
+use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
+use vec3::Color;
 
 mod aabb;
 mod bvh;
 mod camera;
 mod material;
 mod object;
+mod onb;
 mod random;
 mod range;
 mod ray;
@@ -37,10 +40,10 @@ pub struct Args {
     #[clap(long)]
     pub debug: bool,
 
-    #[clap(short, long, default_value = "1280")]
+    #[clap(short = 'W', long, default_value = "1280")]
     pub width: u32,
 
-    #[clap(short, long, default_value = "720")]
+    #[clap(short = 'H', long, default_value = "720")]
     pub height: u32,
 
     #[clap(short = 'd', long, default_value = "50")]
@@ -61,11 +64,15 @@ pub struct Args {
 fn main() -> Result<()> {
     color_eyre::install()?;
 
+    let args = Args::parse();
     tracing_subscriber::fmt::fmt()
         .with_span_events(FmtSpan::CLOSE)
+        .with_max_level(if args.debug {
+            Level::DEBUG
+        } else {
+            Level::INFO
+        })
         .init();
-
-    let args = Args::parse();
 
     let render_settings = RenderSettings {
         samples_per_pixel: args.samples_per_pixel,
@@ -73,11 +80,12 @@ fn main() -> Result<()> {
         image_width: args.width,
         image_height: args.height,
         max_depth: args.max_depth,
+        background_color: Color::ZERO,
     };
 
     let selected_camera = render_settings.selected_camera;
 
-    let scene = scene::load_from_gltf(&args.input, args.bvh_disabled, render_settings)?;
+    let scene = scene::load_from_gltf(&args.input)?.build_bvh(BvhType::Flat);
     info!(
         "extents of the scene: {:#?}",
         scene.root_object.bounding_box()
@@ -85,8 +93,8 @@ fn main() -> Result<()> {
     info!("rendering with configuration {args:#?}");
 
     let camera = Camera::new(scene.camera(selected_camera), args.width, args.height);
+    let renderer = Renderer::new(camera, scene, render_settings);
 
-    let renderer = Renderer::new(camera, scene);
     renderer.render_progressive(args.output, 16)?;
     Ok(())
 }

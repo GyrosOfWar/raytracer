@@ -7,7 +7,7 @@ use triangle_mesh::TriangleRef;
 pub use world::World;
 
 use crate::aabb::Aabb;
-use crate::bvh::BvhNode;
+use crate::bvh::{BvhNode, FlatBvhTree};
 use crate::material::Material;
 use crate::range::Range;
 use crate::ray::Ray;
@@ -75,6 +75,7 @@ pub trait Hittable: Send + Sync {
 pub enum Object {
     Sphere(Sphere),
     BvhNode(BvhNode),
+    FlatBvhTree(FlatBvhTree),
     World(World),
     TriangleRef(TriangleRef),
 }

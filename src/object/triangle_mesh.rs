@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::Arc;
 
 use super::{HitRecord, Hittable};
@@ -15,13 +16,24 @@ enum TriangleMeshMaterial {
     Multiple,
 }
 
-#[derive(Debug)]
 struct TriangleMeshData {
     vertices: Box<[Point3]>,
     face_indices: Box<[(u32, u32, u32)]>,
     normals: Box<[Vec3]>,
     uv: Box<[TextureCoordinates]>,
     material: Arc<Material>,
+}
+
+impl fmt::Debug for TriangleMeshData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TriangleMeshData")
+            .field("vertices", &self.vertices.len())
+            .field("face_indices", &self.face_indices.len())
+            .field("normals", &self.normals.len())
+            .field("uv", &self.uv.len())
+            .field("material", &self.material)
+            .finish()
+    }
 }
 
 impl TriangleMeshData {

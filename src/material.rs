@@ -8,7 +8,7 @@ use crate::random::{self, random};
 use crate::ray::Ray;
 use crate::texture::{HasColorValue, SolidColor, Texture, TextureCoordinates};
 use crate::vec3::random::gen_unit_vector;
-use crate::vec3::{self, reflect, refract, Color, Point3, Vec3};
+use crate::vec3::{self, reflect, refract, Color, Point3, Vec3, Vec3Ext};
 
 pub struct ScatterResult {
     pub attenuation: Color,
@@ -35,8 +35,8 @@ pub trait Scatterable {
     }
 
     #[allow(unused_variables)]
-    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> f32 {
-        0.0
+    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> Option<f32> {
+        None
     }
 }
 
@@ -47,19 +47,20 @@ pub struct Lambertian {
 
 impl Scatterable for Lambertian {
     fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
-        // let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
-        // if scatter_direction.near_zero() {
-        //     scatter_direction = hit.normal;
-        // }
-        let scatter_direction = vec3::random::gen_on_hemisphere(hit.normal);
+        // let scatter_direction = vec3::random::gen_on_hemisphere(hit.normal);
+        let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
+        if scatter_direction.near_zero() {
+            scatter_direction = hit.normal;
+        }
         Some(ScatterResult {
             scattered: Ray::new(hit.point, scatter_direction),
             attenuation: self.texture.value_at(hit.tex_coords, hit.point),
         })
     }
 
-    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> f32 {
-        1.0 / (2.0 * PI)
+    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> Option<f32> {
+        // 1.0 / (2.0 * PI)
+        None
     }
 }
 

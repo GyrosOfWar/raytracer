@@ -7,7 +7,7 @@ use gltf::mesh::Mode;
 use image::{DynamicImage, ImageBuffer, Luma, LumaA, Rgb, Rgba};
 use tracing::{debug, info};
 
-use crate::bvh::{BvhNode, FlatBvhTree};
+use crate::bvh::{BvhNode, BvhType, FlatBvhTree};
 use crate::material::{DiffuseLight, Material};
 use crate::object::triangle_mesh::TriangleMesh;
 use crate::object::{Object, World};
@@ -19,13 +19,29 @@ use crate::Result;
 pub struct SceneDescription {
     pub root_object: Object,
     pub cameras: Vec<CameraSettings>,
-    pub background_color: Color,
-    pub render: RenderSettings,
 }
 
 impl SceneDescription {
     pub fn camera(&self, index: usize) -> CameraSettings {
         self.cameras.get(index).cloned().unwrap_or_default()
+    }
+
+    pub fn build_bvh(self, mode: BvhType) -> Self {
+        if let Object::World(world) = self.root_object {
+            let node = BvhNode::from(world.objects);
+
+            let root_object = match mode {
+                BvhType::Tree => Object::BvhNode(node),
+                BvhType::Flat => Object::FlatBvhTree(FlatBvhTree::from_tree(node)),
+            };
+
+            Self {
+                root_object,
+                cameras: self.cameras,
+            }
+        } else {
+            self
+        }
     }
 }
 
@@ -36,6 +52,7 @@ pub struct RenderSettings {
     pub selected_camera: usize,
     pub max_depth: u32,
     pub samples_per_pixel: u32,
+    pub background_color: Color,
 }
 
 #[derive(Debug, Clone)]
@@ -139,15 +156,12 @@ fn read_mesh(
 
     if let Some(positions) = reader.read_positions() {
         let positions: Vec<_> = positions.collect();
-        debug!("untrasformed vertices: {:#?}", &positions);
         vertices.extend(
             positions
                 .into_iter()
                 .map(|p| transform.transform_point3a(Point3::from(p))),
         );
     }
-
-    debug!("transformed vertices {:#?}", &vertices[0..100]);
 
     if let Some(indices) = reader.read_indices() {
         let indices: Vec<_> = indices.into_u32().collect();
@@ -187,11 +201,7 @@ fn read_mesh(
     ))
 }
 
-pub fn load_from_gltf(
-    path: impl AsRef<Path>,
-    bvh_disabled: bool,
-    render_settings: RenderSettings,
-) -> Result<SceneDescription> {
+pub fn load_from_gltf(path: impl AsRef<Path>) -> Result<SceneDescription> {
     let (gltf, buffers, images) = gltf::import(path)?;
     let mut meshes = Vec::new();
     let mut cameras = vec![];
@@ -227,22 +237,10 @@ pub fn load_from_gltf(
         .map(|f| Object::TriangleRef(f))
         .collect();
 
-    let root_object = if bvh_disabled {
-        Object::World(World::new(objects))
-    } else {
-        let node = BvhNode::from(objects);
-        // let list = FlatBvhTree::from_tree(node);
-        // info!("{:#?}", list);
-        // todo!()
-        Object::BvhNode(node)
-    };
-
     debug!("cameras: {cameras:#?}");
 
     Ok(SceneDescription {
-        root_object,
+        root_object: Object::World(World::new(objects)),
         cameras,
-        background_color: Vec3::ZERO,
-        render: render_settings,
     })
 }

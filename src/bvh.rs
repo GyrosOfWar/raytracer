@@ -14,6 +14,11 @@ use crate::ray::Ray;
 //  - Experiment with different heuristics for splitting the objects (look at pbrt)
 //  - Store all nodes in a contiguous list instead of a pointer-y tree
 
+pub enum BvhType {
+    Flat,
+    Tree,
+}
+
 #[derive(Debug)]
 pub enum FlatBvhNode {
     Leaf {
@@ -27,34 +32,100 @@ pub enum FlatBvhNode {
     },
 }
 
+impl FlatBvhNode {
+    pub fn bounding_box(&self) -> Aabb {
+        match self {
+            FlatBvhNode::Leaf { bbox, .. } => *bbox,
+            FlatBvhNode::Interior { bbox, .. } => *bbox,
+        }
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        matches!(self, FlatBvhNode::Leaf { .. })
+    }
+
+    pub fn is_interior(&self) -> bool {
+        matches!(self, FlatBvhNode::Interior { .. })
+    }
+
+    pub fn is_valid(&self, nodes: &[FlatBvhNode], count: usize) -> bool {
+        match self {
+            FlatBvhNode::Leaf { .. } => true,
+            FlatBvhNode::Interior { left, right, .. } => {
+                let left = left
+                    .and_then(|idx| nodes.get(idx))
+                    .map(|n| n.is_valid(nodes, count + 1))
+                    .unwrap_or(false);
+                let right = right
+                    .and_then(|idx| nodes.get(idx))
+                    .map(|n| n.is_valid(nodes, count + 1))
+                    .unwrap_or(false);
+
+                left && right
+            }
+        }
+    }
+
+    pub fn hit(&self, ray: &Ray, hit_range: Range, nodes: &[FlatBvhNode]) -> Option<HitRecord> {
+        match self {
+            FlatBvhNode::Interior { left, right, bbox } => {
+                if !bbox.hit(ray, hit_range) {
+                    return None;
+                }
+                let hit_left = left.and_then(|idx| nodes[idx].hit(ray, hit_range, nodes));
+                let range = Range::new(
+                    hit_range.min,
+                    hit_left
+                        .as_ref()
+                        .map(|h| h.distance)
+                        .unwrap_or(hit_range.max),
+                );
+                let hit_right = right.and_then(|idx| nodes[idx].hit(ray, range, nodes));
+
+                hit_right.or(hit_left)
+            }
+
+            FlatBvhNode::Leaf { object, bbox } => {
+                if !bbox.hit(ray, hit_range) {
+                    return None;
+                }
+
+                object.hit(ray, hit_range)
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct FlatBvhTree {
     nodes: Vec<FlatBvhNode>,
 }
 
-fn handle_node(node: Option<Box<Object>>, current_index: &mut usize) -> Option<FlatBvhNode> {
+fn handle_node(
+    node: Option<Box<Object>>,
+    node_list: &mut Vec<FlatBvhNode>,
+    current_index: &mut usize,
+) -> Option<usize> {
     if let Some(node) = node {
+        *current_index += 1;
         match *node {
             Object::BvhNode(node) => {
+                info!("handling interior node");
                 let bbox = node.bounding_box();
-                let left = handle_node(node.left, current_index);
-                let left = left.map(|_| {
-                    *current_index += 1;
-                    *current_index
-                });
-                let right = handle_node(node.right, current_index);
-                let right = right.map(|_| {
-                    *current_index += 1;
-                    *current_index
-                });
-                Some(FlatBvhNode::Interior { right, left, bbox })
+                let left = handle_node(node.left, node_list, current_index);
+                let right = handle_node(node.right, node_list, current_index);
+                let node = FlatBvhNode::Interior { right, left, bbox };
+                info!("pushing interior node {node:?}");
+                node_list.push(node);
+                Some(*current_index)
             }
             object => {
-                *current_index += 1;
-                Some(FlatBvhNode::Leaf {
+                info!("handling leaf object");
+                node_list.push(FlatBvhNode::Leaf {
                     bbox: object.bounding_box(),
                     object,
-                })
+                });
+                Some(*current_index)
             }
         }
     } else {
@@ -63,13 +134,11 @@ fn handle_node(node: Option<Box<Object>>, current_index: &mut usize) -> Option<F
 }
 
 fn flatten_tree(node: BvhNode, node_list: &mut Vec<FlatBvhNode>, current_index: &mut usize) {
-    if let Some(node) = handle_node(node.left, current_index) {
-        node_list.push(node);
-    }
-
-    if let Some(node) = handle_node(node.right, current_index) {
-        node_list.push(node);
-    }
+    handle_node(
+        Some(Box::new(Object::BvhNode(node))),
+        node_list,
+        current_index,
+    );
 }
 
 impl FlatBvhTree {
@@ -80,11 +149,18 @@ impl FlatBvhTree {
 
         FlatBvhTree { nodes }
     }
+
+    pub fn is_valid(&self) -> bool {
+        let root_node_is_interior = self.nodes.len() > 1 && self.nodes[0].is_interior();
+        root_node_is_interior && self.nodes[0].is_valid(&self.nodes, 0)
+    }
 }
 
 impl Hittable for FlatBvhTree {
     fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
-        todo!()
+        let root = &self.nodes[0];
+
+        root.hit(ray, hit_range, &self.nodes)
     }
 
     fn bounding_box(&self) -> Aabb {
@@ -127,6 +203,14 @@ impl BvhNode {
         let root = BvhNode::from_objects(objects);
         info!("building BVH took {:?}", start.elapsed());
         root
+    }
+
+    pub fn from_object(object: Object) -> Self {
+        if let Object::World(world) = object {
+            BvhNode::from(world.objects)
+        } else {
+            BvhNode::from(vec![object])
+        }
     }
 
     fn from_objects(mut objects: Vec<Object>) -> Self {
@@ -206,23 +290,23 @@ impl Hittable for BvhNode {
     }
 }
 
-#[allow(unused)]
-pub mod debug {
-    use std::sync::Arc;
+#[cfg(test)]
+mod tests {
+    use tracing::debug;
+    use tracing_test::traced_test;
 
-    use tracing::error;
+    use super::{BvhNode, FlatBvhTree};
+    use crate::{scene, Result};
 
-    use crate::aabb::Aabb;
-    use crate::object::{Hittable, Object};
+    #[test]
+    #[traced_test]
+    fn test_build_linear_bvh() -> Result<()> {
+        let scene = scene::load_from_gltf("./assets/cornell.gltf")?;
+        let node = BvhNode::from_object(scene.root_object);
+        let tree = FlatBvhTree::from_tree(node);
+        // debug!("{tree:#?}");
+        assert!(tree.is_valid());
 
-    fn indent(level: usize) -> String {
-        (0..(level * 2)).map(|_| " ").collect()
-    }
-
-    fn bbox_to_string(bbox: &Aabb) -> String {
-        format!(
-            "x = {} {}, y = {} {}, z={} {}",
-            bbox.x.min, bbox.x.max, bbox.y.min, bbox.y.max, bbox.z.min, bbox.z.max,
-        )
+        Ok(())
     }
 }

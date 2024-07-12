@@ -5,8 +5,8 @@ use crate::ray::Ray;
 
 #[derive(Debug)]
 pub struct World {
-    objects: Vec<Object>,
-    bounding_box: Aabb,
+    pub objects: Vec<Object>,
+    pub bounding_box: Aabb,
 }
 
 impl World {

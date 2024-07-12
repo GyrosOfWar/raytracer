@@ -99,7 +99,7 @@
       "emissiveFactor": [1, 1, 1],
       "extensions": {
         "KHR_materials_emissive_strength": {
-          "emissiveStrength": 100
+          "emissiveStrength": 200
         }
       },
       "name": "Emissive",

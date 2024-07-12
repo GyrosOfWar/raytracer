@@ -1,5 +1,6 @@
-use crate::Result;
 use tracing::info;
+
+use crate::Result;
 
 pub fn measure(name: &str, f: impl FnOnce()) {
     let start = std::time::Instant::now();

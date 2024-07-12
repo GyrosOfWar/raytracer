@@ -4,14 +4,14 @@ use std::time::Instant;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ProgressIterator;
 use rayon::prelude::*;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::camera::Camera;
 use crate::material::{ScatterResult, Scatterable};
 use crate::object::Hittable;
 use crate::range::Range;
 use crate::ray::Ray;
-use crate::scene::SceneDescription;
+use crate::scene::{RenderSettings, SceneDescription};
 use crate::util::{measure, try_measure};
 use crate::vec3::{Color, Vec3};
 use crate::Result;
@@ -19,11 +19,16 @@ use crate::Result;
 pub struct Renderer {
     camera: Camera,
     scene: SceneDescription,
+    render: RenderSettings,
 }
 
 impl Renderer {
-    pub fn new(camera: Camera, scene: SceneDescription) -> Self {
-        Renderer { camera, scene }
+    pub fn new(camera: Camera, scene: SceneDescription, render: RenderSettings) -> Self {
+        Renderer {
+            camera,
+            scene,
+            render,
+        }
     }
 
     fn ray_color(&self, ray: &Ray, depth: u32, world: &impl Hittable) -> Color {
@@ -43,11 +48,9 @@ impl Renderer {
                     }) => {
                         let scattering_pdf = hit.material.scattering_pdf(ray, &hit, &scattered);
                         let pdf = scattering_pdf;
-                        let scattered_color = if pdf != 0.0 {
-                            (attenuation
-                                * scattering_pdf
-                                * self.ray_color(&scattered, depth - 1, world))
-                                / pdf
+                        debug!("pdf: {:?}", pdf);
+                        let scattered_color = if let Some(pdf) = pdf {
+                            (attenuation * pdf * self.ray_color(&scattered, depth - 1, world)) / pdf
                         } else {
                             attenuation * self.ray_color(&scattered, depth - 1, world)
                         };
@@ -56,16 +59,16 @@ impl Renderer {
                     None => emitted_color,
                 }
             }
-            None => self.scene.background_color,
+            None => self.render.background_color,
         }
     }
 
     pub fn render(&self, square_size: usize) -> RgbImage {
         let start = Instant::now();
 
-        let sample_scale = 1.0 / self.scene.render.samples_per_pixel as f32;
-        let width = self.scene.render.image_width;
-        let height = self.scene.render.image_height;
+        let sample_scale = 1.0 / self.render.samples_per_pixel as f32;
+        let width = self.render.image_width;
+        let height = self.render.image_height;
         let pixel_count = width * height;
         let pixels: Vec<_> = (0..pixel_count).collect();
         let pixels = pixels
@@ -76,13 +79,10 @@ impl Renderer {
                     let i = index % width;
                     let j = index / width;
                     let mut color = Vec3::ZERO;
-                    for _ in 0..self.scene.render.samples_per_pixel {
+                    for _ in 0..self.render.samples_per_pixel {
                         let ray = self.camera.get_ray(i, j);
-                        color += self.ray_color(
-                            &ray,
-                            self.scene.render.max_depth,
-                            &self.scene.root_object,
-                        );
+                        color +=
+                            self.ray_color(&ray, self.render.max_depth, &self.scene.root_object);
                     }
                     let result = color * sample_scale;
                     pixels.extend([result.x, result.y, result.z]);
@@ -103,12 +103,12 @@ impl Renderer {
         square_size: usize,
     ) -> Result<()> {
         let start = Instant::now();
-        let pixel_count = self.scene.render.image_height * self.scene.render.image_width;
+        let pixel_count = self.render.image_height * self.render.image_width;
         let image_size = (pixel_count * 3) as usize;
 
         let mut aggregate_image = vec![0.0; image_size];
 
-        let sample_count = self.scene.render.samples_per_pixel;
+        let sample_count = self.render.samples_per_pixel;
         let chunk_size = square_size * square_size;
 
         for current_sample in 1..=sample_count {
@@ -120,14 +120,11 @@ impl Renderer {
                 .flat_map(|chunk| {
                     let mut pixels = vec![];
                     for index in chunk {
-                        let i = index % self.scene.render.image_width;
-                        let j = index / self.scene.render.image_width;
+                        let i = index % self.render.image_width;
+                        let j = index / self.render.image_width;
                         let ray = self.camera.get_ray(i, j);
-                        let color = self.ray_color(
-                            &ray,
-                            self.scene.render.max_depth,
-                            &self.scene.root_object,
-                        );
+                        let color =
+                            self.ray_color(&ray, self.render.max_depth, &self.scene.root_object);
                         pixels.extend([color.x, color.y, color.z]);
                     }
                     pixels
@@ -155,12 +152,9 @@ impl Renderer {
     }
 
     fn pixels_to_image(&self, pixels: Vec<f32>) -> RgbImage {
-        let image = Rgb32FImage::from_vec(
-            self.scene.render.image_width,
-            self.scene.render.image_height,
-            pixels,
-        )
-        .expect("dimensions must match");
+        let image =
+            Rgb32FImage::from_vec(self.render.image_width, self.render.image_height, pixels)
+                .expect("dimensions must match");
 
         DynamicImage::from(image).into_rgb8()
     }
