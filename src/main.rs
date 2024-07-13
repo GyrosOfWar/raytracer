@@ -85,7 +85,7 @@ fn main() -> Result<()> {
 
     let selected_camera = render_settings.selected_camera;
 
-    let scene = scene::load_from_gltf(&args.input)?.build_bvh(BvhType::Tree);
+    let scene = scene::load_from_gltf(&args.input)?.build_bvh(BvhType::Flat);
     info!(
         "extents of the scene: {:#?}",
         scene.root_object.bounding_box()

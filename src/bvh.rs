@@ -34,6 +34,12 @@ pub enum FlatBvhNode {
 }
 
 impl FlatBvhNode {
+    const EMPTY: FlatBvhNode = FlatBvhNode::Interior {
+        left: None,
+        right: None,
+        bbox: Aabb::EMPTY,
+    };
+
     pub fn bounding_box(&self) -> Aabb {
         match self {
             FlatBvhNode::Leaf { bbox, .. } => *bbox,
@@ -49,20 +55,29 @@ impl FlatBvhNode {
         matches!(self, FlatBvhNode::Interior { .. })
     }
 
+    pub fn set_indices(&mut self, l: usize, r: usize) {
+        if let FlatBvhNode::Interior { left, right, .. } = self {
+            left.replace(l);
+            right.replace(r);
+        }
+    }
+
     pub fn is_valid(&self, nodes: &[FlatBvhNode], count: usize) -> bool {
         match self {
             FlatBvhNode::Leaf { .. } => true,
             FlatBvhNode::Interior { left, right, .. } => {
-                let left = left
+                let left_valid = left
                     .and_then(|idx| nodes.get(idx))
                     .map(|n| n.is_valid(nodes, count + 1))
                     .unwrap_or(false);
-                let right = right
+                info!("left {:?} valid: {}", left, left_valid);
+                let right_valid = right
                     .and_then(|idx| nodes.get(idx))
                     .map(|n| n.is_valid(nodes, count + 1))
                     .unwrap_or(false);
+                info!("right {:?} valid: {}", right, right_valid);
 
-                left && right
+                left_valid && right_valid
             }
         }
     }
@@ -102,77 +117,56 @@ pub struct FlatBvhTree {
     nodes: Vec<FlatBvhNode>,
 }
 
-fn handle_node(
-    node: Option<Box<Object>>,
-    node_list: &mut Vec<FlatBvhNode>,
-    current_index: &mut usize,
-) -> Option<usize> {
-    if let Some(node) = node {
-        *current_index += 1;
-        match *node {
-            Object::BvhNode(node) => {
-                info!("handling interior node");
-                let bbox = node.bounding_box();
-                let left = handle_node(node.left, node_list, current_index);
-                let right = handle_node(node.right, node_list, current_index);
-                let node = FlatBvhNode::Interior { right, left, bbox };
-                info!("pushing interior node {node:?}");
-                node_list.push(node);
-                Some(*current_index)
-            }
-            object => {
-                info!("handling leaf object");
-                node_list.push(FlatBvhNode::Leaf {
-                    bbox: object.bounding_box(),
-                    object,
-                });
-                Some(*current_index)
-            }
-        }
-    } else {
-        None
-    }
-}
-
-fn flatten_tree(node: BvhNode, node_list: &mut Vec<MaybeUninit<FlatBvhNode>>, offset: &mut usize) {
-    /*    LinearBVHNode *linearNode = &nodes[*offset];
-    linearNode->bounds = node->bounds;
-    int nodeOffset = (*offset)++;
-    if (node->nPrimitives > 0) {
-        CHECK(!node->children[0] && !node->children[1]);
-        CHECK_LT(node->nPrimitives, 65536);
-        linearNode->primitivesOffset = node->firstPrimOffset;
-        linearNode->nPrimitives = node->nPrimitives;
-    } else {
-        // Create interior flattened BVH node
-        linearNode->axis = node->splitAxis;
-        linearNode->nPrimitives = 0;
-        flattenBVH(node->children[0], offset);
-        linearNode->secondChildOffset = flattenBVH(node->children[1], offset);
-    }
-    return nodeOffset;
-     */
-
-    let linear_node = &node_list[*offset];
-    *offset += 1;
+fn flatten_tree(node: BvhNode, node_list: &mut Vec<FlatBvhNode>, offset: &mut usize) -> usize {
     let node_offset = *offset;
+    *offset += 1;
+    match node {
+        BvhNode::Interior {
+            left, right, bbox, ..
+        } => {
+            // info!("interior: node offset: {node_offset}");
+            node_list[node_offset] = FlatBvhNode::Interior {
+                left: None,
+                right: None,
+                bbox: bbox,
+            };
+            let left_index = flatten_tree(*left, node_list, offset);
+            let right_index = flatten_tree(*right, node_list, offset);
+
+            node_list[node_offset].set_indices(left_index, right_index);
+        }
+        BvhNode::Leaf { object, bbox, .. } => {
+            // info!("leaf: node offset: {node_offset}");
+            node_list[node_offset] = FlatBvhNode::Leaf {
+                object: *object,
+                bbox: bbox,
+            };
+        }
+    }
+
+    *offset
 }
 
 impl FlatBvhTree {
     pub fn from_tree(root: BvhNode) -> Self {
+        let len = root.len() * 2;
         let mut index = 0;
-        let mut nodes = Vec::with_capacity(root.len());
-        for _ in 0..root.len() {
-            nodes.push(MaybeUninit::uninit());
+        let mut nodes = Vec::with_capacity(len);
+        for _ in 0..len {
+            nodes.push(FlatBvhNode::Interior {
+                left: None,
+                right: None,
+                bbox: Aabb::EMPTY,
+            });
         }
         flatten_tree(root, &mut nodes, &mut index);
 
-        todo!()
-        // FlatBvhTree { nodes }
+        Self { nodes }
     }
 
     pub fn is_valid(&self) -> bool {
         let root_node_is_interior = self.nodes.len() > 1 && self.nodes[0].is_interior();
+        info!("root node is interior: {root_node_is_interior}");
         root_node_is_interior && self.nodes[0].is_valid(&self.nodes, 0)
     }
 
@@ -203,29 +197,22 @@ impl Hittable for FlatBvhTree {
     }
 }
 
-// TODO refactor: turn into enum with interior and leaf nodes
-// Leaf nodes contain the Box<Object> and the bounding box
-// Interior nodes contain the left and right children (Box<BvhNode>) and the bounding box
 #[derive(Debug)]
-pub struct BvhNode {
-    left: Option<Box<Object>>,
-    right: Option<Box<Object>>,
-    bbox: Aabb,
-    id: u32,
+pub enum BvhNode {
+    Interior {
+        left: Box<BvhNode>,
+        right: Box<BvhNode>,
+        id: u32,
+        bbox: Aabb,
+    },
+    Leaf {
+        object: Box<Object>,
+        id: u32,
+        bbox: Aabb,
+    },
 }
 
 impl BvhNode {
-    pub fn new(left: Option<Box<Object>>, right: Option<Box<Object>>, bbox: Aabb) -> Self {
-        let id = get_id();
-
-        Self {
-            bbox,
-            left,
-            right,
-            id,
-        }
-    }
-
     pub fn from(objects: Vec<Object>) -> Self {
         let start = Instant::now();
         let root = BvhNode::from_objects(objects);
@@ -241,6 +228,20 @@ impl BvhNode {
         }
     }
 
+    fn bbox(&self) -> Aabb {
+        match self {
+            BvhNode::Interior { bbox, .. } => *bbox,
+            BvhNode::Leaf { bbox, .. } => *bbox,
+        }
+    }
+
+    fn id(&self) -> u32 {
+        match self {
+            BvhNode::Interior { id, .. } => *id,
+            BvhNode::Leaf { id, .. } => *id,
+        }
+    }
+
     fn from_objects(mut objects: Vec<Object>) -> Self {
         let len = objects.len();
 
@@ -250,13 +251,11 @@ impl BvhNode {
         match len {
             1 => {
                 let object = objects.remove(0);
-                BvhNode::new(Some(Box::new(object)), None, bbox)
-            }
-            2 => {
-                let left = Box::new(objects.remove(0));
-                let right = Box::new(objects.remove(0));
-
-                BvhNode::new(Some(left), Some(right), bbox)
+                BvhNode::Leaf {
+                    bbox: object.bounding_box(),
+                    id: get_id(),
+                    object: Box::new(object),
+                }
             }
             _ => {
                 objects.par_sort_unstable_by_key(|o| {
@@ -272,33 +271,32 @@ impl BvhNode {
                     || BvhNode::from_objects(right),
                 );
 
-                BvhNode::new(
-                    Some(Box::new(Object::BvhNode(left))),
-                    Some(Box::new(Object::BvhNode(right))),
+                BvhNode::Interior {
+                    left: Box::new(left),
+                    right: Box::new(right),
+                    id: get_id(),
                     bbox,
-                )
+                }
             }
         }
     }
 
     pub fn len(&self) -> usize {
-        match (self.left.as_ref(), self.right.as_ref()) {
-            (Some(left), Some(right)) => left.len() + right.len(),
-            (Some(left), None) => left.len(),
-            (None, Some(right)) => right.len(),
-            (None, None) => 1,
+        match self {
+            BvhNode::Interior { left, right, .. } => left.len() + right.len(),
+            BvhNode::Leaf { .. } => 1,
         }
     }
 }
 
 impl Hittable for BvhNode {
     fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord> {
-        if !self.bbox.hit(ray, hit_range) {
+        if !self.bbox().hit(ray, hit_range) {
             return None;
         }
 
-        match (self.left.as_ref(), self.right.as_ref()) {
-            (Some(left), Some(right)) => {
+        match self {
+            BvhNode::Interior { left, right, .. } => {
                 let hit_left = left.hit(ray, hit_range);
                 let range = Range::new(
                     hit_range.min,
@@ -309,21 +307,18 @@ impl Hittable for BvhNode {
                 );
 
                 let hit_right = right.hit(ray, range);
-
                 hit_right.or(hit_left)
             }
-            (Some(left), None) => left.hit(ray, hit_range),
-            (None, Some(right)) => right.hit(ray, hit_range),
-            (None, None) => None,
+            BvhNode::Leaf { object, .. } => object.hit(ray, hit_range),
         }
     }
 
     fn bounding_box(&self) -> Aabb {
-        self.bbox
+        self.bbox()
     }
 
     fn id(&self) -> u32 {
-        self.id
+        self.id()
     }
 }
 

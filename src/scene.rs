@@ -32,7 +32,11 @@ impl SceneDescription {
 
             let root_object = match mode {
                 BvhType::Tree => Object::BvhNode(node),
-                BvhType::Flat => Object::FlatBvhTree(FlatBvhTree::from_tree(node)),
+                BvhType::Flat => {
+                    let tree = FlatBvhTree::from_tree(node);
+                    assert!(tree.is_valid());
+                    Object::FlatBvhTree(tree)
+                }
             };
 
             Self {
