@@ -9,13 +9,6 @@ use crate::ray::Ray;
 use crate::texture::TextureCoordinates;
 use crate::vec3::{Point3, Vec3};
 
-#[derive(Debug, Clone)]
-enum TriangleMeshMaterial {
-    Single(Arc<Material>),
-    // TODO
-    Multiple,
-}
-
 struct TriangleMeshData {
     vertices: Box<[Point3]>,
     face_indices: Box<[(u32, u32, u32)]>,
@@ -201,6 +194,10 @@ impl Hittable for TriangleRef {
 
     fn id(&self) -> u32 {
         self.index
+    }
+
+    fn name(&self) -> &'static str {
+        "TriangleRef"
     }
 }
 

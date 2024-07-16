@@ -1,8 +1,11 @@
+use std::fmt::Debug;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 
 use enum_dispatch::enum_dispatch;
 pub use sphere::Sphere;
+use tracing::info;
 use triangle_mesh::TriangleRef;
 pub use world::World;
 
@@ -12,6 +15,7 @@ use crate::material::Material;
 use crate::range::Range;
 use crate::ray::Ray;
 use crate::texture::TextureCoordinates;
+use crate::util::measure;
 use crate::vec3::{Point3, Vec3};
 
 mod sphere;
@@ -62,12 +66,14 @@ impl HitRecord {
 }
 
 #[enum_dispatch]
-pub trait Hittable: Send + Sync {
+pub trait Hittable: Send + Sync + Debug {
     fn hit(&self, ray: &Ray, hit_range: Range) -> Option<HitRecord>;
 
     fn bounding_box(&self) -> Aabb;
 
     fn id(&self) -> u32;
+
+    fn name(&self) -> &'static str;
 }
 
 #[enum_dispatch(Hittable)]

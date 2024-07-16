@@ -1,9 +1,11 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+use gltf::Image;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
 use indicatif::ProgressIterator;
 use rayon::prelude::*;
+use tev_client::{PacketCreateImage, PacketUpdateImage, TevClient};
 use tracing::{debug, info};
 
 use crate::camera::Camera;
@@ -94,14 +96,10 @@ impl Renderer {
         let elapsed = start.elapsed();
         info!("Rendering took {elapsed:?}");
 
-        self.pixels_to_image(pixels)
+        pixels_to_image(pixels, self.render.image_width, self.render.image_height)
     }
 
-    pub fn render_progressive(
-        &self,
-        destination: impl AsRef<Path>,
-        square_size: usize,
-    ) -> Result<()> {
+    pub fn render_progressive(&self, mut output: ImageOutput, square_size: usize) -> Result<()> {
         let start = Instant::now();
         let pixel_count = self.render.image_height * self.render.image_width;
         let image_size = (pixel_count * 3) as usize;
@@ -138,9 +136,13 @@ impl Renderer {
             if should_save_image(current_sample, sample_count) {
                 let intermediate_image: Vec<_> =
                     aggregate_image.iter().map(|c| c * sample_scale).collect();
-                let image = self.pixels_to_image(intermediate_image);
-                image.save(&destination)?;
-                info!("Saved image after sample {}", current_sample);
+
+                output.write(
+                    intermediate_image,
+                    self.render.image_width,
+                    self.render.image_height,
+                )?;
+                info!("Outputted image after sample {}", current_sample);
             }
             let elapsed = sample_start.elapsed();
             info!("Sample {current_sample} took {elapsed:?}");
@@ -149,14 +151,6 @@ impl Renderer {
         info!("Rendering took {elapsed:?}");
 
         Ok(())
-    }
-
-    fn pixels_to_image(&self, pixels: Vec<f32>) -> RgbImage {
-        let image =
-            Rgb32FImage::from_vec(self.render.image_width, self.render.image_height, pixels)
-                .expect("dimensions must match");
-
-        DynamicImage::from(image).into_rgb8()
     }
 }
 
@@ -172,4 +166,59 @@ fn should_save_image(current_sample: u32, sample_count: u32) -> bool {
     let save_interval = 16;
 
     current_sample <= 5 || current_sample % save_interval == 0 || current_sample == sample_count
+}
+
+fn pixels_to_image(pixels: Vec<f32>, width: u32, height: u32) -> RgbImage {
+    let image = Rgb32FImage::from_vec(width, height, pixels).expect("dimensions must match");
+    DynamicImage::from(image).into_rgb8()
+}
+
+#[derive(Debug)]
+pub enum ImageOutput {
+    File(PathBuf),
+    Viewer(TevClient),
+}
+
+impl ImageOutput {
+    pub fn init(&mut self, width: u32, height: u32) -> Result<()> {
+        if let ImageOutput::Viewer(client) = self {
+            client.send(PacketCreateImage {
+                image_name: "raytracer",
+                grab_focus: true,
+                width,
+                height,
+                channel_names: &["R", "G", "B"],
+            })?;
+        }
+
+        Ok(())
+    }
+
+    pub fn write(&mut self, pixels: Vec<f32>, width: u32, height: u32) -> Result<()> {
+        match self {
+            Self::File(destination) => {
+                let image = pixels_to_image(pixels, width, height);
+                image.save(&destination)?;
+            }
+            Self::Viewer(client) => {
+                let channel_offsets = &[0, 1, 2];
+                let channel_strides = &[3, 3, 3];
+
+                client.send(PacketUpdateImage {
+                    image_name: "raytracer",
+                    grab_focus: true,
+                    width,
+                    height,
+                    channel_names: &["R", "G", "B"],
+                    x: 0,
+                    y: 0,
+                    data: &pixels,
+                    channel_offsets,
+                    channel_strides,
+                })?;
+            }
+        }
+
+        Ok(())
+    }
 }

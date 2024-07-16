@@ -6,8 +6,9 @@ use camera::Camera;
 use clap::Parser;
 use mimalloc::MiMalloc;
 use object::Hittable;
-use renderer::Renderer;
+use renderer::{ImageOutput, Renderer};
 use scene::RenderSettings;
+use tev_client::TevClient;
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use vec3::Color;
@@ -70,7 +71,7 @@ fn main() -> Result<()> {
         .with_max_level(if args.debug {
             Level::DEBUG
         } else {
-            Level::INFO
+            Level::WARN
         })
         .init();
 
@@ -85,16 +86,19 @@ fn main() -> Result<()> {
 
     let selected_camera = render_settings.selected_camera;
 
-    let scene = scene::load_from_gltf(&args.input)?.build_bvh(BvhType::Flat);
+    let scene = scene::load_from_gltf(&args.input)?.build_bvh(BvhType::Tree);
     info!(
         "extents of the scene: {:#?}",
         scene.root_object.bounding_box()
     );
     info!("rendering with configuration {args:#?}");
 
+    let mut output = ImageOutput::Viewer(TevClient::spawn_path_default()?);
+    output.init(render_settings.image_width, render_settings.image_height)?;
+
     let camera = Camera::new(scene.camera(selected_camera), args.width, args.height);
     let renderer = Renderer::new(camera, scene, render_settings);
 
-    renderer.render_progressive(args.output, 16)?;
+    renderer.render_progressive(output, 16)?;
     Ok(())
 }

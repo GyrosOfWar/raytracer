@@ -90,4 +90,8 @@ impl Hittable for Sphere {
     fn id(&self) -> u32 {
         self.id
     }
+
+    fn name(&self) -> &'static str {
+        "Sphere"
+    }
 }

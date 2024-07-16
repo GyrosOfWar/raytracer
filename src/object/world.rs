@@ -45,4 +45,8 @@ impl Hittable for World {
     fn id(&self) -> u32 {
         0
     }
+
+    fn name(&self) -> &'static str {
+        "World"
+    }
 }

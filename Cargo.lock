@@ -673,6 +673,7 @@ dependencies = [
  "ordered-float",
  "rand",
  "rayon",
+ "tev_client",
  "tracing",
  "tracing-subscriber",
  "tracing-test",
@@ -802,6 +803,12 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "tev_client"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c845c2d56d4f732d09a32c9ea2cd3f01923be7a5f98d9f7f0a347205c3141036"
 
 [[package]]
 name = "thread_local"

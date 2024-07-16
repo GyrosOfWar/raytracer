@@ -1,5 +1,4 @@
 use std::cmp::Reverse;
-use std::mem::MaybeUninit;
 use std::time::Instant;
 
 use ordered_float::OrderedFloat;
@@ -195,6 +194,10 @@ impl Hittable for FlatBvhTree {
     fn id(&self) -> u32 {
         0
     }
+
+    fn name(&self) -> &'static str {
+        "FlatBvhTree"
+    }
 }
 
 #[derive(Debug)]
@@ -320,11 +323,14 @@ impl Hittable for BvhNode {
     fn id(&self) -> u32 {
         self.id()
     }
+
+    fn name(&self) -> &'static str {
+        "BvhNode"
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use tracing::debug;
     use tracing_test::traced_test;
 
     use super::{BvhNode, FlatBvhTree};

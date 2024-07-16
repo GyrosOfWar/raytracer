@@ -2,11 +2,12 @@ use tracing::info;
 
 use crate::Result;
 
-pub fn measure(name: &str, f: impl FnOnce()) {
+pub fn measure<T>(name: &str, f: impl FnOnce() -> T) -> T {
     let start = std::time::Instant::now();
-    f();
+    let value = f();
     let elapsed = start.elapsed();
     info!("{} took {:?}", name, elapsed);
+    value
 }
 
 pub fn try_measure(name: &str, f: impl FnOnce() -> Result<()>) -> Result<()> {
