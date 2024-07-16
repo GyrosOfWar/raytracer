@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::{FRAC_1_PI, PI};
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
@@ -6,9 +6,11 @@ use enum_dispatch::enum_dispatch;
 use crate::object::HitRecord;
 use crate::random::{self, random};
 use crate::ray::Ray;
+use crate::sample::cosine_hemisphere_pdf;
 use crate::texture::{HasColorValue, SolidColor, Texture, TextureCoordinates};
 use crate::vec3::random::gen_unit_vector;
 use crate::vec3::{self, reflect, refract, Color, Point3, Vec3, Vec3Ext};
+use crate::{math, sample};
 
 pub struct ScatterResult {
     pub attenuation: Color,
@@ -46,21 +48,21 @@ pub struct Lambertian {
 }
 
 impl Scatterable for Lambertian {
-    fn scatter(&self, _ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
-        let scatter_direction = vec3::random::gen_on_hemisphere(hit.normal);
-        // let mut scatter_direction = hit.normal + vec3::random::gen_unit_vector();
-        // if scatter_direction.near_zero() {
-        //     scatter_direction = hit.normal;
-        // }
+    fn scatter(&self, ray: &Ray, hit: &HitRecord) -> Option<ScatterResult> {
+        let w_o = -ray.direction;
+        let u = vec3::random::gen_2d();
+        let mut w_i = sample::cosine_hemisphere(u);
+
         Some(ScatterResult {
-            scattered: Ray::new(hit.point, scatter_direction),
-            attenuation: self.texture.value_at(hit.tex_coords, hit.point),
+            scattered: Ray::new(hit.point, w_i),
+            attenuation: self.texture.value_at(hit.tex_coords, hit.point) * FRAC_1_PI,
         })
     }
 
     fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> Option<f32> {
-        Some(1.0 / (2.0 * PI))
-        // None
+        Some(cosine_hemisphere_pdf(math::abs_cos_theta(
+            scattered.direction,
+        )))
     }
 }
 

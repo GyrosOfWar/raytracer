@@ -17,12 +17,14 @@ mod aabb;
 mod bvh;
 mod camera;
 mod material;
+mod math;
 mod object;
 mod onb;
 mod random;
 mod range;
 mod ray;
 mod renderer;
+mod sample;
 mod scene;
 mod texture;
 mod util;
@@ -71,7 +73,7 @@ fn main() -> Result<()> {
         .with_max_level(if args.debug {
             Level::DEBUG
         } else {
-            Level::WARN
+            Level::INFO
         })
         .init();
 
@@ -81,7 +83,7 @@ fn main() -> Result<()> {
         image_width: args.width,
         image_height: args.height,
         max_depth: args.max_depth,
-        background_color: Color::ZERO,
+        background_color: Color::new(0.2, 0.2, 0.2),
     };
 
     let selected_camera = render_settings.selected_camera;

@@ -15,7 +15,6 @@ use crate::material::Material;
 use crate::range::Range;
 use crate::ray::Ray;
 use crate::texture::TextureCoordinates;
-use crate::util::measure;
 use crate::vec3::{Point3, Vec3};
 
 mod sphere;

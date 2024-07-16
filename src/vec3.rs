@@ -41,11 +41,17 @@ impl Vec3Ext for Vec3 {
 }
 
 pub mod random {
+    use glam::Vec2;
+
     use super::Vec3;
     use crate::random::{random, random_range};
 
     pub fn gen() -> Vec3 {
         Vec3::new(random(), random(), random())
+    }
+
+    pub fn gen_2d() -> Vec2 {
+        Vec2::new(random(), random())
     }
 
     pub fn gen_range(min: f32, max: f32) -> Vec3 {

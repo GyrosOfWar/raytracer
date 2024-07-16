@@ -33,36 +33,47 @@ impl Renderer {
         }
     }
 
-    fn ray_color(&self, ray: &Ray, depth: u32, world: &impl Hittable) -> Color {
-        if depth == 0 {
-            return Vec3::ZERO;
-        }
+    fn ray_color(&self, ray: Ray, world: &impl Hittable) -> Color {
+        let mut l = Color::ZERO;
+        let mut beta = Color::ONE;
+        let mut depth = 0;
+        let mut range = Range::new(self.camera.z_near, self.camera.z_far);
+        let mut ray = ray;
+        while beta != Color::ZERO {
+            if depth >= self.render.max_depth {
+                break;
+            }
 
-        let intersection = world.hit(ray, Range::new(self.camera.z_near, self.camera.z_far));
-        match intersection {
-            Some(hit) => {
-                let emitted_color = hit.material.emit(hit.tex_coords, hit.point);
+            let si = world.hit(&ray, range);
 
-                match hit.material.scatter(ray, &hit) {
-                    Some(ScatterResult {
-                        attenuation,
-                        scattered,
-                    }) => {
-                        let scattering_pdf = hit.material.scattering_pdf(ray, &hit, &scattered);
-                        let pdf = scattering_pdf;
-                        debug!("pdf: {:?}", pdf);
-                        let scattered_color = if let Some(pdf) = pdf {
-                            (attenuation * pdf * self.ray_color(&scattered, depth - 1, world)) / pdf
-                        } else {
-                            attenuation * self.ray_color(&scattered, depth - 1, world)
-                        };
-                        emitted_color + scattered_color
+            match si {
+                Some(hit) => {
+                    l += beta * hit.material.emit(hit.tex_coords, hit.point);
+                    let sample = hit.material.scatter(&ray, &hit);
+                    if let Some(sample) = sample {
+                        let pdf = hit
+                            .material
+                            .scattering_pdf(&ray, &hit, &sample.scattered)
+                            .unwrap_or(1.0);
+                        beta *= sample.attenuation
+                            * sample.scattered.direction.dot(hit.normal).abs()
+                            / pdf;
+                        ray = sample.scattered;
+                    } else {
+                        break;
                     }
-                    None => emitted_color,
+                }
+                None => {
+                    // TODO infinite lights
+                    l = self.render.background_color;
+                    break;
                 }
             }
-            None => self.render.background_color,
+
+            depth += 1;
         }
+
+        l
     }
 
     pub fn render(&self, square_size: usize) -> RgbImage {
@@ -83,8 +94,7 @@ impl Renderer {
                     let mut color = Vec3::ZERO;
                     for _ in 0..self.render.samples_per_pixel {
                         let ray = self.camera.get_ray(i, j);
-                        color +=
-                            self.ray_color(&ray, self.render.max_depth, &self.scene.root_object);
+                        color += self.ray_color(ray, &self.scene.root_object);
                     }
                     let result = color * sample_scale;
                     pixels.extend([result.x, result.y, result.z]);
@@ -121,8 +131,7 @@ impl Renderer {
                         let i = index % self.render.image_width;
                         let j = index / self.render.image_width;
                         let ray = self.camera.get_ray(i, j);
-                        let color =
-                            self.ray_color(&ray, self.render.max_depth, &self.scene.root_object);
+                        let color = self.ray_color(ray, &self.scene.root_object);
                         pixels.extend([color.x, color.y, color.z]);
                     }
                     pixels
