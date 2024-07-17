@@ -1,4 +1,4 @@
-use std::f32::consts::{FRAC_1_PI, PI};
+use std::f32::consts::FRAC_1_PI;
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
@@ -9,12 +9,13 @@ use crate::ray::Ray;
 use crate::sample::cosine_hemisphere_pdf;
 use crate::texture::{HasColorValue, SolidColor, Texture, TextureCoordinates};
 use crate::vec3::random::gen_unit_vector;
-use crate::vec3::{self, reflect, refract, Color, Point3, Vec3, Vec3Ext};
+use crate::vec3::{self, reflect, refract, Color, Point3, Vec3};
 use crate::{math, sample};
 
 pub struct ScatterResult {
     pub attenuation: Color,
     pub scattered: Ray,
+    pub pdf: Option<f32>,
 }
 
 impl ScatterResult {
@@ -23,6 +24,7 @@ impl ScatterResult {
         ScatterResult {
             attenuation: self.attenuation * factor + other.attenuation * (1.0 - factor),
             scattered,
+            pdf: None,
         }
     }
 }
@@ -34,11 +36,6 @@ pub trait Scatterable {
     fn emit(&self, _: TextureCoordinates, _: Point3) -> Color {
         // default material does not emit anything
         Vec3::default()
-    }
-
-    #[allow(unused_variables)]
-    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> Option<f32> {
-        None
     }
 }
 
@@ -53,16 +50,16 @@ impl Scatterable for Lambertian {
         let u = vec3::random::gen_2d();
         let mut w_i = sample::cosine_hemisphere(u);
 
+        if w_o.z < 0.0 {
+            w_i.z *= -1.0;
+        }
+
+        let sample = self.texture.value_at(hit.tex_coords, hit.point);
         Some(ScatterResult {
             scattered: Ray::new(hit.point, w_i),
-            attenuation: self.texture.value_at(hit.tex_coords, hit.point) * FRAC_1_PI,
+            attenuation: sample * FRAC_1_PI,
+            pdf: Some(cosine_hemisphere_pdf(math::abs_cos_theta(w_i))),
         })
-    }
-
-    fn scattering_pdf(&self, ray: &Ray, hit: &HitRecord, scattered: &Ray) -> Option<f32> {
-        Some(cosine_hemisphere_pdf(math::abs_cos_theta(
-            scattered.direction,
-        )))
     }
 }
 
@@ -79,6 +76,7 @@ impl Scatterable for Metal {
         Some(ScatterResult {
             scattered: Ray::new(hit.point, reflected),
             attenuation: self.texture.value_at(hit.tex_coords, hit.point),
+            pdf: None,
         })
     }
 }
@@ -110,6 +108,7 @@ impl Scatterable for Dielectric {
         Some(ScatterResult {
             attenuation: Vec3::new(1.0, 1.0, 1.0),
             scattered: Ray::new(hit.point, direction),
+            pdf: None,
         })
     }
 }

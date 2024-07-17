@@ -15,7 +15,7 @@
           "kind": "bin"
         }
       },
-      "args": ["assets/cornell.gltf"],
+      "args": ["-W", "500", "-H", "500", "assets/cornell.gltf"],
       "cwd": "${workspaceFolder}",
       "env": {
         "RT_SEQUENTIAL": "1"

@@ -1,11 +1,9 @@
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
 
 use enum_dispatch::enum_dispatch;
 pub use sphere::Sphere;
-use tracing::info;
 use triangle_mesh::TriangleRef;
 pub use world::World;
 

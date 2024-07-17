@@ -1,4 +1,4 @@
-// #![allow(unused)]
+#![allow(unused)]
 use std::path::PathBuf;
 
 use bvh::BvhType;
@@ -83,7 +83,7 @@ fn main() -> Result<()> {
         image_width: args.width,
         image_height: args.height,
         max_depth: args.max_depth,
-        background_color: Color::new(0.2, 0.2, 0.2),
+        background_color: Color::ZERO,
     };
 
     let selected_camera = render_settings.selected_camera;

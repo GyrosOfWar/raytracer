@@ -1,20 +1,17 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Instant;
 
-use gltf::Image;
 use image::{DynamicImage, Rgb32FImage, RgbImage};
-use indicatif::ProgressIterator;
 use rayon::prelude::*;
 use tev_client::{PacketCreateImage, PacketUpdateImage, TevClient};
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::camera::Camera;
-use crate::material::{ScatterResult, Scatterable};
+use crate::material::Scatterable;
 use crate::object::Hittable;
 use crate::range::Range;
 use crate::ray::Ray;
 use crate::scene::{RenderSettings, SceneDescription};
-use crate::util::{measure, try_measure};
 use crate::vec3::{Color, Vec3};
 use crate::Result;
 
@@ -37,7 +34,7 @@ impl Renderer {
         let mut l = Color::ZERO;
         let mut beta = Color::ONE;
         let mut depth = 0;
-        let mut range = Range::new(self.camera.z_near, self.camera.z_far);
+        let range = Range::new(self.camera.z_near, self.camera.z_far);
         let mut ray = ray;
         while beta != Color::ZERO {
             if depth >= self.render.max_depth {
@@ -51,13 +48,9 @@ impl Renderer {
                     l += beta * hit.material.emit(hit.tex_coords, hit.point);
                     let sample = hit.material.scatter(&ray, &hit);
                     if let Some(sample) = sample {
-                        let pdf = hit
-                            .material
-                            .scattering_pdf(&ray, &hit, &sample.scattered)
-                            .unwrap_or(1.0);
                         beta *= sample.attenuation
                             * sample.scattered.direction.dot(hit.normal).abs()
-                            / pdf;
+                            / sample.pdf.unwrap_or(1.0);
                         ray = sample.scattered;
                     } else {
                         break;

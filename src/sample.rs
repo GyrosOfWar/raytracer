@@ -11,7 +11,7 @@ pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
     }
 
     let (theta, r) = if u_offset.x.abs() > u_offset.y.abs() {
-        (u_offset.x, FRAC_PI_4 * (u_offset.x / u_offset.y))
+        (u_offset.x, FRAC_PI_4 * (u_offset.y / u_offset.x))
     } else {
         (
             u_offset.y,
@@ -24,7 +24,7 @@ pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
 
 pub fn cosine_hemisphere(u: Vec2) -> Vec3A {
     let d = sample_uniform_disk_concentric(u);
-    let z = math::safe_sqrt(1.0 - d.x.sqrt() - d.y.sqrt());
+    let z = math::safe_sqrt(1.0 - (d.x * d.x) - (d.y * d.y));
 
     Vec3A::new(d.x, d.y, z)
 }
