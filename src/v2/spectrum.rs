@@ -1,11 +1,9 @@
-use std::fmt::Debug;
-
-use crate::v2::util;
-use enum_dispatch::enum_dispatch;
-
-use ordered_float::OrderedFloat;
-
 use crate::math::lerp;
+use crate::v2::util;
+use crate::Result;
+use enum_dispatch::enum_dispatch;
+use ordered_float::OrderedFloat;
+use std::fmt::Debug;
 
 const LAMBDA_MAX: f32 = 830.0;
 const LAMBDA_MIN: f32 = 360.0;
@@ -128,6 +126,31 @@ fn blackbody(lambda: f32, kelvin: f32) -> f32 {
         (2.0 * H * C * C) / (l.powi(5) * exp)
     }
 }
+
+pub const N_SPECTRUM_SAMPLES: usize = 4;
+
+pub struct SampledSpectrum {
+    samples: [f32; N_SPECTRUM_SAMPLES],
+}
+
+impl SampledSpectrum {
+    pub fn from_slice(slice: &[f32]) -> Result<Self> {
+        Ok(SampledSpectrum {
+            samples: slice.try_into()?,
+        })
+    }
+
+    pub fn from_array(array: [f32; N_SPECTRUM_SAMPLES]) -> Self {
+        SampledSpectrum { samples: array }
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.samples.iter().copied().all(|n| n == 0.0)
+    }
+}
+
+// todo
+pub struct SampledWavelengths {}
 
 #[cfg(test)]
 mod tests {}
