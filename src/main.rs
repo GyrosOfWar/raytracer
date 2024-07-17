@@ -28,6 +28,7 @@ mod sample;
 mod scene;
 mod texture;
 mod util;
+mod v2;
 mod vec3;
 
 #[global_allocator]
