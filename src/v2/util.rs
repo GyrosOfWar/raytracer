@@ -1,6 +1,7 @@
-use crate::math;
 use num_traits::clamp;
 use ordered_float::OrderedFloat;
+
+use crate::math;
 
 pub fn find_interval<P>(sz: usize, pred: P) -> usize
 where

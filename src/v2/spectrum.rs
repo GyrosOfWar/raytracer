@@ -1,9 +1,11 @@
+use std::fmt::Debug;
+
+use enum_dispatch::enum_dispatch;
+use ordered_float::OrderedFloat;
+
 use crate::math::lerp;
 use crate::v2::util;
 use crate::Result;
-use enum_dispatch::enum_dispatch;
-use ordered_float::OrderedFloat;
-use std::fmt::Debug;
 
 const LAMBDA_MAX: f32 = 830.0;
 const LAMBDA_MIN: f32 = 360.0;
@@ -14,6 +16,15 @@ pub trait HasWavelength: Send + Sync + Debug {
     fn evaluate(&self, lambda: f32) -> f32;
 
     fn max_value(&self) -> f32;
+
+    fn sample(&self, lambda: SampledWavelengths) -> SampledSpectrum {
+        let mut samples = [0.0; N_SPECTRUM_SAMPLES];
+        for (idx, wavelength) in lambda.lambda.iter().copied().enumerate() {
+            samples[idx] = self.evaluate(wavelength);
+        }
+
+        SampledSpectrum::from_array(samples)
+    }
 }
 
 #[enum_dispatch(HasWavelength)]
@@ -127,6 +138,15 @@ fn blackbody(lambda: f32, kelvin: f32) -> f32 {
     }
 }
 
+pub fn inner_product(f: Spectrum, g: Spectrum) -> f32 {
+    let mut integral = 0.0;
+    for lambda in (LAMBDA_MIN as usize)..(LAMBDA_MAX as usize) {
+        integral += f.evaluate(lambda) * g.evaluate(lambda);
+    }
+
+    integral
+}
+
 pub const N_SPECTRUM_SAMPLES: usize = 4;
 
 pub struct SampledSpectrum {
@@ -149,8 +169,52 @@ impl SampledSpectrum {
     }
 }
 
-// todo
-pub struct SampledWavelengths {}
+#[derive(Debug)]
+pub struct SampledWavelengths {
+    pub lambda: [f32; N_SPECTRUM_SAMPLES],
+    pub pdf: [f32; N_SPECTRUM_SAMPLES],
+}
+
+impl SampledWavelengths {
+    pub fn sample_uniform(u: f32) -> Self {
+        Self::sample_uniform_in_range(u, LAMBDA_MIN, LAMBDA_MAX)
+    }
+
+    pub fn sample_uniform_in_range(u: f32, lambda_min: f32, lambda_max: f32) -> Self {
+        let mut lambda = [0.0; N_SPECTRUM_SAMPLES];
+        lambda[0] = lerp(u, lambda_min, lambda_max);
+        let delta = (lambda_max - lambda_min) / N_SPECTRUM_SAMPLES as f32;
+        for i in 1..N_SPECTRUM_SAMPLES {
+            lambda[i] = lambda[i - 1] + delta;
+            if lambda[i] > lambda_max {
+                lambda[i] = lambda_min + (lambda[i] - lambda_max);
+            }
+        }
+
+        let pdf = [1.0 / (lambda_max - lambda_min); N_SPECTRUM_SAMPLES];
+
+        Self { lambda, pdf }
+    }
+}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::SampledWavelengths;
+    use crate::v2::spectrum::{LAMBDA_MAX, LAMBDA_MIN, N_SPECTRUM_SAMPLES};
+
+    #[test]
+    fn test_sampled_wavelengths_uniform() {
+        let u = 0.0;
+        let wavelength = SampledWavelengths::sample_uniform(u);
+        let delta = (LAMBDA_MAX - LAMBDA_MIN) / N_SPECTRUM_SAMPLES as f32;
+        assert_eq!(
+            wavelength.lambda,
+            [
+                360.0,
+                360.0 + delta,
+                360.0 + (delta * 2.0),
+                360.0 + (delta * 3.0)
+            ]
+        );
+    }
+}
