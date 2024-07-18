@@ -53,15 +53,41 @@ impl HasWavelength for Constant {
 
 #[derive(Debug)]
 pub struct DenselySampled {
-    lambda_min: i32,
-    lambda_max: i32,
+    lambda_min: usize,
+    lambda_max: usize,
     values: Vec<f32>,
+}
+
+impl DenselySampled {
+    pub fn new(values: Vec<f32>) -> Self {
+        DenselySampled {
+            lambda_max: LAMBDA_MAX as usize,
+            lambda_min: LAMBDA_MIN as usize,
+            values,
+        }
+    }
+
+    pub fn from_spectrum_in_range(spec: Spectrum, lambda_min: usize, lambda_max: usize) -> Self {
+        let mut values = vec![];
+        for lambda in lambda_min..lambda_max {
+            values[lambda - lambda_min] = spec.evaluate(lambda as f32);
+        }
+        DenselySampled {
+            values,
+            lambda_max,
+            lambda_min,
+        }
+    }
+
+    pub fn from_spectrum(spec: Spectrum) -> Self {
+        Self::from_spectrum_in_range(spec, LAMBDA_MIN as usize, LAMBDA_MAX as usize)
+    }
 }
 
 impl HasWavelength for DenselySampled {
     fn evaluate(&self, lambda: f32) -> f32 {
-        let offset = lambda.round() as i32 - self.lambda_min;
-        if offset < 0 || offset as usize >= self.values.len() {
+        let offset = lambda.round() as usize - self.lambda_min;
+        if offset as usize >= self.values.len() {
             0.0
         } else {
             self.values[offset as usize]
@@ -77,6 +103,13 @@ impl HasWavelength for DenselySampled {
 pub struct PiecewiseLinear {
     lambdas: Vec<f32>,
     values: Vec<f32>,
+}
+
+impl PiecewiseLinear {
+    pub fn new(mut lambdas: Vec<f32>, values: Vec<f32>) -> Self {
+        lambdas.sort_by_key(|f| OrderedFloat(*f));
+        Self { lambdas, values }
+    }
 }
 
 impl HasWavelength for PiecewiseLinear {
@@ -138,10 +171,10 @@ fn blackbody(lambda: f32, kelvin: f32) -> f32 {
     }
 }
 
-pub fn inner_product(f: Spectrum, g: Spectrum) -> f32 {
+pub fn inner_product(f: &Spectrum, g: &Spectrum) -> f32 {
     let mut integral = 0.0;
     for lambda in (LAMBDA_MIN as usize)..(LAMBDA_MAX as usize) {
-        integral += f.evaluate(lambda) * g.evaluate(lambda);
+        integral += f.evaluate(lambda as f32) * g.evaluate(lambda as f32);
     }
 
     integral
