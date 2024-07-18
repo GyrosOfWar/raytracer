@@ -18,12 +18,12 @@ pub trait HasWavelength: Send + Sync + Debug {
     fn max_value(&self) -> f32;
 
     fn sample(&self, lambda: SampledWavelengths) -> SampledSpectrum {
-        let mut samples = [0.0; N_SPECTRUM_SAMPLES];
-        for (idx, wavelength) in lambda.lambda.iter().copied().enumerate() {
-            samples[idx] = self.evaluate(wavelength);
-        }
-
-        SampledSpectrum::from_array(samples)
+        let spectrum: Vec<_> = lambda
+            .lambda
+            .into_iter()
+            .map(|w| self.evaluate(w))
+            .collect();
+        SampledSpectrum::from_array(spectrum.try_into().expect("must have correct length"))
     }
 }
 

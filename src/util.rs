@@ -10,10 +10,10 @@ pub fn measure<T>(name: &str, f: impl FnOnce() -> T) -> T {
     value
 }
 
-pub fn try_measure(name: &str, f: impl FnOnce() -> Result<()>) -> Result<()> {
+pub fn try_measure<T>(name: &str, f: impl FnOnce() -> Result<T>) -> Result<T> {
     let start = std::time::Instant::now();
-    f()?;
+    let result = f()?;
     let elapsed = start.elapsed();
     info!("{} took {:?}", name, elapsed);
-    Ok(())
+    Ok(result)
 }

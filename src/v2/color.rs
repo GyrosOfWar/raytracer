@@ -2,6 +2,8 @@ use super::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
+static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
+
 #[derive(Deserialize)]
 struct CieXyzFile {
     x: Vec<f32>,
@@ -30,8 +32,6 @@ impl CieXyz {
         }
     }
 }
-
-static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
 
 #[derive(Debug)]
 pub struct Xyz {

@@ -11,3 +11,13 @@ pub fn abs_cos_theta(v: Vec3A) -> f32 {
 pub fn lerp(x: f32, a: f32, b: f32) -> f32 {
     (1.0 - x) * a + x * b
 }
+
+pub fn clamp<T: PartialOrd>(x: T, min: T, max: T) -> T {
+    if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
+    }
+}
