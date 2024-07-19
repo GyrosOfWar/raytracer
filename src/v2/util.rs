@@ -2,26 +2,11 @@ use ordered_float::OrderedFloat;
 
 use crate::math;
 
-pub fn find_interval<P>(sz: usize, pred: P) -> usize
-where
-    P: Fn(usize) -> bool,
-{
-    let mut size: isize = sz as isize - 2;
-    let mut first: isize = 1;
-
-    while size > 0 {
-        let half = size as usize >> 1;
-        let middle = first as usize + half;
-        let pred_result = pred(middle);
-        if pred_result {
-            first = (middle + 1) as isize;
-            size = size - (half + 1) as isize;
-        } else {
-            size = half as isize;
-        }
-    }
-
-    math::clamp(size as isize - 1, 0, sz as isize - 2) as usize
+pub fn find_interval<T: PartialOrd>(slice: &[T], item: T) -> usize {
+    slice
+        .binary_search_by(|probe| probe.partial_cmp(&item).expect("no NaNs allowed"))
+        .unwrap_or(0)
+        .min(slice.len() - 2)
 }
 
 pub fn max_value(values: &[f32]) -> f32 {
@@ -67,7 +52,7 @@ mod tests {
     fn test_find_interval() {
         let values = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
         let target = 4.0;
-        let idx = find_interval(values.len(), |idx| values[idx] <= target);
+        let idx = find_interval(&values, target);
         assert_eq!(idx, 4);
     }
 }

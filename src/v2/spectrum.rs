@@ -68,7 +68,7 @@ impl DenselySampled {
     }
 
     pub fn from_spectrum_in_range(spec: Spectrum, lambda_min: usize, lambda_max: usize) -> Self {
-        let mut values = vec![];
+        let mut values = vec![0.0; (lambda_max - lambda_min)];
         for lambda in lambda_min..lambda_max {
             values[lambda - lambda_min] = spec.evaluate(lambda as f32);
         }
@@ -120,7 +120,7 @@ impl HasWavelength for PiecewiseLinear {
         {
             0.0
         } else {
-            let o = util::find_interval(self.lambdas.len(), |idx| self.lambdas[idx] <= lambda);
+            let o = util::find_interval(&self.lambdas, lambda);
             let t = (lambda - self.lambdas[o]) / (self.lambdas[o + 1] - self.lambdas[o]);
             lerp(t, self.values[o], self.values[o + 1])
         }
