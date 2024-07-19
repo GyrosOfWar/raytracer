@@ -5,7 +5,7 @@ use tracing::info;
 pub fn find_interval<T: PartialOrd>(slice: &[T], item: T) -> usize {
     slice
         .binary_search_by(|probe| probe.partial_cmp(&item).expect("no NaNs allowed"))
-        .unwrap_or(0)
+        .unwrap_or_else(|e| e)
         .min(slice.len() - 2)
 }
 
@@ -67,8 +67,13 @@ mod tests {
     #[test]
     fn test_find_interval() {
         let values = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
-        let target = 4.0;
-        let idx = find_interval(&values, target);
+        let idx = find_interval(&values, 4.0);
         assert_eq!(idx, 4);
+
+        let idx = find_interval(&values, 7.0);
+        assert_eq!(idx, 4);
+
+        let idx = find_interval(&values, -1.0);
+        assert_eq!(idx, 0);
     }
 }
