@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 
+use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
 use ordered_float::OrderedFloat;
 
 use crate::math::lerp;
 use crate::util;
-use color_eyre::Result;
 
 const LAMBDA_MAX: f32 = 830.0;
 const LAMBDA_MIN: f32 = 360.0;

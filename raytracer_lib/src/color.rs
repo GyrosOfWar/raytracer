@@ -1,6 +1,7 @@
-use super::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
+
+use super::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 
 static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
 
@@ -59,9 +60,8 @@ pub struct Rgb {
 
 #[cfg(test)]
 mod tests {
-    use crate::spectrum::{Constant, Spectrum};
-
     use super::Xyz;
+    use crate::spectrum::{Constant, Spectrum};
 
     #[test]
     fn test_xyz_from_spectrum() {

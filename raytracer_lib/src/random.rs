@@ -31,25 +31,6 @@ mod rand {
     }
 }
 
-#[allow(unused)]
-mod libc {
-    use libc::{rand, RAND_MAX};
-
-    pub fn random() -> f32 {
-        let r = unsafe { rand() } as f64;
-
-        (r / (RAND_MAX as f64 + 1.0)) as f32
-    }
-
-    pub fn random_range(min: f32, max: f32) -> f32 {
-        min + (max - min) * random()
-    }
-
-    pub fn random_int(min: i32, max: i32) -> i32 {
-        random_range(min as f32, (max + 1) as f32) as i32
-    }
-}
-
 pub fn random() -> f32 {
     rand::random()
 }

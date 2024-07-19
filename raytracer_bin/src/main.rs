@@ -6,17 +6,6 @@ use mimalloc::MiMalloc;
 use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-mod color;
-mod math;
-mod onb;
-mod random;
-mod range;
-mod ray;
-mod sample;
-mod spectrum;
-mod util;
-mod vec3;
-
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 

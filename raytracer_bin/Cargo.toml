@@ -1,0 +1,21 @@
+[package]
+name = "raytracer-bin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.8", features = ["derive"] }
+color-eyre = "0.6.3"
+indicatif = { version = "0.17.8", features = ["rayon"] }
+mimalloc = "0.1.43"
+rayon = "1.10.0"
+tev_client = "0.5.2"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+raytracer_lib = { path = "../raytracer_lib" }
+
+[profile.release]
+debug = true
+
+[dev-dependencies]
+tracing-test = "0.2.5"
