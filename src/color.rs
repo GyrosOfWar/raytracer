@@ -20,7 +20,7 @@ struct CieXyz {
 impl CieXyz {
     fn load() -> Self {
         let object: CieXyzFile =
-            serde_json::from_str(include_str!("../../data/cie-xyz.json")).unwrap();
+            serde_json::from_str(include_str!("../data/cie-xyz.json")).unwrap();
         let x = PiecewiseLinear::new(object.lambda.clone(), object.x);
         let y = PiecewiseLinear::new(object.lambda.clone(), object.y);
         let z = PiecewiseLinear::new(object.lambda, object.z);
@@ -52,7 +52,7 @@ impl From<Spectrum> for Xyz {
 
 #[cfg(test)]
 mod tests {
-    use crate::v2::spectrum::{Constant, Spectrum};
+    use crate::spectrum::{Constant, Spectrum};
 
     use super::Xyz;
 

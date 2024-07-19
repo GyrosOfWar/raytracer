@@ -4,7 +4,7 @@ use enum_dispatch::enum_dispatch;
 use ordered_float::OrderedFloat;
 
 use crate::math::lerp;
-use crate::v2::util;
+use crate::util;
 use crate::Result;
 
 const LAMBDA_MAX: f32 = 830.0;
@@ -68,7 +68,7 @@ impl DenselySampled {
     }
 
     pub fn from_spectrum_in_range(spec: Spectrum, lambda_min: usize, lambda_max: usize) -> Self {
-        let mut values = vec![0.0; (lambda_max - lambda_min)];
+        let mut values = vec![0.0; lambda_max - lambda_min];
         for lambda in lambda_min..lambda_max {
             values[lambda - lambda_min] = spec.evaluate(lambda as f32);
         }
@@ -233,7 +233,7 @@ impl SampledWavelengths {
 #[cfg(test)]
 mod tests {
     use super::SampledWavelengths;
-    use crate::v2::spectrum::{LAMBDA_MAX, LAMBDA_MIN, N_SPECTRUM_SAMPLES};
+    use crate::spectrum::{LAMBDA_MAX, LAMBDA_MIN, N_SPECTRUM_SAMPLES};
 
     #[test]
     fn test_sampled_wavelengths_uniform() {

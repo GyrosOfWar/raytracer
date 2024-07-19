@@ -1,6 +1,5 @@
 pub type Point3 = glam::Vec3A;
 pub type Vec3 = glam::Vec3A;
-pub type Color = glam::Vec3A;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Axis {
