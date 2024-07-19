@@ -50,6 +50,13 @@ impl From<Spectrum> for Xyz {
     }
 }
 
+#[derive(Debug)]
+pub struct Rgb {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::spectrum::{Constant, Spectrum};

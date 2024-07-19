@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 
 use crate::math::lerp;
 use crate::util;
-use crate::Result;
+use color_eyre::Result;
 
 const LAMBDA_MAX: f32 = 830.0;
 const LAMBDA_MIN: f32 = 360.0;

@@ -20,8 +20,6 @@ mod vec3;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-pub type Result<T> = color_eyre::Result<T>;
-
 #[derive(Debug, Parser)]
 pub struct Args {
     #[clap(long)]
@@ -51,7 +49,7 @@ pub struct Args {
     pub output: PathBuf,
 }
 
-fn main() -> Result<()> {
+fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     let args = Args::parse();

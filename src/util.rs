@@ -1,4 +1,4 @@
-use crate::Result;
+use color_eyre::Result;
 use ordered_float::OrderedFloat;
 use tracing::info;
 
