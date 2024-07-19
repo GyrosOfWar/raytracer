@@ -1,3 +1,4 @@
+pub mod aabb;
 pub mod color;
 pub mod math;
 pub mod onb;
@@ -7,6 +8,6 @@ pub mod ray;
 pub mod sample;
 pub mod spectrum;
 pub mod util;
-pub mod vec3;
+pub mod vec;
 
 pub type Result<T> = color_eyre::Result<T>;
