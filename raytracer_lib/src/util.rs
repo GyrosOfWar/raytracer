@@ -18,7 +18,7 @@ pub fn max_value(values: &[f32]) -> f32 {
 }
 
 pub fn is_sorted<T: PartialOrd>(slice: &[T]) -> bool {
-    slice.windows(2).all(|w| w[0] <= w[1])
+    is_sorted_by(slice, |a, b| a < b)
 }
 
 pub fn is_sorted_by<T: PartialOrd, F>(slice: &[T], mut compare: F) -> bool

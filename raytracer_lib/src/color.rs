@@ -1,9 +1,10 @@
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-use super::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
+use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 
-static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
+pub const CIE_Y_INTEGRAL: f32 = 106.856895;
+pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
 
 #[derive(Deserialize)]
 struct CieXyzFile {
@@ -12,10 +13,11 @@ struct CieXyzFile {
     z: Vec<f32>,
     lambda: Vec<f32>,
 }
-struct CieXyz {
-    x: Spectrum,
-    y: Spectrum,
-    z: Spectrum,
+
+pub struct CieXyz {
+    pub x: Spectrum,
+    pub y: Spectrum,
+    pub z: Spectrum,
 }
 
 impl CieXyz {
@@ -65,7 +67,6 @@ mod tests {
 
     #[test]
     fn test_xyz_from_spectrum() {
-        // TODO look at the pbrt test suite
         let spectrum: Spectrum = Constant { c: 400.0 }.into();
         let xyz: Xyz = spectrum.into();
         assert_ne!(xyz.x, 0.0);

@@ -1,11 +1,13 @@
 use std::fmt::Debug;
+use std::ops::Mul;
 
 use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
 use ordered_float::OrderedFloat;
 
+use crate::color::{Xyz, CIE_XYZ};
 use crate::math::lerp;
-use crate::util;
+use crate::util::{self, is_sorted};
 
 const LAMBDA_MAX: f32 = 830.0;
 const LAMBDA_MIN: f32 = 360.0;
@@ -17,7 +19,7 @@ pub trait HasWavelength: Send + Sync + Debug {
 
     fn max_value(&self) -> f32;
 
-    fn sample(&self, lambda: SampledWavelengths) -> SampledSpectrum {
+    fn sample(&self, lambda: &SampledWavelengths) -> SampledSpectrum {
         let spectrum: Vec<_> = lambda
             .lambda
             .into_iter()
@@ -107,7 +109,9 @@ pub struct PiecewiseLinear {
 
 impl PiecewiseLinear {
     pub fn new(mut lambdas: Vec<f32>, values: Vec<f32>) -> Self {
-        lambdas.sort_by_key(|f| OrderedFloat(*f));
+        if !is_sorted(&lambdas) {
+            lambdas.sort_by_key(|f| OrderedFloat(*f));
+        }
         Self { lambdas, values }
     }
 }
@@ -182,6 +186,7 @@ pub fn inner_product(f: &Spectrum, g: &Spectrum) -> f32 {
 
 pub const N_SPECTRUM_SAMPLES: usize = 4;
 
+#[derive(Debug, Copy, Clone)]
 pub struct SampledSpectrum {
     samples: [f32; N_SPECTRUM_SAMPLES],
 }
@@ -199,6 +204,47 @@ impl SampledSpectrum {
 
     pub fn is_zero(&self) -> bool {
         self.samples.iter().copied().all(|n| n == 0.0)
+    }
+
+    pub fn safe_div(self, rhs: SampledSpectrum) -> Self {
+        let mut samples = self.samples;
+        for (i, value) in rhs.samples.iter().enumerate() {
+            samples[i] = if *value != 0.0 {
+                samples[i] / value
+            } else {
+                0.0
+            };
+        }
+        SampledSpectrum { samples }
+    }
+
+    pub fn average(&self) -> f32 {
+        let sum: f32 = self.samples.iter().sum();
+        sum / self.samples.len() as f32
+    }
+
+    pub fn to_xyz(&self, value: SampledWavelengths) -> Xyz {
+        let x = CIE_XYZ.x.sample(&value);
+        let y = CIE_XYZ.y.sample(&value);
+        let z = CIE_XYZ.z.sample(&value);
+        let pdf = value.pdf();
+        Xyz {
+            x: (x * *self).safe_div(pdf).average(),
+            y: (y * *self).safe_div(pdf).average(),
+            z: (z * *self).safe_div(pdf).average(),
+        }
+    }
+}
+
+impl Mul for SampledSpectrum {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut values = self.samples;
+        for (idx, value) in rhs.samples.iter().enumerate() {
+            values[idx] *= value;
+        }
+        SampledSpectrum { samples: values }
     }
 }
 
@@ -227,6 +273,10 @@ impl SampledWavelengths {
         let pdf = [1.0 / (lambda_max - lambda_min); N_SPECTRUM_SAMPLES];
 
         Self { lambda, pdf }
+    }
+
+    pub fn pdf(&self) -> SampledSpectrum {
+        SampledSpectrum::from_array(self.pdf)
     }
 }
 
