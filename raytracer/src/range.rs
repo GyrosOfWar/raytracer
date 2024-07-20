@@ -40,7 +40,6 @@ impl Range {
         self.max.is_finite() && self.min.is_finite()
     }
 
-    #[allow(unused)]
     pub fn clamp(&self, x: f32) -> f32 {
         if x < self.min {
             self.min

@@ -9,14 +9,6 @@ use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
 
-#[derive(Deserialize)]
-struct CieXyzFile {
-    x: Vec<f32>,
-    y: Vec<f32>,
-    z: Vec<f32>,
-    lambda: Vec<f32>,
-}
-
 pub struct CieXyz {
     pub x: Spectrum,
     pub y: Spectrum,
@@ -25,6 +17,14 @@ pub struct CieXyz {
 
 impl CieXyz {
     fn load() -> Self {
+        #[derive(Deserialize)]
+        struct CieXyzFile {
+            x: Vec<f32>,
+            y: Vec<f32>,
+            z: Vec<f32>,
+            lambda: Vec<f32>,
+        }
+
         let object: CieXyzFile =
             serde_json::from_str(include_str!("../data/cie-xyz.json")).unwrap();
         let x = PiecewiseLinear::new(object.lambda.clone(), object.x);
