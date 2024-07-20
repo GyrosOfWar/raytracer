@@ -1,3 +1,6 @@
+use std::ops::Div;
+
+use glam::Vec2;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
@@ -41,6 +44,27 @@ pub struct Xyz {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+impl Xyz {
+    pub fn xy(&self) -> Vec2 {
+        Vec2::new(
+            self.x / (self.x + self.y + self.z),
+            self.y / (self.x + self.y + self.z),
+        )
+    }
+}
+
+impl Div<f32> for Xyz {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Xyz {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
+    }
 }
 
 impl From<Spectrum> for Xyz {

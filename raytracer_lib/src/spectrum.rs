@@ -5,7 +5,7 @@ use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
 use ordered_float::OrderedFloat;
 
-use crate::color::{Xyz, CIE_XYZ};
+use crate::color::{Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
 use crate::math::lerp;
 use crate::util::{self, is_sorted};
 
@@ -228,11 +228,13 @@ impl SampledSpectrum {
         let y = CIE_XYZ.y.sample(&value);
         let z = CIE_XYZ.z.sample(&value);
         let pdf = value.pdf();
-        Xyz {
+        let xyz = Xyz {
             x: (x * *self).safe_div(pdf).average(),
             y: (y * *self).safe_div(pdf).average(),
             z: (z * *self).safe_div(pdf).average(),
-        }
+        };
+
+        xyz / CIE_Y_INTEGRAL
     }
 }
 
