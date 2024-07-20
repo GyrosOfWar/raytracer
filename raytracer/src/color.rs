@@ -2,6 +2,7 @@ use std::ops::Div;
 
 use glam::Vec2;
 use once_cell::sync::Lazy;
+use ordered_float::Float;
 use serde::Deserialize;
 
 use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
@@ -82,6 +83,38 @@ pub struct Rgb {
     pub r: f32,
     pub g: f32,
     pub b: f32,
+}
+
+pub struct RgbSigmoidPolynomial {
+    pub c0: f32,
+    pub c1: f32,
+    pub c2: f32,
+}
+
+impl RgbSigmoidPolynomial {
+    pub fn evaluate(&self, lambda: f32) -> f32 {
+        sigmoid(evaluate_polynomial(&[lambda, self.c0, self.c1, self.c2]))
+    }
+}
+
+fn evaluate_polynomial(coefficients: &[f32]) -> f32 {
+    match coefficients {
+        &[] => 1.0,
+        &[a] => a,
+        &[a, b, rest @ ..] => a.mul_add(evaluate_polynomial(&rest), b),
+    }
+}
+
+fn sigmoid(x: f32) -> f32 {
+    if x.is_infinite() {
+        if x > 0.0 {
+            1.0
+        } else {
+            0.0
+        }
+    } else {
+        0.5 + x / (2.0 * (1.0 + x * x).sqrt())
+    }
 }
 
 #[cfg(test)]
