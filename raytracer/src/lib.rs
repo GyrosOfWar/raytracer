@@ -1,5 +1,6 @@
 pub mod aabb;
 pub mod color;
+pub mod integrator;
 pub mod math;
 pub mod onb;
 pub mod random;

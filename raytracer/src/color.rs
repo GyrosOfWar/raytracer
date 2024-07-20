@@ -2,9 +2,9 @@ use std::ops::Div;
 
 use glam::Vec2;
 use once_cell::sync::Lazy;
-use ordered_float::Float;
 use serde::Deserialize;
 
+use crate::math::evaluate_polynomial;
 use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
@@ -93,15 +93,7 @@ pub struct RgbSigmoidPolynomial {
 
 impl RgbSigmoidPolynomial {
     pub fn evaluate(&self, lambda: f32) -> f32 {
-        sigmoid(evaluate_polynomial(&[lambda, self.c0, self.c1, self.c2]))
-    }
-}
-
-fn evaluate_polynomial(coefficients: &[f32]) -> f32 {
-    match coefficients {
-        &[] => 1.0,
-        &[a] => a,
-        &[a, b, rest @ ..] => a.mul_add(evaluate_polynomial(&rest), b),
+        sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda))
     }
 }
 
