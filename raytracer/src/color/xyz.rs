@@ -76,9 +76,9 @@ impl Div<f32> for Xyz {
 impl<'a> From<&'a Spectrum> for Xyz {
     fn from(value: &'a Spectrum) -> Self {
         Xyz {
-            x: inner_product(&CIE_XYZ.x, &value),
-            y: inner_product(&CIE_XYZ.y, &value),
-            z: inner_product(&CIE_XYZ.z, &value),
+            x: inner_product(&CIE_XYZ.x, value),
+            y: inner_product(&CIE_XYZ.y, value),
+            z: inner_product(&CIE_XYZ.z, value),
         }
     }
 }

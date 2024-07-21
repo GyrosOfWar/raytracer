@@ -2,16 +2,20 @@ use std::path::Path;
 use std::sync::Arc;
 
 use glam::{Mat3A, Vec2, Vec3A};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
-use crate::spectrum::Spectrum;
+use crate::spectrum::{Constant, Spectrum, NAMED_SPECTRA};
 use crate::util::find_interval;
 use crate::Result;
 
 const RES: usize = 64;
+pub static COLOR_SPACES: Lazy<ColorSpaces> = Lazy::new(|| {
+    ColorSpaces::load().expect("failed to load color space files, did you forget to generate them?")
+});
 
 #[derive(Serialize, Deserialize)]
 pub struct CoefficientsFile {
@@ -167,8 +171,72 @@ impl RgbColorSpace {
         vec.into()
     }
 
+    pub fn to_rgb_coefficients(&self, rgb: Rgb) -> RgbSigmoidPolynomial {
+        self.spectrum_table.evaluate(rgb.clamp_zero())
+    }
+
     pub fn convert_color_space(from: &RgbColorSpace, to: &RgbColorSpace) -> Mat3A {
         to.rgb_from_xyz * from.xyz_from_rgb
+    }
+}
+
+pub struct ColorSpaces {
+    pub s_rgb: RgbColorSpace,
+    pub dci_p3: RgbColorSpace,
+    pub rec2020: RgbColorSpace,
+    pub aces2065_1: RgbColorSpace,
+}
+
+impl ColorSpaces {
+    pub fn load() -> Result<Self> {
+        let s_rgb_table =
+            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/srgb.bin")?);
+        let dci_p3_table =
+            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/dci_p3.bin")?);
+        let rec2020_table =
+            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/rec2020.bin")?);
+        let aces_table =
+            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/aces.bin")?);
+
+        let s_rgb = RgbColorSpace::new(
+            Vec2::new(0.64, 0.33),
+            Vec2::new(0.3, 0.6),
+            Vec2::new(0.15, 0.06),
+            // TODO stdillum-D65
+            Constant { c: 400.0 }.into(),
+            Arc::new(s_rgb_table),
+        );
+
+        let dci_p3 = RgbColorSpace::new(
+            Vec2::new(0.68, 0.32),
+            Vec2::new(0.265, 0.690),
+            Vec2::new(0.15, 0.06),
+            NAMED_SPECTRA.std_illum_d65.clone(),
+            Arc::new(dci_p3_table),
+        );
+
+        let rec2020 = RgbColorSpace::new(
+            Vec2::new(0.708, 0.292),
+            Vec2::new(0.170, 0.797),
+            Vec2::new(0.131, 0.046),
+            NAMED_SPECTRA.std_illum_d65.clone(),
+            Arc::new(rec2020_table),
+        );
+
+        let aces2065_1 = RgbColorSpace::new(
+            Vec2::new(0.7347, 0.2653),
+            Vec2::new(0.0, 1.0),
+            Vec2::new(0.0001, -0.077),
+            NAMED_SPECTRA.illum_aces_d60.clone(),
+            Arc::new(aces_table),
+        );
+
+        Ok(ColorSpaces {
+            s_rgb,
+            dci_p3,
+            rec2020,
+            aces2065_1,
+        })
     }
 }
 

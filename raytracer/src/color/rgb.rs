@@ -48,9 +48,17 @@ impl Rgb {
             _ => self.b,
         }
     }
+
+    pub fn clamp_zero(self) -> Rgb {
+        Rgb {
+            r: self.r.max(0.0),
+            g: self.g.max(0.0),
+            b: self.b.max(0.0),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RgbSigmoidPolynomial {
     pub c0: f32,
     pub c1: f32,
