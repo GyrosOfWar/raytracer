@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-use raytracer::color::CoefficientsFile;
+use raytracer::color::colorspace::CoefficientsFile;
 use regex::Regex;
 
 fn parse_coefficients(regex: &Regex, content: &str) -> Vec<f32> {

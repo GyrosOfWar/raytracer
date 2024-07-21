@@ -86,3 +86,30 @@ fn sigmoid(x: f32) -> f32 {
         0.5 + x / (2.0 * (1.0 + x * x).sqrt())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::color::rgb::Rgb;
+
+    #[test]
+    fn test_rgb_component() {
+        let rgb = Rgb {
+            r: 1.0,
+            g: 0.5,
+            b: 0.7,
+        };
+        assert_eq!(rgb.max_component_index(), 0);
+        let rgb = Rgb {
+            r: 0.5,
+            g: 1.0,
+            b: 0.2,
+        };
+        assert_eq!(rgb.max_component_index(), 1);
+        let rgb = Rgb {
+            r: 0.2,
+            g: 0.7,
+            b: 1.0,
+        };
+        assert_eq!(rgb.max_component_index(), 2);
+    }
+}

@@ -5,9 +5,9 @@ use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
 use ordered_float::OrderedFloat;
 
+use crate::color::colorspace::RgbColorSpace;
 use crate::color::rgb::Rgb;
-use crate::color::xyz::Xyz;
-use crate::color::{RgbColorSpace, CIE_XYZ, CIE_Y_INTEGRAL};
+use crate::color::xyz::{Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
 use crate::math::lerp;
 use crate::range::Range;
 use crate::util::{self, is_sorted};

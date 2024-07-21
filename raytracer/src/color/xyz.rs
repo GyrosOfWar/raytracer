@@ -1,9 +1,13 @@
 use std::ops::Div;
 
 use glam::{Vec2, Vec3A};
+use once_cell::sync::Lazy;
+use serde::Deserialize;
 
-use super::CIE_XYZ;
-use crate::spectrum::{inner_product, Spectrum};
+use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
+
+pub const CIE_Y_INTEGRAL: f32 = 106.856895;
+pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(CieXyz::load);
 
 #[derive(Debug)]
 pub struct Xyz {
@@ -75,6 +79,36 @@ impl<'a> From<&'a Spectrum> for Xyz {
             x: inner_product(&CIE_XYZ.x, &value),
             y: inner_product(&CIE_XYZ.y, &value),
             z: inner_product(&CIE_XYZ.z, &value),
+        }
+    }
+}
+
+pub struct CieXyz {
+    pub x: Spectrum,
+    pub y: Spectrum,
+    pub z: Spectrum,
+}
+
+impl CieXyz {
+    fn load() -> Self {
+        #[derive(Deserialize)]
+        struct CieXyzFile {
+            x: Vec<f32>,
+            y: Vec<f32>,
+            z: Vec<f32>,
+            lambda: Vec<f32>,
+        }
+
+        let object: CieXyzFile =
+            serde_json::from_str(include_str!("../../data/cie-xyz.json")).unwrap();
+        let x = PiecewiseLinear::new(object.lambda.clone(), object.x);
+        let y = PiecewiseLinear::new(object.lambda.clone(), object.y);
+        let z = PiecewiseLinear::new(object.lambda, object.z);
+
+        CieXyz {
+            x: DenselySampled::from_spectrum(x.into()).into(),
+            y: DenselySampled::from_spectrum(y.into()).into(),
+            z: DenselySampled::from_spectrum(z.into()).into(),
         }
     }
 }
