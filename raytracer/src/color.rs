@@ -1,6 +1,7 @@
 use std::ops::Div;
+use std::sync::Arc;
 
-use glam::Vec2;
+use glam::{Mat3, Mat3A, Vec2, Vec3A};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
@@ -50,7 +51,43 @@ pub struct Xyz {
     pub z: f32,
 }
 
+impl From<Xyz> for Vec3A {
+    fn from(value: Xyz) -> Self {
+        Vec3A::new(value.x, value.y, value.z)
+    }
+}
+
+impl From<Vec3A> for Xyz {
+    fn from(value: Vec3A) -> Self {
+        Xyz {
+            x: value.x,
+            y: value.y,
+            z: value.z,
+        }
+    }
+}
+
 impl Xyz {
+    pub fn from_xy(xy: Vec2) -> Self {
+        Self::from_xy_y(xy, 1.0)
+    }
+
+    pub fn from_xy_y(xy: Vec2, y: f32) -> Self {
+        if xy.y == 0.0 {
+            Xyz {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }
+        } else {
+            Xyz {
+                x: xy.x * y / xy.y,
+                y,
+                z: (1.0 - xy.x - xy.y) * y / xy.y,
+            }
+        }
+    }
+
     pub fn xy(&self) -> Vec2 {
         Vec2::new(
             self.x / (self.x + self.y + self.z),
@@ -71,8 +108,8 @@ impl Div<f32> for Xyz {
     }
 }
 
-impl From<Spectrum> for Xyz {
-    fn from(value: Spectrum) -> Self {
+impl<'a> From<&'a Spectrum> for Xyz {
+    fn from(value: &'a Spectrum) -> Self {
         Xyz {
             x: inner_product(&CIE_XYZ.x, &value),
             y: inner_product(&CIE_XYZ.y, &value),
@@ -86,6 +123,22 @@ pub struct Rgb {
     pub r: f32,
     pub g: f32,
     pub b: f32,
+}
+
+impl From<Vec3A> for Rgb {
+    fn from(value: Vec3A) -> Self {
+        Rgb {
+            r: value.x,
+            g: value.y,
+            b: value.z,
+        }
+    }
+}
+
+impl From<Rgb> for Vec3A {
+    fn from(value: Rgb) -> Self {
+        Vec3A::new(value.r, value.g, value.b)
+    }
 }
 
 impl Rgb {
@@ -119,6 +172,8 @@ pub struct RgbSigmoidPolynomial {
     pub c2: f32,
 }
 
+// implements the spectrum interface for convenience,
+// but is itself not a spectrum, so left out of the Spectrum enum
 impl HasWavelength for RgbSigmoidPolynomial {
     fn evaluate(&self, lambda: f32) -> f32 {
         sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda))
@@ -201,6 +256,71 @@ impl RgbToSpectrumTable {
                 c2: c[2],
             }
         }
+    }
+}
+
+pub struct RgbColorSpace {
+    r: Vec2,
+    g: Vec2,
+    b: Vec2,
+    w: Vec2,
+    illuminant: Spectrum,
+    spectrum_table: Arc<RgbToSpectrumTable>,
+    rgb_from_xyz: Mat3A,
+    xyz_from_rgb: Mat3A,
+}
+
+impl RgbColorSpace {
+    pub fn new(
+        r: Vec2,
+        g: Vec2,
+        b: Vec2,
+        illuminant: Spectrum,
+        spectrum_table: Arc<RgbToSpectrumTable>,
+    ) -> Self {
+        let w_xyz = Xyz::from(&illuminant);
+        let w = w_xyz.xy();
+        let xyz_r = Xyz::from_xy(r);
+        let xyz_g = Xyz::from_xy(g);
+        let xyz_b = Xyz::from_xy(b);
+        let rgb = Mat3A::from_cols(
+            Vec3A::new(xyz_r.x, xyz_g.x, xyz_b.x),
+            Vec3A::new(xyz_r.y, xyz_g.y, xyz_b.y),
+            Vec3A::new(xyz_r.z, xyz_g.z, xyz_b.z),
+        );
+        let c = rgb.inverse() * Vec3A::from(w_xyz);
+        let xyz_from_rgb = rgb
+            * Mat3A::from_cols(
+                Vec3A::new(c[0], 0.0, 0.0),
+                Vec3A::new(0.0, c[1], 0.0),
+                Vec3A::new(0.0, 0.0, c[2]),
+            );
+        let rgb_from_xyz = xyz_from_rgb.inverse();
+
+        Self {
+            r,
+            g,
+            b,
+            w,
+            illuminant,
+            spectrum_table,
+            rgb_from_xyz,
+            xyz_from_rgb,
+        }
+    }
+
+    pub fn to_rgb(&self, xyz: Xyz) -> Rgb {
+        let vec = self.rgb_from_xyz * Vec3A::from(xyz);
+        vec.into()
+    }
+
+    pub fn to_xyz(&self, rgb: Rgb) -> Xyz {
+        let vec = self.xyz_from_rgb * Vec3A::from(rgb);
+        vec.into()
+    }
+
+    pub fn convert_color_space(from: &RgbColorSpace, to: &RgbColorSpace) -> Mat3A {
+        to.rgb_from_xyz * from.xyz_from_rgb
     }
 }
 

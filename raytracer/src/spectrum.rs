@@ -5,7 +5,7 @@ use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
 use ordered_float::OrderedFloat;
 
-use crate::color::{Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
+use crate::color::{Rgb, RgbColorSpace, Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
 use crate::math::lerp;
 use crate::util::{self, is_sorted};
 
@@ -33,7 +33,7 @@ pub trait HasWavelength: Send + Sync + Debug {
 #[derive(Debug)]
 pub enum Spectrum {
     Constant(Constant),
-    DenselySampled(DenselySampled),
+    DenselSampled(DenselySampled),
     PiecewiseLinear(PiecewiseLinear),
     Blackbody(Blackbody),
 }
@@ -235,6 +235,11 @@ impl SampledSpectrum {
         };
 
         xyz / CIE_Y_INTEGRAL
+    }
+
+    pub fn to_rgb(&self, wavelengths: SampledWavelengths, color_space: &RgbColorSpace) -> Rgb {
+        let xyz = self.to_xyz(wavelengths);
+        color_space.to_rgb(xyz)
     }
 }
 
