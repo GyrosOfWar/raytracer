@@ -1,18 +1,20 @@
-use std::io::BufRead;
-use std::ops::Div;
 use std::path::Path;
 use std::sync::Arc;
 
 use glam::{Mat3A, Vec2, Vec3A};
 use once_cell::sync::Lazy;
+use rgb::{Rgb, RgbSigmoidPolynomial};
 use serde::{Deserialize, Serialize};
+use xyz::Xyz;
 
-use crate::math::{evaluate_polynomial, lerp};
-use crate::spectrum::{
-    inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
-};
+use crate::math::lerp;
+use crate::spectrum::{DenselySampled, PiecewiseLinear, Spectrum};
 use crate::util::find_interval;
 use crate::Result;
+
+pub mod colorspace;
+pub mod rgb;
+pub mod xyz;
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(CieXyz::load);
@@ -34,7 +36,7 @@ impl CieXyz {
         }
 
         let object: CieXyzFile =
-            serde_json::from_str(include_str!("../data/cie-xyz.json")).unwrap();
+            serde_json::from_str(include_str!("../../data/cie-xyz.json")).unwrap();
         let x = PiecewiseLinear::new(object.lambda.clone(), object.x);
         let y = PiecewiseLinear::new(object.lambda.clone(), object.y);
         let z = PiecewiseLinear::new(object.lambda, object.z);
@@ -44,164 +46,6 @@ impl CieXyz {
             y: DenselySampled::from_spectrum(y.into()).into(),
             z: DenselySampled::from_spectrum(z.into()).into(),
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct Xyz {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
-
-impl From<Xyz> for Vec3A {
-    fn from(value: Xyz) -> Self {
-        Vec3A::new(value.x, value.y, value.z)
-    }
-}
-
-impl From<Vec3A> for Xyz {
-    fn from(value: Vec3A) -> Self {
-        Xyz {
-            x: value.x,
-            y: value.y,
-            z: value.z,
-        }
-    }
-}
-
-impl Xyz {
-    pub fn from_xy(xy: Vec2) -> Self {
-        Self::from_xy_y(xy, 1.0)
-    }
-
-    pub fn from_xy_y(xy: Vec2, y: f32) -> Self {
-        if xy.y == 0.0 {
-            Xyz {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            }
-        } else {
-            Xyz {
-                x: xy.x * y / xy.y,
-                y,
-                z: (1.0 - xy.x - xy.y) * y / xy.y,
-            }
-        }
-    }
-
-    pub fn xy(&self) -> Vec2 {
-        Vec2::new(
-            self.x / (self.x + self.y + self.z),
-            self.y / (self.x + self.y + self.z),
-        )
-    }
-}
-
-impl Div<f32> for Xyz {
-    type Output = Self;
-
-    fn div(self, rhs: f32) -> Self::Output {
-        Xyz {
-            x: self.x / rhs,
-            y: self.y / rhs,
-            z: self.z / rhs,
-        }
-    }
-}
-
-impl<'a> From<&'a Spectrum> for Xyz {
-    fn from(value: &'a Spectrum) -> Self {
-        Xyz {
-            x: inner_product(&CIE_XYZ.x, &value),
-            y: inner_product(&CIE_XYZ.y, &value),
-            z: inner_product(&CIE_XYZ.z, &value),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Rgb {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-}
-
-impl From<Vec3A> for Rgb {
-    fn from(value: Vec3A) -> Self {
-        Rgb {
-            r: value.x,
-            g: value.y,
-            b: value.z,
-        }
-    }
-}
-
-impl From<Rgb> for Vec3A {
-    fn from(value: Rgb) -> Self {
-        Vec3A::new(value.r, value.g, value.b)
-    }
-}
-
-impl Rgb {
-    pub fn max_component_index(&self) -> u8 {
-        if self.r > self.g {
-            if self.r > self.b {
-                0
-            } else {
-                2
-            }
-        } else if self.g > self.b {
-            1
-        } else {
-            2
-        }
-    }
-
-    pub fn component(&self, idx: u8) -> f32 {
-        match idx {
-            0 => self.r,
-            1 => self.g,
-            _ => self.b,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct RgbSigmoidPolynomial {
-    pub c0: f32,
-    pub c1: f32,
-    pub c2: f32,
-}
-
-// implements the spectrum interface for convenience,
-// but is itself not a spectrum, so left out of the Spectrum enum
-impl HasWavelength for RgbSigmoidPolynomial {
-    fn evaluate(&self, lambda: f32) -> f32 {
-        sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda))
-    }
-
-    fn max_value(&self) -> f32 {
-        let result = self.evaluate(360.0).max(self.evaluate(830.0));
-        let lambda = -self.c1 / (2.0 * self.c0);
-        if (LAMBDA_MIN..LAMBDA_MAX).contains(&lambda) {
-            result.max(self.evaluate(lambda))
-        } else {
-            result
-        }
-    }
-}
-
-fn sigmoid(x: f32) -> f32 {
-    if x.is_infinite() {
-        if x > 0.0 {
-            1.0
-        } else {
-            0.0
-        }
-    } else {
-        0.5 + x / (2.0 * (1.0 + x * x).sqrt())
     }
 }
 
@@ -224,6 +68,7 @@ impl CoefficientsFile {
     }
 }
 
+#[derive(Debug)]
 pub struct RgbToSpectrumTable {
     z_nodes: Box<[f32]>,
     coefficients: Box<[f32]>,
@@ -299,6 +144,7 @@ impl RgbToSpectrumTable {
     }
 }
 
+#[derive(Debug)]
 pub struct RgbColorSpace {
     pub r: Vec2,
     pub g: Vec2,
@@ -366,9 +212,10 @@ impl RgbColorSpace {
 
 #[cfg(test)]
 mod tests {
+    use color_eyre::Result;
+
     use super::{CoefficientsFile, Rgb, RgbToSpectrumTable};
     use crate::spectrum::HasWavelength;
-    use color_eyre::Result;
 
     #[test]
     fn test_rgb_component() {

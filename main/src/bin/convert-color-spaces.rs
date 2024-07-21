@@ -1,4 +1,6 @@
-use std::{fs::File, io::BufWriter};
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 
 use raytracer::color::CoefficientsFile;
 use regex::Regex;
@@ -46,8 +48,12 @@ fn main() -> color_eyre::Result<()> {
                 coefficients,
                 scale,
             };
-
-            let mut writer = BufWriter::new(File::create(format!("{file_name}.bin"))?);
+            let file_name = format!(
+                "{}.bin",
+                file_name.replace("rgbspectrum_", "").replace(".c", "")
+            );
+            let path = Path::new("../raytracer/data/color-spaces").join(file_name);
+            let mut writer = BufWriter::new(File::create(path)?);
             bincode::serialize_into(&mut writer, &data)?;
         }
     }
