@@ -9,7 +9,7 @@ use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(CieXyz::load);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Xyz {
     pub x: f32,
     pub y: f32,
