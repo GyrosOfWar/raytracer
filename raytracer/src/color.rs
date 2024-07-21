@@ -5,11 +5,13 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use crate::math::{evaluate_polynomial, lerp};
-use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum};
+use crate::spectrum::{
+    inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
+};
 use crate::util::find_interval;
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
-pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
+pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(CieXyz::load);
 
 pub struct CieXyz {
     pub x: Spectrum,
@@ -94,12 +96,10 @@ impl Rgb {
             } else {
                 2
             }
+        } else if self.g > self.b {
+            1
         } else {
-            if self.g > self.b {
-                1
-            } else {
-                2
-            }
+            2
         }
     }
 
@@ -127,7 +127,7 @@ impl HasWavelength for RgbSigmoidPolynomial {
     fn max_value(&self) -> f32 {
         let result = self.evaluate(360.0).max(self.evaluate(830.0));
         let lambda = -self.c1 / (2.0 * self.c0);
-        if lambda >= 360.0 && lambda <= 830.0 {
+        if (LAMBDA_MIN..LAMBDA_MAX).contains(&lambda) {
             result.max(self.evaluate(lambda))
         } else {
             result
@@ -149,10 +149,11 @@ fn sigmoid(x: f32) -> f32 {
 
 const RES: usize = 64;
 
+type Coefficients = [[[[[f32; 3]; RES]; RES]; RES]; 3];
+
 pub struct RgbToSpectrumTable {
     z_nodes: Box<[f32]>,
-    // uhhhhh
-    coefficients: Box<[[[[[f32; 3]; RES]; RES]; RES]; 3]>,
+    coefficients: Box<Coefficients>,
 }
 
 impl RgbToSpectrumTable {
@@ -176,11 +177,11 @@ impl RgbToSpectrumTable {
             let dz = (z - self.z_nodes[zi]) / (self.z_nodes[zi + 1] - self.z_nodes[zi]);
 
             let mut c = [0.0f32; 3];
-            for i in 0..3 {
+            for (i, value) in c.iter_mut().enumerate() {
                 let co = |dx: usize, dy: usize, dz: usize| {
                     self.coefficients[max_c as usize][zi + dz][yi + dy][xi + dx][i]
                 };
-                c[i] = lerp(
+                *value = lerp(
                     dz,
                     lerp(
                         dy,

@@ -9,8 +9,8 @@ use crate::color::{Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
 use crate::math::lerp;
 use crate::util::{self, is_sorted};
 
-const LAMBDA_MAX: f32 = 830.0;
-const LAMBDA_MIN: f32 = 360.0;
+pub const LAMBDA_MAX: f32 = 830.0;
+pub const LAMBDA_MIN: f32 = 360.0;
 
 #[enum_dispatch]
 pub trait HasWavelength: Send + Sync + Debug {
@@ -89,10 +89,10 @@ impl DenselySampled {
 impl HasWavelength for DenselySampled {
     fn evaluate(&self, lambda: f32) -> f32 {
         let offset = lambda.round() as usize - self.lambda_min;
-        if offset as usize >= self.values.len() {
+        if offset >= self.values.len() {
             0.0
         } else {
-            self.values[offset as usize]
+            self.values[offset]
         }
     }
 
