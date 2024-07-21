@@ -7,10 +7,12 @@ use ordered_float::OrderedFloat;
 
 use crate::color::{Rgb, RgbColorSpace, Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
 use crate::math::lerp;
+use crate::range::Range;
 use crate::util::{self, is_sorted};
 
-pub const LAMBDA_MAX: f32 = 830.0;
 pub const LAMBDA_MIN: f32 = 360.0;
+pub const LAMBDA_MAX: f32 = 830.0;
+pub const VISIBLE_RANGE: Range = Range::new(LAMBDA_MIN, LAMBDA_MAX);
 
 #[enum_dispatch]
 pub trait HasWavelength: Send + Sync + Debug {
