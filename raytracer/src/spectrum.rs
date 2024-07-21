@@ -451,7 +451,7 @@ impl NamedSpectra {
 
 #[cfg(test)]
 mod tests {
-    use super::SampledWavelengths;
+    use super::{HasWavelength, SampledWavelengths, NAMED_SPECTRA};
     use crate::spectrum::{LAMBDA_MAX, LAMBDA_MIN, N_SPECTRUM_SAMPLES};
 
     #[test]
@@ -468,5 +468,16 @@ mod tests {
                 360.0 + (delta * 3.0)
             ]
         );
+    }
+
+    #[test]
+    fn test_named_spectra() {
+        for lambda in 360..830 {
+            let value = NAMED_SPECTRA.illum_aces_d60.evaluate(lambda as f32);
+            assert!(value > 0.0);
+
+            let value = NAMED_SPECTRA.std_illum_d65.evaluate(lambda as f32);
+            assert!(value > 0.0);
+        }
     }
 }

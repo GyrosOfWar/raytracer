@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
-use crate::spectrum::{Constant, Spectrum, NAMED_SPECTRA};
+use crate::spectrum::{Constant, NamedSpectra, Spectrum, NAMED_SPECTRA};
 use crate::util::find_interval;
 use crate::Result;
 
@@ -202,8 +202,7 @@ impl ColorSpaces {
             Vec2::new(0.64, 0.33),
             Vec2::new(0.3, 0.6),
             Vec2::new(0.15, 0.06),
-            // TODO stdillum-D65
-            Constant { c: 400.0 }.into(),
+            NAMED_SPECTRA.std_illum_d65.clone(),
             Arc::new(s_rgb_table),
         );
 
@@ -242,11 +241,24 @@ impl ColorSpaces {
 
 #[cfg(test)]
 mod tests {
-    use super::RgbToSpectrumTable;
+    use super::{RgbToSpectrumTable, COLOR_SPACES};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
     use crate::spectrum::HasWavelength;
     use crate::Result;
+
+    fn for_each_color(func: impl Fn(f32, f32, f32)) {
+        for r in 0..100 {
+            let r = r as f32 / 100.0;
+            for g in 0..100 {
+                let g = g as f32 / 100.0;
+                for b in 0..100 {
+                    let b = b as f32 / 100.0;
+                    func(r, g, b)
+                }
+            }
+        }
+    }
 
     #[test]
     fn test_load_spectrum_file() -> Result<()> {
@@ -288,23 +300,31 @@ mod tests {
         let file = CoefficientsFile::load("./data/color-spaces/srgb.bin")?;
         let table = RgbToSpectrumTable::new(file);
 
-        for r in 0..100 {
-            let r = r as f32 / 100.0;
-            for g in 0..100 {
-                let g = g as f32 / 100.0;
-                for b in 0..100 {
-                    let b = b as f32 / 100.0;
-                    let color = Rgb { r, g, b };
-                    let sigmoid = table.evaluate(color);
+        for_each_color(|r, g, b| {
+            let color = Rgb { r, g, b };
+            let sigmoid = table.evaluate(color);
 
-                    for lambda in 360..830 {
-                        let result = sigmoid.evaluate(lambda as f32);
-                        assert!(result >= 0.0);
-                    }
-                }
+            for lambda in 360..830 {
+                let result = sigmoid.evaluate(lambda as f32);
+                assert!(result >= 0.0);
             }
-        }
+        });
 
         Ok(())
+    }
+
+    #[test]
+    fn test_standard_color_spaces() {
+        for color_space in &[
+            &COLOR_SPACES.aces2065_1,
+            &COLOR_SPACES.dci_p3,
+            &COLOR_SPACES.rec2020,
+            &COLOR_SPACES.s_rgb,
+        ] {
+            for_each_color(|r, g, b| {
+                let color = Rgb { r, g, b };
+                color_space.to_xyz(color);
+            })
+        }
     }
 }
