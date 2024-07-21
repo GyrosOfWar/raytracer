@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::ops::Mul;
+use std::sync::Arc;
 
 use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
@@ -43,6 +44,7 @@ pub enum Spectrum {
     Blackbody(Blackbody),
     RgbAlbedo(RgbAlbedo),
     RgbUnbounded(RgbUnbounded),
+    RgbIlluminant(RgbIlluminant),
 }
 
 #[derive(Debug, Clone)]
@@ -265,9 +267,38 @@ impl HasWavelength for RgbUnbounded {
     }
 }
 
-pub struct RgbIlluminant {}
+#[derive(Debug, Clone)]
+pub struct RgbIlluminant {
+    scale: f32,
+    coefficients: RgbSigmoidPolynomial,
+    illuminant: Arc<Spectrum>,
+}
 
-impl RgbIlluminant {}
+impl RgbIlluminant {
+    pub fn new(color_space: &RgbColorSpace, rgb: Rgb) -> Self {
+        let m = rgb.max();
+        let scale = 2.0 * m;
+        Self {
+            scale,
+            coefficients: color_space.to_rgb_coefficients(if scale != 0.0 {
+                rgb / scale
+            } else {
+                Rgb::ZERO
+            }),
+            illuminant: color_space.illuminant.clone(),
+        }
+    }
+}
+
+impl HasWavelength for RgbIlluminant {
+    fn evaluate(&self, lambda: f32) -> f32 {
+        self.scale * self.coefficients.evaluate(lambda) * self.illuminant.evaluate(lambda)
+    }
+
+    fn max_value(&self) -> f32 {
+        self.scale * self.coefficients.max_value() * self.illuminant.max_value()
+    }
+}
 
 pub fn inner_product(f: &impl HasWavelength, g: &impl HasWavelength) -> f32 {
     let mut integral = 0.0;

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
-use crate::spectrum::{Constant, NamedSpectra, Spectrum, NAMED_SPECTRA};
+use crate::spectrum::{Spectrum, NAMED_SPECTRA};
 use crate::util::find_interval;
 use crate::Result;
 
@@ -116,7 +116,7 @@ pub struct RgbColorSpace {
     pub g: Vec2,
     pub b: Vec2,
     pub w: Vec2,
-    pub illuminant: Spectrum,
+    pub illuminant: Arc<Spectrum>,
     spectrum_table: Arc<RgbToSpectrumTable>,
     pub rgb_from_xyz: Mat3A,
     pub xyz_from_rgb: Mat3A,
@@ -127,10 +127,10 @@ impl RgbColorSpace {
         r: Vec2,
         g: Vec2,
         b: Vec2,
-        illuminant: Spectrum,
+        illuminant: Arc<Spectrum>,
         spectrum_table: Arc<RgbToSpectrumTable>,
     ) -> Self {
-        let w_xyz = Xyz::from(&illuminant);
+        let w_xyz = Xyz::from(illuminant.as_ref());
         let w = w_xyz.xy();
         let xyz_r = Xyz::from_xy(r);
         let xyz_g = Xyz::from_xy(g);
@@ -202,7 +202,7 @@ impl ColorSpaces {
             Vec2::new(0.64, 0.33),
             Vec2::new(0.3, 0.6),
             Vec2::new(0.15, 0.06),
-            NAMED_SPECTRA.std_illum_d65.clone(),
+            Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
             Arc::new(s_rgb_table),
         );
 
@@ -210,7 +210,7 @@ impl ColorSpaces {
             Vec2::new(0.68, 0.32),
             Vec2::new(0.265, 0.690),
             Vec2::new(0.15, 0.06),
-            NAMED_SPECTRA.std_illum_d65.clone(),
+            Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
             Arc::new(dci_p3_table),
         );
 
@@ -218,7 +218,7 @@ impl ColorSpaces {
             Vec2::new(0.708, 0.292),
             Vec2::new(0.170, 0.797),
             Vec2::new(0.131, 0.046),
-            NAMED_SPECTRA.std_illum_d65.clone(),
+            Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
             Arc::new(rec2020_table),
         );
 
@@ -226,7 +226,7 @@ impl ColorSpaces {
             Vec2::new(0.7347, 0.2653),
             Vec2::new(0.0, 1.0),
             Vec2::new(0.0001, -0.077),
-            NAMED_SPECTRA.illum_aces_d60.clone(),
+            Arc::new(NAMED_SPECTRA.illum_aces_d60.clone()),
             Arc::new(aces_table),
         );
 
@@ -241,6 +241,8 @@ impl ColorSpaces {
 
 #[cfg(test)]
 mod tests {
+    use glam::Vec3A;
+
     use super::{RgbToSpectrumTable, COLOR_SPACES};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
@@ -322,8 +324,10 @@ mod tests {
             &COLOR_SPACES.s_rgb,
         ] {
             for_each_color(|r, g, b| {
-                let color = Rgb { r, g, b };
-                color_space.to_xyz(color);
+                let rgb = Rgb { r, g, b };
+                let xyz = color_space.to_xyz(rgb);
+                let back_converted = color_space.to_rgb(xyz);
+                assert!(Vec3A::from(rgb).abs_diff_eq(Vec3A::from(back_converted), 0.001));
             })
         }
     }

@@ -1,9 +1,11 @@
+use std::ops::Div;
+
 use glam::Vec3A;
 
 use crate::math::evaluate_polynomial;
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Rgb {
     pub r: f32,
     pub g: f32,
@@ -20,6 +22,18 @@ impl From<Vec3A> for Rgb {
     }
 }
 
+impl Div<f32> for Rgb {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Rgb {
+            r: self.r / rhs,
+            g: self.g / rhs,
+            b: self.b / rhs,
+        }
+    }
+}
+
 impl From<Rgb> for Vec3A {
     fn from(value: Rgb) -> Self {
         Vec3A::new(value.r, value.g, value.b)
@@ -27,6 +41,16 @@ impl From<Rgb> for Vec3A {
 }
 
 impl Rgb {
+    pub const ZERO: Rgb = Rgb {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+    };
+
+    pub fn max(&self) -> f32 {
+        self.component(self.max_component_index())
+    }
+
     pub fn max_component_index(&self) -> u8 {
         if self.r > self.g {
             if self.r > self.b {
