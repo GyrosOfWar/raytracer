@@ -22,11 +22,13 @@ pub fn clamp<T: PartialOrd>(x: T, min: T, max: T) -> T {
     }
 }
 
+/// Evaluate a polynomial using Horner's rule. Coefficients are interpreted
+/// in highest-to-lowest order in terms of power.
 pub fn evaluate_polynomial(coefficients: &[f32], x: f32) -> f32 {
-    let mut result = *coefficients.last().unwrap_or(&0.0);
+    let mut result = coefficients[0];
 
-    for &coeff in coefficients.iter().rev().skip(1) {
-        result = result.mul_add(x, coeff);
+    for coeff in coefficients.iter().skip(1) {
+        result = result.mul_add(x, *coeff);
     }
 
     result
@@ -41,12 +43,10 @@ mod tests {
         let coefficients = &[0.0, 0.0, 0.0];
         assert_eq!(evaluate_polynomial(coefficients, 1.0), 0.0);
 
-        // = 3 + 2 + 1^2 = 6
         let coefficients = &[3.0, 2.0, 1.0];
         assert_eq!(evaluate_polynomial(coefficients, 1.0), 6.0);
 
-        // 4 + 3 * 4^2 + 3 * 4^3 + 3 * 4^4 = 340
-        let coefficients = &[4.0, 4.0, 4.0, 4.0];
-        assert_eq!(evaluate_polynomial(coefficients, 3.0), 1012.0);
+        let coefficients = &[2.0, -6.0, 2.0, -1.0];
+        assert_eq!(evaluate_polynomial(coefficients, 3.0), 5.0);
     }
 }

@@ -5,7 +5,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use crate::math::evaluate_polynomial;
-use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
+use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: Lazy<CieXyz> = Lazy::new(|| CieXyz::load());
@@ -85,15 +85,26 @@ pub struct Rgb {
     pub b: f32,
 }
 
+#[derive(Debug)]
 pub struct RgbSigmoidPolynomial {
     pub c0: f32,
     pub c1: f32,
     pub c2: f32,
 }
 
-impl RgbSigmoidPolynomial {
-    pub fn evaluate(&self, lambda: f32) -> f32 {
+impl HasWavelength for RgbSigmoidPolynomial {
+    fn evaluate(&self, lambda: f32) -> f32 {
         sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda))
+    }
+
+    fn max_value(&self) -> f32 {
+        let result = self.evaluate(360.0).max(self.evaluate(830.0));
+        let lambda = -self.c1 / (2.0 * self.c0);
+        if lambda >= 360.0 && lambda <= 830.0 {
+            result.max(self.evaluate(lambda))
+        } else {
+            result
+        }
     }
 }
 
@@ -106,6 +117,28 @@ fn sigmoid(x: f32) -> f32 {
         }
     } else {
         0.5 + x / (2.0 * (1.0 + x * x).sqrt())
+    }
+}
+
+const RES: usize = 64;
+
+pub struct RgbToSpectrumTable {
+    z_nodes: Box<[f32]>,
+    // uhhhhh
+    coefficients: Box<[[[[[f32; 3]; RES]; RES]; RES]; 3]>,
+}
+
+impl RgbToSpectrumTable {
+    pub fn evaluate(&self, rgb: Rgb) -> RgbSigmoidPolynomial {
+        if rgb.r == rgb.g && rgb.g == rgb.b {
+            RgbSigmoidPolynomial {
+                c0: 0.0,
+                c1: 0.0,
+                c2: (rgb.r - 0.5) / (rgb.r * (1.0 - rgb.r)).sqrt(),
+            }
+        } else {
+            todo!()
+        }
     }
 }
 

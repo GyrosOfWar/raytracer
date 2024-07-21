@@ -56,15 +56,6 @@ impl Aabb {
         .pad_to_minimums()
     }
 
-    // pub fn from_objects(objects: &[impl Hittable]) -> Self {
-    //     let mut bbox = Aabb::EMPTY;
-    //     for object in objects.iter() {
-    //         let bbox2 = object.bounding_box();
-    //         bbox = Aabb::from_boxes(bbox, bbox2);
-    //     }
-    //     bbox
-    // }
-
     pub fn interval_at(&self, axis: Axis) -> Range {
         match axis {
             Axis::X => self.x,
