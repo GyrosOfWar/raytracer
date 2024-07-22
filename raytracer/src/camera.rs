@@ -1,11 +1,9 @@
 use std::ops::Mul;
 
-use glam::{Mat4, Vec2, Vec3A};
+use glam::{vec3, Mat4, Vec2, Vec3A};
 
-use crate::{
-    ray::{Ray, RayDifferential},
-    spectrum::SampledWavelengths,
-};
+use crate::ray::{Ray, RayDifferential};
+use crate::spectrum::SampledWavelengths;
 
 pub struct Bounds2 {
     p_min: Vec2,
@@ -56,7 +54,13 @@ impl PerspectiveCamera {
         lens_radius: f32,
         focal_distance: f32,
     ) -> Self {
-        // let camera_from_raster =screen_from_camera.inverse() * screen_
+        let ndc_from_screen =
+            Transform::scale(
+                1.0 / (screen_window.p_max().x - screen_window.p_min().x),
+                1.0 / (screen_window.p_max().y - screen_window.p_min().y),
+                1.0,
+            ) * Transform::translate(-screen_window.p_min().x, -screen_window.p_max().y, 0.0);
+        // let raster_from_ndc = Transform::scale();
         todo!()
     }
 
@@ -89,6 +93,30 @@ impl Transform {
             inverse: matrix.inverse(),
             matrix,
         }
+    }
+
+    pub fn translate(x: f32, y: f32, z: f32) -> Self {
+        Transform::new(Mat4::from_translation(vec3(x, y, z)))
+    }
+
+    pub fn rotate_x(angle: f32) -> Self {
+        Transform::new(Mat4::from_rotation_x(angle))
+    }
+
+    pub fn rotate_y(angle: f32) -> Self {
+        Transform::new(Mat4::from_rotation_y(angle))
+    }
+
+    pub fn rotate_z(angle: f32) -> Self {
+        Transform::new(Mat4::from_rotation_z(angle))
+    }
+
+    pub fn scale(x: f32, y: f32, z: f32) -> Self {
+        Transform::new(Mat4::from_scale(vec3(x, y, z)))
+    }
+
+    pub fn uniform_scale(s: f32) -> Self {
+        Transform::scale(s, s, s)
     }
 
     pub fn apply(&self, point: Vec3A) -> Vec3A {
