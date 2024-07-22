@@ -1,8 +1,33 @@
 use std::ops::Mul;
 
-use glam::{Mat3A, Mat4, Vec2, Vec3A};
+use glam::{Mat4, Vec2, Vec3A};
 
-use crate::{ray::Ray, spectrum::SampledWavelengths};
+use crate::{
+    ray::{Ray, RayDifferential},
+    spectrum::SampledWavelengths,
+};
+
+pub struct Bounds2 {
+    p_min: Vec2,
+    p_max: Vec2,
+}
+
+impl Bounds2 {
+    pub fn new(a: Vec2, b: Vec2) -> Self {
+        Bounds2 {
+            p_min: a.min(b),
+            p_max: a.max(b),
+        }
+    }
+
+    pub fn p_min(&self) -> Vec2 {
+        self.p_min
+    }
+
+    pub fn p_max(&self) -> Vec2 {
+        self.p_max
+    }
+}
 
 pub struct CameraSample {
     pub p_film: Vec2,
@@ -10,12 +35,44 @@ pub struct CameraSample {
     pub filter_weight: f32,
 }
 
+#[derive(Debug)]
 pub struct PerspectiveCamera {
-    transform: CameraTransform,
+    camera_transform: CameraTransform,
+    screen_from_camera: Transform,
+    camera_from_raster: Transform,
+    raster_from_screen: Transform,
+    screen_from_raster: Transform,
+    lens_radius: f32,
+    focal_distance: f32,
+    z_near: f32,
+    z_far: f32,
 }
 
 impl PerspectiveCamera {
-    pub fn generate_ray(sample: CameraSample, lambda: &mut SampledWavelengths) -> Option<Ray> {
+    pub fn new(
+        camera_transform: CameraTransform,
+        screen_from_camera: Transform,
+        screen_window: Bounds2,
+        lens_radius: f32,
+        focal_distance: f32,
+    ) -> Self {
+        // let camera_from_raster =screen_from_camera.inverse() * screen_
+        todo!()
+    }
+
+    pub fn generate_ray(
+        &self,
+        sample: CameraSample,
+        lambda: &mut SampledWavelengths,
+    ) -> Option<Ray> {
+        todo!()
+    }
+
+    pub fn generate_ray_differential(
+        &self,
+        sample: CameraSample,
+        lambda: &mut SampledWavelengths,
+    ) -> Option<RayDifferential> {
         todo!()
     }
 }
@@ -34,11 +91,11 @@ impl Transform {
         }
     }
 
-    pub fn transform(&self, point: Vec3A) -> Vec3A {
+    pub fn apply(&self, point: Vec3A) -> Vec3A {
         self.matrix.transform_point3a(point)
     }
 
-    pub fn inverse_transform(&self, point: Vec3A) -> Vec3A {
+    pub fn apply_inverse(&self, point: Vec3A) -> Vec3A {
         self.inverse.transform_point3a(point)
     }
 
@@ -61,6 +118,7 @@ impl Mul for Transform {
     }
 }
 
+#[derive(Debug)]
 pub struct CameraTransform {
     world_from_render: Transform,
     render_from_camera: Transform,
@@ -79,15 +137,15 @@ impl CameraTransform {
     }
 
     pub fn render_from_camera(&self, p: Vec3A) -> Vec3A {
-        self.render_from_camera.transform(p)
+        self.render_from_camera.apply(p)
     }
 
     pub fn camera_from_render(&self, p: Vec3A) -> Vec3A {
-        self.render_from_camera.inverse_transform(p)
+        self.render_from_camera.apply_inverse(p)
     }
 
     pub fn render_from_world(&self, p: Vec3A) -> Vec3A {
-        self.world_from_render.inverse_transform(p)
+        self.world_from_render.apply_inverse(p)
     }
 
     pub fn camera_from_world(&self) -> Transform {

@@ -410,6 +410,28 @@ impl SampledWavelengths {
     pub fn pdf(&self) -> SampledSpectrum {
         SampledSpectrum::from_array(self.pdf)
     }
+
+    pub fn terminate_secondary(&mut self) {
+        if self.secondary_terminated() {
+            return;
+        }
+
+        for value in self.pdf.iter_mut().skip(1) {
+            *value = 0.0;
+        }
+
+        self.pdf[0] /= N_SPECTRUM_SAMPLES as f32;
+    }
+
+    pub fn secondary_terminated(&self) -> bool {
+        for value in self.pdf.iter().skip(1) {
+            if *value != 0.0 {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 pub static NAMED_SPECTRA: Lazy<NamedSpectra> = Lazy::new(NamedSpectra::new);

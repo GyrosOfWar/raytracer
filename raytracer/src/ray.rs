@@ -15,3 +15,6 @@ impl Ray {
         self.origin + (self.direction * t)
     }
 }
+
+#[derive(Debug)]
+pub struct RayDifferential {}
