@@ -1,11 +1,12 @@
+use std::sync::Arc;
+
 use glam::{vec3, Mat3A, U64Vec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
-
-use crate::camera::Bounds2;
 
 use crate::color::colorspace::{RgbColorSpace, S_RGB};
 use crate::color::rgb::Rgb;
 use crate::color::xyz::{Xyz, CIE_XYZ};
+use crate::filter::{Filter, ReconstructionFilter};
 use crate::math::linear_least_squares;
 use crate::spectrum::{
     inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
@@ -14,19 +15,103 @@ use crate::spectrum::{
 
 static SWATCH_REFLECTANCES: Lazy<Vec<Spectrum>> = Lazy::new(load_swatch_reflectances);
 
-pub struct SpectralFilm {
+#[derive(Debug)]
+pub struct FilmBaseParameters {
     full_resolution: U64Vec2,
-    pixel_bounds: Bounds2, // TODO integer version
+    // pixel_bounds: Bounds2i,
+    filter: ReconstructionFilter,
+    /// sensor diagonal in meters
+    sensor_diagonal: f32,
+    sensor: PixelSensor,
+    file_name: String,
 }
 
-impl SpectralFilm {}
+#[derive(Debug)]
+pub struct RgbFilm {
+    full_resolution: U64Vec2,
+    // pixel_bounds: Bounds2i,
+    sensor: PixelSensor,
+    sensor_diagonal: f32,
+    file_name: String,
+    color_space: Arc<RgbColorSpace>,
+    max_component_value: f32,
+    filter_integral: f32,
+    write_fp16: bool,
+    output_rgb_from_sensor_rgb: Mat3A,
+    pixels: Vec<Pixel>,
+    filter: ReconstructionFilter,
+}
 
+impl RgbFilm {
+    pub fn new(
+        parameters: FilmBaseParameters,
+        color_space: Arc<RgbColorSpace>,
+        max_component_value: f32,
+        write_fp16: bool,
+    ) -> Self {
+        let filter_integral = parameters.filter.integral();
+        let pixels = vec![
+            Pixel::default();
+            (parameters.full_resolution.x * parameters.full_resolution.y) as usize
+        ];
+        let output_rgb_from_sensor_rgb =
+            color_space.rgb_from_xyz * parameters.sensor.xyz_from_sensor_rgb().clone();
+        RgbFilm {
+            full_resolution: parameters.full_resolution,
+            // pixel_bounds: parameters.pixel_bounds,
+            sensor: parameters.sensor,
+            filter: parameters.filter,
+            filter_integral,
+            pixels,
+            write_fp16,
+            color_space,
+            sensor_diagonal: parameters.sensor_diagonal,
+            file_name: parameters.file_name,
+            max_component_value,
+            output_rgb_from_sensor_rgb,
+        }
+    }
+
+    fn index(&self, location: U64Vec2) -> usize {
+        let width = self.full_resolution.y;
+        (width * location.x + location.y) as usize
+    }
+
+    pub fn add_sample(
+        &mut self,
+        location: U64Vec2,
+        sample: SampledSpectrum,
+        lambda: SampledWavelengths,
+        weight: f32,
+    ) {
+        let mut rgb = self.sensor.to_sensor_rgb(&sample, &lambda);
+        let max = rgb.max();
+        if max > self.max_component_value {
+            rgb *= self.max_component_value / max;
+        }
+
+        let idx = self.index(location);
+        let pixel = &mut self.pixels[idx];
+        pixel.rgb_sum[0] += (rgb.r * weight) as f64;
+        pixel.rgb_sum[1] += (rgb.g * weight) as f64;
+        pixel.rgb_sum[2] += (rgb.b * weight) as f64;
+        pixel.weight_sum += weight as f64;
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Pixel {
+    pub rgb_sum: [f64; 3],
+    pub weight_sum: f64,
+}
+
+#[derive(Debug)]
 pub struct PixelSensor {
     r_bar: Spectrum,
     g_bar: Spectrum,
     b_bar: Spectrum,
     imaging_ratio: f32,
-    xyz_from_sensor: Mat3A,
+    xyz_from_sensor_rgb: Mat3A,
 }
 
 impl Default for PixelSensor {
@@ -63,26 +148,26 @@ impl PixelSensor {
         sensor_illum: Spectrum,
         imaging_ratio: f32,
     ) -> Self {
-        let mut rgb_camera = vec![];
-        for refl in SWATCH_REFLECTANCES.iter() {
-            let rgb = project_reflectance(refl, &sensor_illum, &r_bar, &g_bar, &b_bar);
-            rgb_camera.push(rgb);
-        }
+        let rgb_camera: Vec<_> = SWATCH_REFLECTANCES
+            .iter()
+            .map(|refl| project_reflectance(refl, &sensor_illum, &r_bar, &g_bar, &b_bar))
+            .collect();
 
         let sensor_white_g = inner_product(&sensor_illum, &g_bar);
         let sensor_white_y = inner_product(&sensor_illum, &CIE_XYZ.y);
 
-        let mut xyz_output = vec![];
-        for refl in SWATCH_REFLECTANCES.iter() {
-            let xyz = project_reflectance(
-                refl,
-                &color_space.illuminant.as_ref(),
-                &CIE_XYZ.x,
-                &CIE_XYZ.y,
-                &CIE_XYZ.z,
-            ) * (sensor_white_y / sensor_white_g);
-            xyz_output.push(xyz);
-        }
+        let xyz_output: Vec<_> = SWATCH_REFLECTANCES
+            .iter()
+            .map(|refl| {
+                project_reflectance(
+                    refl,
+                    color_space.illuminant.as_ref(),
+                    &CIE_XYZ.x,
+                    &CIE_XYZ.y,
+                    &CIE_XYZ.z,
+                ) * (sensor_white_y / sensor_white_g)
+            })
+            .collect();
 
         let m = linear_least_squares(&rgb_camera, &xyz_output);
 
@@ -91,7 +176,7 @@ impl PixelSensor {
             g_bar,
             b_bar,
             imaging_ratio,
-            xyz_from_sensor: m,
+            xyz_from_sensor_rgb: m,
         }
     }
 
@@ -105,7 +190,7 @@ impl PixelSensor {
             g_bar: CIE_XYZ.y.clone(),
             b_bar: CIE_XYZ.z.clone(),
             imaging_ratio,
-            xyz_from_sensor: white_balance,
+            xyz_from_sensor_rgb: white_balance,
         }
     }
 
@@ -116,6 +201,10 @@ impl PixelSensor {
             g: (self.g_bar.sample(lambda) * l).average(),
             b: (self.b_bar.sample(lambda) * l).average(),
         } * self.imaging_ratio
+    }
+
+    pub fn xyz_from_sensor_rgb(&self) -> &Mat3A {
+        &self.xyz_from_sensor_rgb
     }
 }
 
@@ -143,8 +232,8 @@ fn project_reflectance(
 fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
     #[rustfmt::skip]
     const LMS_FROM_XYZ: Mat3A = Mat3A::from_cols_array(&[
-        0.8951, 0.2664, -0.1614, 
-        -0.7502, 1.7135, 0.0367, 
+        0.8951, 0.2664, -0.1614,
+        -0.7502, 1.7135, 0.0367,
         0.0389, -0.0685, 1.0296,
     ]);
 
@@ -443,31 +532,68 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        color::{colorspace::S_RGB, rgb::Rgb},
-        random::random,
-        spectrum::{HasWavelength, RgbAlbedo, SampledWavelengths, Spectrum},
+    use glam::{u64vec2, vec2};
+
+    use super::{FilmBaseParameters, PixelSensor, RgbFilm};
+    use crate::color::colorspace::{RgbColorSpace, S_RGB};
+    use crate::color::rgb::Rgb;
+    use crate::filter::{Gaussian, ReconstructionFilter};
+    use crate::random::random;
+    use crate::spectrum::{
+        HasWavelength, RgbAlbedo, SampledSpectrum, SampledWavelengths, Spectrum,
     };
 
-    use super::PixelSensor;
+    fn get_rgb_sample(
+        r: f32,
+        g: f32,
+        b: f32,
+        color_space: &RgbColorSpace,
+    ) -> (SampledSpectrum, SampledWavelengths) {
+        let lambda = SampledWavelengths::sample_uniform(random());
+        let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, Rgb { r, g, b }).into();
+        let sample = spectrum.sample(&lambda);
+
+        (sample, lambda)
+    }
 
     #[test]
     fn create_pixel_sensor() {
         let sensor = PixelSensor::create(&S_RGB, 100.0, 6500.0, 1.0);
-        let lambda = SampledWavelengths::sample_uniform(random());
-        let spectrum: Spectrum = RgbAlbedo::with_color_space(
-            &S_RGB,
-            Rgb {
-                r: 0.9,
-                g: 0.1,
-                b: 0.1,
-            },
-        )
-        .into();
-        let sample = spectrum.sample(&lambda);
+        let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
         let response = sensor.to_sensor_rgb(&sample, &lambda);
         assert!(response.r >= 0.9);
         assert!(response.g >= 0.1);
         assert!(response.b >= 0.1);
+    }
+
+    #[test]
+    fn test_add_samples() {
+        let parameters = FilmBaseParameters {
+            full_resolution: u64vec2(400, 300),
+            file_name: "file.png".into(),
+            filter: ReconstructionFilter::Gaussian(Gaussian::new(vec2(1.0, 1.0), 1.0, 1.0, 1.0)),
+            sensor: PixelSensor::default(),
+            sensor_diagonal: 0.036,
+        };
+
+        let mut film = RgbFilm::new(
+            parameters,
+            // TODO move to Arc in the Lazy<T>?
+            S_RGB.clone(),
+            std::f32::INFINITY,
+            false,
+        );
+
+        for i in 0..400 {
+            for j in 0..300 {
+                let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
+                film.add_sample(u64vec2(i, j), sample, lambda, 1.0);
+            }
+        }
+
+        for pixel in film.pixels {
+            assert!(pixel.rgb_sum.iter().all(|f| *f >= 0.0));
+            assert_eq!(pixel.weight_sum, 1.0);
+        }
     }
 }

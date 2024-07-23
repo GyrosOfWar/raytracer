@@ -53,6 +53,10 @@ pub fn linear_least_squares(a: &[Vec3A], b: &[Vec3A]) -> Mat3A {
     (at_a_i * at_b).transpose()
 }
 
+pub fn square(x: f32) -> f32 {
+    x * x
+}
+
 #[cfg(test)]
 mod tests {
     use crate::math::evaluate_polynomial;

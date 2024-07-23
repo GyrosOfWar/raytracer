@@ -1,18 +1,19 @@
 use std::ops::Mul;
 
-use glam::{vec3, Mat4, Vec2, Vec3A};
+use glam::{vec3, I64Vec2, Mat4, Vec2, Vec3A};
 
+use crate::film::RgbFilm;
 use crate::ray::{Ray, RayDifferential};
 use crate::spectrum::SampledWavelengths;
 
-pub struct Bounds2 {
+pub struct Bounds2f {
     p_min: Vec2,
     p_max: Vec2,
 }
 
-impl Bounds2 {
+impl Bounds2f {
     pub fn new(a: Vec2, b: Vec2) -> Self {
-        Bounds2 {
+        Bounds2f {
             p_min: a.min(b),
             p_max: a.max(b),
         }
@@ -23,6 +24,29 @@ impl Bounds2 {
     }
 
     pub fn p_max(&self) -> Vec2 {
+        self.p_max
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bounds2i {
+    p_min: I64Vec2,
+    p_max: I64Vec2,
+}
+
+impl Bounds2i {
+    pub fn new(a: I64Vec2, b: I64Vec2) -> Self {
+        Bounds2i {
+            p_min: a.min(b),
+            p_max: a.max(b),
+        }
+    }
+
+    pub fn p_min(&self) -> I64Vec2 {
+        self.p_min
+    }
+
+    pub fn p_max(&self) -> I64Vec2 {
         self.p_max
     }
 }
@@ -44,13 +68,15 @@ pub struct PerspectiveCamera {
     focal_distance: f32,
     z_near: f32,
     z_far: f32,
+    // does it need to own the film?
+    film: RgbFilm,
 }
 
 impl PerspectiveCamera {
     pub fn new(
         camera_transform: CameraTransform,
         screen_from_camera: Transform,
-        screen_window: Bounds2,
+        screen_window: Bounds2f,
         lens_radius: f32,
         focal_distance: f32,
     ) -> Self {

@@ -1,4 +1,4 @@
-use std::ops::{Div, Mul};
+use std::ops::{Div, Mul, MulAssign};
 
 use glam::Vec3A;
 
@@ -31,6 +31,14 @@ impl Mul<f32> for Rgb {
             g: self.g * rhs,
             b: self.b * rhs,
         }
+    }
+}
+
+impl MulAssign<f32> for Rgb {
+    fn mul_assign(&mut self, rhs: f32) {
+        self.r *= rhs;
+        self.g *= rhs;
+        self.b *= rhs;
     }
 }
 
