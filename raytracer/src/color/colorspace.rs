@@ -13,8 +13,61 @@ use crate::util::find_interval;
 use crate::Result;
 
 const RES: usize = 64;
-pub static COLOR_SPACES: Lazy<ColorSpaces> = Lazy::new(|| {
-    ColorSpaces::load().expect("failed to load color space files, did you forget to generate them?")
+
+pub static S_RGB: Lazy<RgbColorSpace> = Lazy::new(|| {
+    let table = RgbToSpectrumTable::new(
+        CoefficientsFile::load("./data/color-spaces/srgb.bin").expect("failed to load srgb table"),
+    );
+    RgbColorSpace::new(
+        Vec2::new(0.64, 0.33),
+        Vec2::new(0.3, 0.6),
+        Vec2::new(0.15, 0.06),
+        Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
+        Arc::new(table),
+    )
+});
+
+pub static DCI_P3: Lazy<RgbColorSpace> = Lazy::new(|| {
+    let table = RgbToSpectrumTable::new(
+        CoefficientsFile::load("./data/color-spaces/dci_p3.bin")
+            .expect("failed to load dci_p3 table"),
+    );
+    RgbColorSpace::new(
+        Vec2::new(0.68, 0.32),
+        Vec2::new(0.265, 0.690),
+        Vec2::new(0.15, 0.06),
+        Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
+        Arc::new(table),
+    )
+});
+
+pub static REC_2020: Lazy<RgbColorSpace> = Lazy::new(|| {
+    let table = RgbToSpectrumTable::new(
+        CoefficientsFile::load("./data/color-spaces/rec2020.bin")
+            .expect("failed to load rec2020 table"),
+    );
+
+    RgbColorSpace::new(
+        Vec2::new(0.708, 0.292),
+        Vec2::new(0.170, 0.797),
+        Vec2::new(0.131, 0.046),
+        Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
+        Arc::new(table),
+    )
+});
+
+pub static ACES2065_1: Lazy<RgbColorSpace> = Lazy::new(|| {
+    let aces_table = RgbToSpectrumTable::new(
+        CoefficientsFile::load("./data/color-spaces/aces.bin")
+            .expect("failed to load aces2065-1 table"),
+    );
+    RgbColorSpace::new(
+        Vec2::new(0.7347, 0.2653),
+        Vec2::new(0.0, 1.0),
+        Vec2::new(0.0001, -0.077),
+        Arc::new(NAMED_SPECTRA.illum_aces_d60.clone()),
+        Arc::new(aces_table),
+    )
 });
 
 #[derive(Serialize, Deserialize)]
@@ -180,70 +233,11 @@ impl RgbColorSpace {
     }
 }
 
-pub struct ColorSpaces {
-    pub s_rgb: RgbColorSpace,
-    pub dci_p3: RgbColorSpace,
-    pub rec2020: RgbColorSpace,
-    pub aces2065_1: RgbColorSpace,
-}
-
-impl ColorSpaces {
-    pub fn load() -> Result<Self> {
-        let s_rgb_table =
-            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/srgb.bin")?);
-        let dci_p3_table =
-            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/dci_p3.bin")?);
-        let rec2020_table =
-            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/rec2020.bin")?);
-        let aces_table =
-            RgbToSpectrumTable::new(CoefficientsFile::load("./data/color-spaces/aces.bin")?);
-
-        let s_rgb = RgbColorSpace::new(
-            Vec2::new(0.64, 0.33),
-            Vec2::new(0.3, 0.6),
-            Vec2::new(0.15, 0.06),
-            Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
-            Arc::new(s_rgb_table),
-        );
-
-        let dci_p3 = RgbColorSpace::new(
-            Vec2::new(0.68, 0.32),
-            Vec2::new(0.265, 0.690),
-            Vec2::new(0.15, 0.06),
-            Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
-            Arc::new(dci_p3_table),
-        );
-
-        let rec2020 = RgbColorSpace::new(
-            Vec2::new(0.708, 0.292),
-            Vec2::new(0.170, 0.797),
-            Vec2::new(0.131, 0.046),
-            Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
-            Arc::new(rec2020_table),
-        );
-
-        let aces2065_1 = RgbColorSpace::new(
-            Vec2::new(0.7347, 0.2653),
-            Vec2::new(0.0, 1.0),
-            Vec2::new(0.0001, -0.077),
-            Arc::new(NAMED_SPECTRA.illum_aces_d60.clone()),
-            Arc::new(aces_table),
-        );
-
-        Ok(ColorSpaces {
-            s_rgb,
-            dci_p3,
-            rec2020,
-            aces2065_1,
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use glam::Vec3A;
 
-    use super::{RgbToSpectrumTable, COLOR_SPACES};
+    use super::{RgbToSpectrumTable, ACES2065_1, DCI_P3, REC_2020, S_RGB};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
     use crate::spectrum::HasWavelength;
@@ -317,12 +311,7 @@ mod tests {
 
     #[test]
     fn test_standard_color_spaces() {
-        for color_space in &[
-            &COLOR_SPACES.aces2065_1,
-            &COLOR_SPACES.dci_p3,
-            &COLOR_SPACES.rec2020,
-            &COLOR_SPACES.s_rgb,
-        ] {
+        for color_space in &[&ACES2065_1, &DCI_P3, &REC_2020, &S_RGB] {
             for_each_color(|r, g, b| {
                 let rgb = Rgb { r, g, b };
                 let xyz = color_space.to_xyz(rgb);

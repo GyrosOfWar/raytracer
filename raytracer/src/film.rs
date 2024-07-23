@@ -1,13 +1,12 @@
-use glam::{vec3, Mat3, Mat3A, U64Vec2, Vec2, Vec3A};
+use glam::{vec3, Mat3A, U64Vec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
 
 use crate::camera::Bounds2;
-use crate::color;
-use crate::color::colorspace::{RgbColorSpace, COLOR_SPACES};
+
+use crate::color::colorspace::{RgbColorSpace, S_RGB};
 use crate::color::rgb::Rgb;
 use crate::color::xyz::{Xyz, CIE_XYZ};
 use crate::math::linear_least_squares;
-use crate::sample::sample_uniform_disk_concentric;
 use crate::spectrum::{
     inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
@@ -32,7 +31,7 @@ pub struct PixelSensor {
 
 impl Default for PixelSensor {
     fn default() -> Self {
-        PixelSensor::create(&COLOR_SPACES.s_rgb, 100.0, 6500.0, 1.0)
+        PixelSensor::create(&S_RGB, 100.0, 6500.0, 1.0)
     }
 }
 
@@ -444,13 +443,31 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
-    use crate::color::colorspace::COLOR_SPACES;
+    use crate::{
+        color::{colorspace::S_RGB, rgb::Rgb},
+        random::random,
+        spectrum::{HasWavelength, RgbAlbedo, SampledWavelengths, Spectrum},
+    };
 
     use super::PixelSensor;
 
     #[test]
     fn create_pixel_sensor() {
-        let sensor = PixelSensor::create(&COLOR_SPACES.s_rgb, 100.0, 6500.0, 1.0);
-        // sensor.to_sensor_rgb(sample, lambda)
+        let sensor = PixelSensor::create(&S_RGB, 100.0, 6500.0, 1.0);
+        let lambda = SampledWavelengths::sample_uniform(random());
+        let spectrum: Spectrum = RgbAlbedo::with_color_space(
+            &S_RGB,
+            Rgb {
+                r: 0.9,
+                g: 0.1,
+                b: 0.1,
+            },
+        )
+        .into();
+        let sample = spectrum.sample(&lambda);
+        let response = sensor.to_sensor_rgb(&sample, &lambda);
+        assert!(response.r >= 0.9);
+        assert!(response.g >= 0.1);
+        assert!(response.b >= 0.1);
     }
 }
