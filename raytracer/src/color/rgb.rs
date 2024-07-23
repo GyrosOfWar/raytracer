@@ -99,7 +99,7 @@ impl HasWavelength for RgbSigmoidPolynomial {
     fn max_value(&self) -> f32 {
         let result = self.evaluate(360.0).max(self.evaluate(830.0));
         let lambda = -self.c1 / (2.0 * self.c0);
-        if (LAMBDA_MIN..LAMBDA_MAX).contains(&lambda) {
+        if (LAMBDA_MIN..=LAMBDA_MAX).contains(&lambda) {
             result.max(self.evaluate(lambda))
         } else {
             result

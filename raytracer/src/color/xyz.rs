@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::ops::{Div, Mul};
 
 use glam::{Vec2, Vec3A};
 use once_cell::sync::Lazy;
@@ -58,6 +58,18 @@ impl Xyz {
             self.x / (self.x + self.y + self.z),
             self.y / (self.x + self.y + self.z),
         )
+    }
+}
+
+impl Mul<f32> for Xyz {
+    type Output = Xyz;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
     }
 }
 

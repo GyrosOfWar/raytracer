@@ -80,7 +80,7 @@ impl DenselySampled {
 
     pub fn from_spectrum_in_range(spec: Spectrum, lambda_min: usize, lambda_max: usize) -> Self {
         let mut values = vec![0.0; lambda_max - lambda_min];
-        for lambda in lambda_min..lambda_max {
+        for lambda in lambda_min..=lambda_max {
             values[lambda - lambda_min] = spec.evaluate(lambda as f32);
         }
         DenselySampled {
@@ -302,7 +302,7 @@ impl HasWavelength for RgbIlluminant {
 
 pub fn inner_product(f: &impl HasWavelength, g: &impl HasWavelength) -> f32 {
     let mut integral = 0.0;
-    for lambda in (LAMBDA_MIN as usize)..(LAMBDA_MAX as usize) {
+    for lambda in (LAMBDA_MIN as usize)..=(LAMBDA_MAX as usize) {
         integral += f.evaluate(lambda as f32) * g.evaluate(lambda as f32);
     }
 
