@@ -1,4 +1,6 @@
-use glam::Vec3A;
+use glam::{Mat3A, Vec3A};
+
+use crate::vec::{MatExt, Vec3Ext};
 
 pub fn safe_sqrt(u: f32) -> f32 {
     u.max(0.0).sqrt()
@@ -32,6 +34,23 @@ pub fn evaluate_polynomial(coefficients: &[f32], x: f32) -> f32 {
     }
 
     result
+}
+
+pub fn linear_least_squares(a: &[Vec3A], b: &[Vec3A]) -> Mat3A {
+    let mut at_a = Mat3A::ZERO;
+    let mut at_b = Mat3A::ZERO;
+
+    for i in 0..3 {
+        for j in 0..3 {
+            for r in 0..a.len() {
+                at_a.set(i, j, a[r].get(i) * a[r].get(j));
+                at_b.set(i, j, a[r].get(i) * b[r].get(j));
+            }
+        }
+    }
+
+    let at_a_i = at_a.inverse();
+    (at_a_i * at_b).transpose()
 }
 
 #[cfg(test)]

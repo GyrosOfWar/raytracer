@@ -1,3 +1,5 @@
+use glam::Mat3A;
+
 pub type Point3 = glam::Vec3A;
 pub type Vec3 = glam::Vec3A;
 
@@ -22,6 +24,7 @@ pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
 pub trait Vec3Ext {
     fn near_zero(&self) -> bool;
     fn at(&self, axis: Axis) -> f32;
+    fn get(&self, index: usize) -> f32;
 }
 
 impl Vec3Ext for Vec3 {
@@ -36,6 +39,44 @@ impl Vec3Ext for Vec3 {
             Axis::Y => self.y,
             Axis::Z => self.z,
         }
+    }
+
+    fn get(&self, index: usize) -> f32 {
+        match index {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => panic!("index out of bounds"),
+        }
+    }
+}
+
+pub trait MatExt {
+    fn get(&self, i: usize, j: usize) -> f32;
+    fn set(&mut self, i: usize, j: usize, value: f32);
+}
+
+impl MatExt for Mat3A {
+    fn get(&self, i: usize, j: usize) -> f32 {
+        self.row(i).get(j)
+    }
+
+    fn set(&mut self, i: usize, j: usize, value: f32) {
+        let vec = match i {
+            0 => &mut self.x_axis,
+            1 => &mut self.y_axis,
+            2 => &mut self.z_axis,
+            _ => panic!("index out of bounds"),
+        };
+
+        let dst = match j {
+            0 => &mut vec.x,
+            1 => &mut vec.y,
+            2 => &mut vec.z,
+            _ => panic!("index out of bounds"),
+        };
+
+        *dst = value;
     }
 }
 
@@ -90,5 +131,21 @@ pub mod random {
         } else {
             -on_unit_sphere
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use glam::Mat3A;
+
+    use super::MatExt;
+
+    #[test]
+    fn mat_set_value() {
+        let mut mat = Mat3A::ZERO;
+        mat.set(0, 0, 5.0);
+        println!("{mat:?}");
+        assert_eq!(mat.x_axis.x, 5.0);
+        assert_eq!(mat.get(0, 0), 5.0);
     }
 }
