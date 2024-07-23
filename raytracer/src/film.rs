@@ -1,12 +1,16 @@
-use glam::{Mat3A, U64Vec2, Vec3A};
+use glam::{vec3, Mat3, Mat3A, U64Vec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
 
 use crate::camera::Bounds2;
-use crate::color::colorspace::RgbColorSpace;
-use crate::color::xyz::CIE_XYZ;
+use crate::color;
+use crate::color::colorspace::{RgbColorSpace, COLOR_SPACES};
+use crate::color::rgb::Rgb;
+use crate::color::xyz::{Xyz, CIE_XYZ};
 use crate::math::linear_least_squares;
+use crate::sample::sample_uniform_disk_concentric;
 use crate::spectrum::{
-    inner_product, HasWavelength, PiecewiseLinear, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
+    inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
+    SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
 
 static SWATCH_REFLECTANCES: Lazy<Vec<Spectrum>> = Lazy::new(load_swatch_reflectances);
@@ -26,8 +30,33 @@ pub struct PixelSensor {
     xyz_from_sensor: Mat3A,
 }
 
+impl Default for PixelSensor {
+    fn default() -> Self {
+        PixelSensor::create(&COLOR_SPACES.s_rgb, 100.0, 6500.0, 1.0)
+    }
+}
+
 impl PixelSensor {
-    pub fn new(
+    pub fn create(
+        color_space: &RgbColorSpace,
+        iso: f32,
+        white_balance: f32,
+        exposure_time: f32,
+    ) -> PixelSensor {
+        let imaging_ratio = exposure_time * iso / 100.0;
+        let d_illum = NamedSpectra::d_illuminant(white_balance);
+
+        PixelSensor::new(
+            CIE_XYZ.x.clone(),
+            CIE_XYZ.y.clone(),
+            CIE_XYZ.z.clone(),
+            color_space,
+            d_illum,
+            imaging_ratio,
+        )
+    }
+
+    fn new(
         r_bar: Spectrum,
         g_bar: Spectrum,
         b_bar: Spectrum,
@@ -66,6 +95,29 @@ impl PixelSensor {
             xyz_from_sensor: m,
         }
     }
+
+    fn with_xyz(color_space: &RgbColorSpace, sensor_illum: Spectrum, imaging_ratio: f32) -> Self {
+        let source_white = Xyz::from(&sensor_illum).xy();
+        let target_white = color_space.w;
+        let white_balance = white_balance(source_white, target_white);
+
+        PixelSensor {
+            r_bar: CIE_XYZ.x.clone(),
+            g_bar: CIE_XYZ.y.clone(),
+            b_bar: CIE_XYZ.z.clone(),
+            imaging_ratio,
+            xyz_from_sensor: white_balance,
+        }
+    }
+
+    pub fn to_sensor_rgb(&self, sample: &SampledSpectrum, lambda: &SampledWavelengths) -> Rgb {
+        let l = sample.safe_div(lambda.pdf());
+        Rgb {
+            r: (self.r_bar.sample(lambda) * l).average(),
+            g: (self.g_bar.sample(lambda) * l).average(),
+            b: (self.b_bar.sample(lambda) * l).average(),
+        } * self.imaging_ratio
+    }
 }
 
 fn project_reflectance(
@@ -87,6 +139,35 @@ fn project_reflectance(
     }
 
     result / g_integral
+}
+
+fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
+    #[rustfmt::skip]
+    const LMS_FROM_XYZ: Mat3A = Mat3A::from_cols_array(&[
+        0.8951, 0.2664, -0.1614, 
+        -0.7502, 1.7135, 0.0367, 
+        0.0389, -0.0685, 1.0296,
+    ]);
+
+    #[rustfmt::skip]
+    const XYZ_FROM_LMS: Mat3A = Mat3A::from_cols_array(&[
+        0.986993, -0.147054, 0.159963,
+        0.432305, 0.51836, 0.0492912,
+        -0.00852866, 0.0400428, 0.968487,
+    ]);
+
+    let src_xyz = Vec3A::from(Xyz::from_xy(source_white));
+    let dest_xyz = Vec3A::from(Xyz::from_xy(target_white));
+    let src_lms = LMS_FROM_XYZ * src_xyz;
+    let dest_lms = LMS_FROM_XYZ * dest_xyz;
+
+    let lms_correct = Mat3A::from_diagonal(vec3(
+        dest_lms.x / src_lms.x,
+        dest_lms.y / src_lms.y,
+        dest_lms.z / src_lms.z,
+    ));
+
+    XYZ_FROM_LMS * lms_correct * LMS_FROM_XYZ
 }
 
 fn load_swatch_reflectances() -> Vec<Spectrum> {
@@ -363,17 +444,13 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
+    use crate::color::colorspace::COLOR_SPACES;
+
     use super::PixelSensor;
 
     #[test]
     fn create_pixel_sensor() {
-        // let sensor = PixelSensor::new(
-        //     r_bar,
-        //     g_bar,
-        //     b_bar,
-        //     color_space,
-        //     sensor_illum,
-        //     imaging_ratio,
-        // );
+        let sensor = PixelSensor::create(&COLOR_SPACES.s_rgb, 100.0, 6500.0, 1.0);
+        // sensor.to_sensor_rgb(sample, lambda)
     }
 }

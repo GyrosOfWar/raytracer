@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::ops::{Div, Mul};
 
 use glam::Vec3A;
 
@@ -18,6 +18,18 @@ impl From<Vec3A> for Rgb {
             r: value.x,
             g: value.y,
             b: value.z,
+        }
+    }
+}
+
+impl Mul<f32> for Rgb {
+    type Output = Rgb;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Rgb {
+            r: self.r * rhs,
+            g: self.g * rhs,
+            b: self.b * rhs,
         }
     }
 }
