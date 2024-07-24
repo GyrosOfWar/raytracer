@@ -103,15 +103,6 @@ impl RgbFilm {
         let width = self.pixel_bounds.y_extent();
         (width * location.x + location.y) as usize
     }
-
-    pub fn add_sample(
-        &mut self,
-        location: IVec2,
-        sample: SampledSpectrum,
-        lambda: SampledWavelengths,
-        weight: f32,
-    ) {
-    }
 }
 
 impl Film for RgbFilm {
@@ -631,23 +622,24 @@ mod test {
     use glam::{ivec2, uvec2, vec2};
 
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
-    use crate::assert_in_range;
     use crate::camera::Bounds2i;
     use crate::color::colorspace::{RgbColorSpace, S_RGB};
     use crate::color::rgb::Rgb;
+    use crate::film::Film;
     use crate::filter::{Gaussian, ReconstructionFilter};
-    use crate::random::{random, random_int};
+    use crate::random::random_int;
     use crate::spectrum::{
         HasWavelength, RgbAlbedo, SampledSpectrum, SampledWavelengths, Spectrum,
     };
 
     fn get_rgb_sample(
+        u: f32,
         r: f32,
         g: f32,
         b: f32,
         color_space: &RgbColorSpace,
     ) -> (SampledSpectrum, SampledWavelengths) {
-        let lambda = SampledWavelengths::sample_uniform(random());
+        let lambda = SampledWavelengths::sample_uniform(u);
         let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, Rgb::new(r, g, b)).into();
         let sample = spectrum.sample(&lambda);
 
@@ -657,11 +649,9 @@ mod test {
     #[test]
     fn create_pixel_sensor() {
         let sensor = PixelSensor::create(&S_RGB, 100.0, 6500.0, 1.0);
-        let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
+        let (sample, lambda) = get_rgb_sample(0.0, 0.9, 0.1, 0.1, S_RGB.as_ref());
         let response = sensor.to_sensor_rgb(&sample, &lambda);
-        assert_in_range!(response.r, 0.0, 1.0);
-        assert_in_range!(response.g, 0.0, 1.0);
-        assert_in_range!(response.b, 0.0, 1.0);
+        assert_eq!(0, response.max_component_index());
     }
 
     #[test]
@@ -686,11 +676,11 @@ mod test {
             pixel_bounds: bounds,
         };
 
-        let mut film = RgbFilm::new(parameters, S_RGB.clone(), std::f32::INFINITY, false);
+        let film = RgbFilm::new(parameters, S_RGB.clone(), std::f32::INFINITY, false);
 
         for i in x_min..x_max {
             for j in y_min..y_max {
-                let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
+                let (sample, lambda) = get_rgb_sample(0.0, 0.9, 0.1, 0.1, S_RGB.as_ref());
                 film.add_sample(ivec2(i, j), sample, lambda, 1.0);
             }
         }
