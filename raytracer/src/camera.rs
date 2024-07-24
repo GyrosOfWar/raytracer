@@ -60,7 +60,7 @@ impl Bounds2i {
     }
 
     pub fn y_extent(&self) -> i64 {
-        self.p_max.y - self.p_max.y
+        self.p_max.y - self.p_min.y
     }
 }
 
