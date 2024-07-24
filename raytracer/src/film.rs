@@ -52,7 +52,6 @@ pub struct FilmBaseParameters {
     /// sensor diagonal in meters
     sensor_diagonal: f32,
     sensor: PixelSensor,
-    file_name: String,
 }
 
 #[derive(Debug)]
@@ -62,11 +61,9 @@ pub struct RgbFilm {
     sensor: PixelSensor,
     /// sensor diagonal in mm
     sensor_diagonal: f32,
-    file_name: String,
     color_space: Arc<RgbColorSpace>,
     max_component_value: f32,
     filter_integral: f32,
-    write_fp16: bool,
     output_rgb_from_sensor_rgb: Mat3A,
     pixels: Mutex<Vec<Pixel>>,
     filter: ReconstructionFilter,
@@ -77,7 +74,6 @@ impl RgbFilm {
         parameters: FilmBaseParameters,
         color_space: Arc<RgbColorSpace>,
         max_component_value: f32,
-        write_fp16: bool,
     ) -> Self {
         let filter_integral = parameters.filter.integral();
         let pixels = vec![Pixel::default(); parameters.pixel_bounds.area() as usize];
@@ -90,10 +86,8 @@ impl RgbFilm {
             filter: parameters.filter,
             filter_integral,
             pixels: Mutex::new(pixels),
-            write_fp16,
             color_space,
             sensor_diagonal: parameters.sensor_diagonal * 0.001,
-            file_name: parameters.file_name,
             max_component_value,
             output_rgb_from_sensor_rgb,
         }
@@ -319,15 +313,15 @@ fn project_reflectance(
 fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
     #[rustfmt::skip]
     const LMS_FROM_XYZ: Mat3A = Mat3A::from_cols_array(&[
-        0.8951, 0.2664, -0.1614,
-        -0.7502, 1.7135, 0.0367,
-        0.0389, -0.0685, 1.0296,
+         0.8951,  0.2664, -0.1614,
+        -0.7502,  1.7135,  0.0367,
+         0.0389, -0.0685,  1.0296,
     ]);
 
     #[rustfmt::skip]
     const XYZ_FROM_LMS: Mat3A = Mat3A::from_cols_array(&[
-        0.986993, -0.147054, 0.159963,
-        0.432305, 0.51836, 0.0492912,
+         0.986993,  -0.147054,  0.159963,
+         0.432305,   0.51836,   0.0492912,
         -0.00852866, 0.0400428, 0.968487,
     ]);
 
@@ -669,14 +663,13 @@ mod test {
 
         let parameters = FilmBaseParameters {
             full_resolution: uvec2(400, 300),
-            file_name: "file.png".into(),
             filter: ReconstructionFilter::Gaussian(Gaussian::new(vec2(1.0, 1.0), 1.0, 1.0, 1.0)),
             sensor: PixelSensor::default(),
             sensor_diagonal: 0.036,
             pixel_bounds: bounds,
         };
 
-        let film = RgbFilm::new(parameters, S_RGB.clone(), std::f32::INFINITY, false);
+        let film = RgbFilm::new(parameters, S_RGB.clone(), std::f32::INFINITY);
 
         for i in x_min..x_max {
             for j in y_min..y_max {
