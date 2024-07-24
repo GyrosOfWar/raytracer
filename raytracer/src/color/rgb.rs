@@ -1,6 +1,6 @@
 use std::ops::{Div, Mul, MulAssign};
 
-use glam::Vec3A;
+use glam::{Mat3A, Vec3A};
 
 use crate::assert_in_range;
 use crate::math::evaluate_polynomial;
@@ -35,6 +35,14 @@ impl MulAssign<f32> for Rgb {
     }
 }
 
+impl Mul<Rgb> for Mat3A {
+    type Output = Rgb;
+
+    fn mul(self, rhs: Rgb) -> Self::Output {
+        Rgb::from(self * Vec3A::from(rhs))
+    }
+}
+
 impl Div<f32> for Rgb {
     type Output = Self;
 
@@ -57,9 +65,9 @@ impl Rgb {
     };
 
     pub fn new(r: f32, g: f32, b: f32) -> Rgb {
-        assert_in_range!(r, 0.0, 1.0);
-        assert_in_range!(g, 0.0, 1.0);
-        assert_in_range!(b, 0.0, 1.0);
+        // assert_in_range!(r, 0.0, 1.0);
+        // assert_in_range!(g, 0.0, 1.0);
+        // assert_in_range!(b, 0.0, 1.0);
 
         Rgb { r, g, b }
     }

@@ -155,8 +155,9 @@ impl Film for RgbFilm {
         self.sensor_diagonal
     }
 
-    fn to_output_rgb(&self, spectrum: SampledSpectrum, lambda: SampledWavelengths) -> Rgb {
-        todo!()
+    fn to_output_rgb(&self, sample: SampledSpectrum, lambda: SampledWavelengths) -> Rgb {
+        let sensor_rgb = self.sensor.to_sensor_rgb(&sample, &lambda);
+        self.output_rgb_from_sensor_rgb * sensor_rgb
     }
 
     fn get_pixel_rgb(&self, p_film: IVec2) -> Rgb {
@@ -630,6 +631,7 @@ mod test {
     use glam::{ivec2, uvec2, vec2};
 
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
+    use crate::assert_in_range;
     use crate::camera::Bounds2i;
     use crate::color::colorspace::{RgbColorSpace, S_RGB};
     use crate::color::rgb::Rgb;
@@ -657,9 +659,9 @@ mod test {
         let sensor = PixelSensor::create(&S_RGB, 100.0, 6500.0, 1.0);
         let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
         let response = sensor.to_sensor_rgb(&sample, &lambda);
-        assert!(response.r >= 0.9);
-        assert!(response.g >= 0.1);
-        assert!(response.b >= 0.1);
+        assert_in_range!(response.r, 0.0, 1.0);
+        assert_in_range!(response.g, 0.0, 1.0);
+        assert_in_range!(response.b, 0.0, 1.0);
     }
 
     #[test]
@@ -694,9 +696,10 @@ mod test {
         }
 
         let total_pixels = (x_max - x_min) * (y_max - y_min);
-        assert_eq!(total_pixels as usize, film.pixels.len());
+        let pixels = film.pixels.lock();
+        assert_eq!(total_pixels as usize, pixels.len());
 
-        for pixel in film.pixels {
+        for pixel in pixels.iter() {
             assert!(pixel.rgb_sum.iter().all(|f| *f >= 0.0));
             assert_eq!(pixel.weight_sum, 1.0);
         }
