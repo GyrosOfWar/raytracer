@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use glam::{vec3, I64Vec2, Mat4, Vec2, Vec3A};
+use glam::{vec3, IVec2, Mat4, Vec2, Vec3A};
 
 use crate::film::RgbFilm;
 use crate::ray::{Ray, RayDifferential};
@@ -30,36 +30,36 @@ impl Bounds2f {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bounds2i {
-    p_min: I64Vec2,
-    p_max: I64Vec2,
+    p_min: IVec2,
+    p_max: IVec2,
 }
 
 impl Bounds2i {
-    pub fn new(a: I64Vec2, b: I64Vec2) -> Self {
+    pub fn new(a: IVec2, b: IVec2) -> Self {
         Bounds2i {
             p_min: a.min(b),
             p_max: a.max(b),
         }
     }
 
-    pub fn p_min(&self) -> I64Vec2 {
+    pub fn p_min(&self) -> IVec2 {
         self.p_min
     }
 
-    pub fn p_max(&self) -> I64Vec2 {
+    pub fn p_max(&self) -> IVec2 {
         self.p_max
     }
 
-    pub fn area(&self) -> i64 {
+    pub fn area(&self) -> i32 {
         let d = self.p_max - self.p_min;
         d.x * d.y
     }
 
-    pub fn x_extent(&self) -> i64 {
+    pub fn x_extent(&self) -> i32 {
         self.p_max.x - self.p_min.x
     }
 
-    pub fn y_extent(&self) -> i64 {
+    pub fn y_extent(&self) -> i32 {
         self.p_max.y - self.p_min.y
     }
 }

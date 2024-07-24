@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use glam::{vec3, Mat3A, U64Vec2, Vec2, Vec3A};
+use glam::{vec3, IVec2, Mat3A, UVec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
 
 use crate::camera::Bounds2i;
@@ -18,7 +18,7 @@ static SWATCH_REFLECTANCES: Lazy<Vec<Spectrum>> = Lazy::new(load_swatch_reflecta
 
 #[derive(Debug)]
 pub struct FilmBaseParameters {
-    full_resolution: U64Vec2,
+    full_resolution: UVec2,
     pixel_bounds: Bounds2i,
     filter: ReconstructionFilter,
     /// sensor diagonal in meters
@@ -29,7 +29,7 @@ pub struct FilmBaseParameters {
 
 #[derive(Debug)]
 pub struct RgbFilm {
-    full_resolution: U64Vec2,
+    full_resolution: UVec2,
     pixel_bounds: Bounds2i,
     sensor: PixelSensor,
     sensor_diagonal: f32,
@@ -70,14 +70,14 @@ impl RgbFilm {
         }
     }
 
-    fn index(&self, location: U64Vec2) -> usize {
-        let width = self.pixel_bounds.y_extent() as u64;
+    fn index(&self, location: IVec2) -> usize {
+        let width = self.pixel_bounds.y_extent();
         (width * location.x + location.y) as usize
     }
 
     pub fn add_sample(
         &mut self,
-        location: U64Vec2,
+        location: IVec2,
         sample: SampledSpectrum,
         lambda: SampledWavelengths,
         weight: f32,
@@ -87,6 +87,8 @@ impl RgbFilm {
         if max > self.max_component_value {
             rgb *= self.max_component_value / max;
         }
+        let location = location - self.pixel_bounds.p_min();
+        dbg!(&location);
 
         let idx = self.index(location);
         let pixel = &mut self.pixels[idx];
@@ -530,14 +532,14 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
-    use glam::{i64vec2, u64vec2, vec2};
+    use glam::{ivec2, uvec2, vec2};
 
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
     use crate::camera::Bounds2i;
     use crate::color::colorspace::{RgbColorSpace, S_RGB};
     use crate::color::rgb::Rgb;
     use crate::filter::{Gaussian, ReconstructionFilter};
-    use crate::random::random;
+    use crate::random::{random, random_int};
     use crate::spectrum::{
         HasWavelength, RgbAlbedo, SampledSpectrum, SampledWavelengths, Spectrum,
     };
@@ -567,29 +569,37 @@ mod test {
 
     #[test]
     fn test_add_samples() {
+        let x1 = random_int(0, 400);
+        let y1 = random_int(0, 300);
+        let x2 = random_int(0, 400);
+        let y2 = random_int(0, 300);
+
+        let x_min = x1.min(x2);
+        let y_min = y1.min(y2);
+        let x_max = x1.max(x2);
+        let y_max = y1.max(y2);
+        let bounds = Bounds2i::new(ivec2(x_min, y_min), ivec2(x_max, y_max));
+
         let parameters = FilmBaseParameters {
-            full_resolution: u64vec2(400, 300),
+            full_resolution: uvec2(400, 300),
             file_name: "file.png".into(),
             filter: ReconstructionFilter::Gaussian(Gaussian::new(vec2(1.0, 1.0), 1.0, 1.0, 1.0)),
             sensor: PixelSensor::default(),
             sensor_diagonal: 0.036,
-            pixel_bounds: Bounds2i::new(i64vec2(50, 50), i64vec2(200, 200)),
+            pixel_bounds: bounds,
         };
 
-        let mut film = RgbFilm::new(
-            parameters,
-            // TODO move to Arc in the Lazy<T>?
-            S_RGB.clone(),
-            std::f32::INFINITY,
-            false,
-        );
+        let mut film = RgbFilm::new(parameters, S_RGB.clone(), std::f32::INFINITY, false);
 
-        for i in 50..200 {
-            for j in 50..200 {
+        for i in x_min..x_max {
+            for j in y_min..y_max {
                 let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
-                film.add_sample(u64vec2(i, j), sample, lambda, 1.0);
+                film.add_sample(ivec2(i, j), sample, lambda, 1.0);
             }
         }
+
+        let total_pixels = (x_max - x_min) * (y_max - y_min);
+        assert_eq!(total_pixels as usize, film.pixels.len());
 
         for pixel in film.pixels {
             assert!(pixel.rgb_sum.iter().all(|f| *f >= 0.0));
