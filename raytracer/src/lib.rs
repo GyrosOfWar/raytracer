@@ -4,6 +4,7 @@ pub mod color;
 pub mod film;
 pub mod filter;
 pub mod integrator;
+pub mod macros;
 pub mod math;
 pub mod random;
 pub mod range;

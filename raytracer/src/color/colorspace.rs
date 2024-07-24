@@ -277,11 +277,8 @@ mod tests {
     fn test_create_spectrum_table() -> Result<()> {
         let file = CoefficientsFile::load("./data/color-spaces/srgb.bin")?;
         let table = RgbToSpectrumTable::new(file);
-        let sigmoid = table.evaluate(Rgb {
-            r: 0.0,
-            g: 1.0,
-            b: 0.0,
-        });
+        let sigmoid = table.evaluate(Rgb::new(0.0, 1.0, 0.0));
+
         // sanity check, the entire visible range should be defined
         for lambda in 360..830 {
             let result = sigmoid.evaluate(lambda as f32);
@@ -313,7 +310,7 @@ mod tests {
     fn test_standard_color_spaces() {
         for color_space in &[&ACES2065_1, &DCI_P3, &REC_2020, &S_RGB] {
             for_each_color(|r, g, b| {
-                let rgb = Rgb { r, g, b };
+                let rgb = Rgb::new(r, g, b);
                 let xyz = color_space.to_xyz(rgb);
                 let back_converted = color_space.to_rgb(xyz);
                 assert!(Vec3A::from(rgb).abs_diff_eq(Vec3A::from(back_converted), 0.001));

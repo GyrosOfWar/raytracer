@@ -56,10 +56,20 @@ impl Filter for Gaussian {
     }
 
     fn integral(&self) -> f32 {
-        (gaussian_integral(-self.radius.x, self.radius.x, 0.0, self.sigma)
-            - 2.0 * self.radius.x * self.exp_x)
-            * (gaussian_integral(-self.radius.y, self.radius.y, 0.0, self.sigma)
-                - 2.0 * self.radius.y * self.exp_y)
+        let a = gaussian_integral(
+            -self.radius.x,
+            self.radius.x,
+            0.0,
+            self.sigma - 2.0 * self.radius.x * self.exp_x,
+        );
+        let b = gaussian_integral(
+            -self.radius.y,
+            self.radius.y,
+            0.0,
+            self.sigma - 2.0 * self.radius.y * self.exp_y,
+        );
+
+        a * b
     }
 
     fn sample(&self, point: Vec2) -> FilterSample {
@@ -73,10 +83,5 @@ fn gaussian(x: f32, mu: f32, sigma: f32) -> f32 {
 
 fn gaussian_integral(x0: f32, x1: f32, mu: f32, sigma: f32) -> f32 {
     let sigma_root_2 = sigma * 1.414213562373095;
-    return 0.5 * (erf((mu - x0) / sigma_root_2) - erf((mu - x1) / sigma_root_2));
-}
-
-fn erf(n: f32) -> f32 {
-    // TODO
-    n
+    return 0.5 * (libm::erff((mu - x0) / sigma_root_2) - libm::erff((mu - x1) / sigma_root_2));
 }

@@ -2,6 +2,7 @@ use std::ops::{Div, Mul, MulAssign};
 
 use glam::Vec3A;
 
+use crate::assert_in_range;
 use crate::math::evaluate_polynomial;
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
 
@@ -14,11 +15,7 @@ pub struct Rgb {
 
 impl From<Vec3A> for Rgb {
     fn from(value: Vec3A) -> Self {
-        Rgb {
-            r: value.x,
-            g: value.y,
-            b: value.z,
-        }
+        Rgb::new(value.x, value.y, value.z)
     }
 }
 
@@ -26,11 +23,7 @@ impl Mul<f32> for Rgb {
     type Output = Rgb;
 
     fn mul(self, rhs: f32) -> Self::Output {
-        Rgb {
-            r: self.r * rhs,
-            g: self.g * rhs,
-            b: self.b * rhs,
-        }
+        Rgb::new(self.r * rhs, self.g * rhs, self.b * rhs)
     }
 }
 
@@ -46,11 +39,7 @@ impl Div<f32> for Rgb {
     type Output = Self;
 
     fn div(self, rhs: f32) -> Self::Output {
-        Rgb {
-            r: self.r / rhs,
-            g: self.g / rhs,
-            b: self.b / rhs,
-        }
+        Rgb::new(self.r / rhs, self.g / rhs, self.b / rhs)
     }
 }
 
@@ -66,6 +55,14 @@ impl Rgb {
         g: 0.0,
         b: 0.0,
     };
+
+    pub fn new(r: f32, g: f32, b: f32) -> Rgb {
+        assert_in_range!(r, 0.0, 1.0);
+        assert_in_range!(g, 0.0, 1.0);
+        assert_in_range!(b, 0.0, 1.0);
+
+        Rgb { r, g, b }
+    }
 
     pub fn max(&self) -> f32 {
         self.component(self.max_component_index())

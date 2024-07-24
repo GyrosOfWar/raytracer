@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use glam::{vec3, IVec2, Mat3A, UVec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 
-use crate::camera::Bounds2i;
+use crate::camera::{Bounds2f, Bounds2i};
 use crate::color::colorspace::{RgbColorSpace, S_RGB};
 use crate::color::rgb::Rgb;
 use crate::color::xyz::{Xyz, CIE_XYZ};
@@ -15,6 +16,33 @@ use crate::spectrum::{
 };
 
 static SWATCH_REFLECTANCES: Lazy<Vec<Spectrum>> = Lazy::new(load_swatch_reflectances);
+
+pub trait Film {
+    fn add_sample(
+        &self,
+        p_film: IVec2,
+        sample: SampledSpectrum,
+        lambda: SampledWavelengths,
+        weight: f32,
+    );
+
+    fn sample_bounds(&self) -> Bounds2f;
+
+    fn sample_wavelenghts(&self, u: f32) -> SampledWavelengths;
+
+    fn pixel_bounds(&self) -> Bounds2i;
+
+    /// Returns the sensor diagonal in millimeters.
+    fn diagonal(&self) -> f32;
+
+    fn to_output_rgb(&self, spectrum: SampledSpectrum, lambda: SampledWavelengths) -> Rgb;
+
+    fn get_pixel_rgb(&self, p_film: IVec2) -> Rgb;
+
+    fn pixel_sensor(&self) -> &PixelSensor;
+
+    fn filter(&self) -> &ReconstructionFilter;
+}
 
 #[derive(Debug)]
 pub struct FilmBaseParameters {
@@ -32,6 +60,7 @@ pub struct RgbFilm {
     full_resolution: UVec2,
     pixel_bounds: Bounds2i,
     sensor: PixelSensor,
+    /// sensor diagonal in mm
     sensor_diagonal: f32,
     file_name: String,
     color_space: Arc<RgbColorSpace>,
@@ -39,7 +68,7 @@ pub struct RgbFilm {
     filter_integral: f32,
     write_fp16: bool,
     output_rgb_from_sensor_rgb: Mat3A,
-    pixels: Vec<Pixel>,
+    pixels: Mutex<Vec<Pixel>>,
     filter: ReconstructionFilter,
 }
 
@@ -60,10 +89,10 @@ impl RgbFilm {
             sensor: parameters.sensor,
             filter: parameters.filter,
             filter_integral,
-            pixels,
+            pixels: Mutex::new(pixels),
             write_fp16,
             color_space,
-            sensor_diagonal: parameters.sensor_diagonal,
+            sensor_diagonal: parameters.sensor_diagonal * 0.001,
             file_name: parameters.file_name,
             max_component_value,
             output_rgb_from_sensor_rgb,
@@ -82,20 +111,67 @@ impl RgbFilm {
         lambda: SampledWavelengths,
         weight: f32,
     ) {
+    }
+}
+
+impl Film for RgbFilm {
+    fn add_sample(
+        &self,
+        p_film: IVec2,
+        sample: SampledSpectrum,
+        lambda: SampledWavelengths,
+        weight: f32,
+    ) {
         let mut rgb = self.sensor.to_sensor_rgb(&sample, &lambda);
         let max = rgb.max();
         if max > self.max_component_value {
             rgb *= self.max_component_value / max;
         }
-        let location = location - self.pixel_bounds.p_min();
-        dbg!(&location);
 
+        let location = p_film - self.pixel_bounds.p_min();
         let idx = self.index(location);
-        let pixel = &mut self.pixels[idx];
+
+        let mut pixels = self.pixels.lock();
+        let pixel = &mut pixels[idx];
         pixel.rgb_sum[0] += (rgb.r * weight) as f64;
         pixel.rgb_sum[1] += (rgb.g * weight) as f64;
         pixel.rgb_sum[2] += (rgb.b * weight) as f64;
         pixel.weight_sum += weight as f64;
+    }
+
+    fn sample_bounds(&self) -> Bounds2f {
+        todo!()
+    }
+
+    fn sample_wavelenghts(&self, u: f32) -> SampledWavelengths {
+        todo!()
+    }
+
+    fn pixel_bounds(&self) -> Bounds2i {
+        self.pixel_bounds.clone()
+    }
+
+    fn diagonal(&self) -> f32 {
+        self.sensor_diagonal
+    }
+
+    fn to_output_rgb(&self, spectrum: SampledSpectrum, lambda: SampledWavelengths) -> Rgb {
+        todo!()
+    }
+
+    fn get_pixel_rgb(&self, p_film: IVec2) -> Rgb {
+        let idx = self.index(p_film);
+        let pixels = self.pixels.lock();
+        let pixel = &pixels[idx];
+        pixel.to_rgb()
+    }
+
+    fn pixel_sensor(&self) -> &PixelSensor {
+        &self.sensor
+    }
+
+    fn filter(&self) -> &ReconstructionFilter {
+        &self.filter
     }
 }
 
@@ -103,6 +179,17 @@ impl RgbFilm {
 pub struct Pixel {
     pub rgb_sum: [f64; 3],
     pub weight_sum: f64,
+}
+
+impl Pixel {
+    pub fn to_rgb(&self) -> Rgb {
+        let [r, g, b] = self.rgb_sum;
+        Rgb::new(
+            (r / self.weight_sum) as f32,
+            (g / self.weight_sum) as f32,
+            (b / self.weight_sum) as f32,
+        )
+    }
 }
 
 #[derive(Debug)]
@@ -130,14 +217,22 @@ impl PixelSensor {
         let imaging_ratio = exposure_time * iso / 100.0;
         let d_illum = NamedSpectra::d_illuminant(white_balance);
 
-        PixelSensor::new(
-            CIE_XYZ.x.clone(),
-            CIE_XYZ.y.clone(),
-            CIE_XYZ.z.clone(),
-            color_space,
-            d_illum,
-            imaging_ratio,
-        )
+        PixelSensor::with_xyz(color_space, d_illum, imaging_ratio)
+    }
+
+    pub fn create_with_rgb(
+        r_bar: Spectrum,
+        g_bar: Spectrum,
+        b_bar: Spectrum,
+        color_space: &RgbColorSpace,
+        iso: f32,
+        white_balance: f32,
+        exposure_time: f32,
+    ) -> PixelSensor {
+        let imaging_ratio = exposure_time * iso / 100.0;
+        let d_illum = NamedSpectra::d_illuminant(white_balance);
+
+        PixelSensor::new(r_bar, g_bar, b_bar, color_space, d_illum, imaging_ratio)
     }
 
     fn new(
@@ -196,11 +291,11 @@ impl PixelSensor {
 
     pub fn to_sensor_rgb(&self, sample: &SampledSpectrum, lambda: &SampledWavelengths) -> Rgb {
         let l = sample.safe_div(lambda.pdf());
-        Rgb {
-            r: (self.r_bar.sample(lambda) * l).average(),
-            g: (self.g_bar.sample(lambda) * l).average(),
-            b: (self.b_bar.sample(lambda) * l).average(),
-        } * self.imaging_ratio
+        Rgb::new(
+            (self.r_bar.sample(lambda) * l).average(),
+            (self.g_bar.sample(lambda) * l).average(),
+            (self.b_bar.sample(lambda) * l).average(),
+        ) * self.imaging_ratio
     }
 
     pub fn xyz_from_sensor_rgb(&self) -> &Mat3A {
@@ -551,7 +646,7 @@ mod test {
         color_space: &RgbColorSpace,
     ) -> (SampledSpectrum, SampledWavelengths) {
         let lambda = SampledWavelengths::sample_uniform(random());
-        let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, Rgb { r, g, b }).into();
+        let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, Rgb::new(r, g, b)).into();
         let sample = spectrum.sample(&lambda);
 
         (sample, lambda)
