@@ -56,10 +56,10 @@ impl Filter for Gaussian {
     }
 
     fn integral(&self) -> f32 {
-        ((gaussian_integral(-self.radius.x, self.radius.x, 0.0, self.sigma)
+        (gaussian_integral(-self.radius.x, self.radius.x, 0.0, self.sigma)
             - 2.0 * self.radius.x * self.exp_x)
             * (gaussian_integral(-self.radius.y, self.radius.y, 0.0, self.sigma)
-                - 2.0 * self.radius.y * self.exp_y))
+                - 2.0 * self.radius.y * self.exp_y)
     }
 
     fn sample(&self, point: Vec2) -> FilterSample {

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use glam::{vec3, Mat3A, U64Vec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
 
+use crate::camera::Bounds2i;
 use crate::color::colorspace::{RgbColorSpace, S_RGB};
 use crate::color::rgb::Rgb;
 use crate::color::xyz::{Xyz, CIE_XYZ};
@@ -18,7 +19,7 @@ static SWATCH_REFLECTANCES: Lazy<Vec<Spectrum>> = Lazy::new(load_swatch_reflecta
 #[derive(Debug)]
 pub struct FilmBaseParameters {
     full_resolution: U64Vec2,
-    // pixel_bounds: Bounds2i,
+    pixel_bounds: Bounds2i,
     filter: ReconstructionFilter,
     /// sensor diagonal in meters
     sensor_diagonal: f32,
@@ -29,7 +30,7 @@ pub struct FilmBaseParameters {
 #[derive(Debug)]
 pub struct RgbFilm {
     full_resolution: U64Vec2,
-    // pixel_bounds: Bounds2i,
+    pixel_bounds: Bounds2i,
     sensor: PixelSensor,
     sensor_diagonal: f32,
     file_name: String,
@@ -50,15 +51,12 @@ impl RgbFilm {
         write_fp16: bool,
     ) -> Self {
         let filter_integral = parameters.filter.integral();
-        let pixels = vec![
-            Pixel::default();
-            (parameters.full_resolution.x * parameters.full_resolution.y) as usize
-        ];
+        let pixels = vec![Pixel::default(); parameters.pixel_bounds.area() as usize];
         let output_rgb_from_sensor_rgb =
             color_space.rgb_from_xyz * parameters.sensor.xyz_from_sensor_rgb().clone();
         RgbFilm {
             full_resolution: parameters.full_resolution,
-            // pixel_bounds: parameters.pixel_bounds,
+            pixel_bounds: parameters.pixel_bounds,
             sensor: parameters.sensor,
             filter: parameters.filter,
             filter_integral,
@@ -73,7 +71,7 @@ impl RgbFilm {
     }
 
     fn index(&self, location: U64Vec2) -> usize {
-        let width = self.full_resolution.y;
+        let width = self.pixel_bounds.y_extent() as u64;
         (width * location.x + location.y) as usize
     }
 
@@ -532,9 +530,10 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
-    use glam::{u64vec2, vec2};
+    use glam::{i64vec2, u64vec2, vec2};
 
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
+    use crate::camera::Bounds2i;
     use crate::color::colorspace::{RgbColorSpace, S_RGB};
     use crate::color::rgb::Rgb;
     use crate::filter::{Gaussian, ReconstructionFilter};
@@ -574,6 +573,7 @@ mod test {
             filter: ReconstructionFilter::Gaussian(Gaussian::new(vec2(1.0, 1.0), 1.0, 1.0, 1.0)),
             sensor: PixelSensor::default(),
             sensor_diagonal: 0.036,
+            pixel_bounds: Bounds2i::new(i64vec2(50, 50), i64vec2(200, 200)),
         };
 
         let mut film = RgbFilm::new(
@@ -584,8 +584,8 @@ mod test {
             false,
         );
 
-        for i in 0..400 {
-            for j in 0..300 {
+        for i in 50..200 {
+            for j in 50..200 {
                 let (sample, lambda) = get_rgb_sample(0.9, 0.1, 0.1, S_RGB.as_ref());
                 film.add_sample(u64vec2(i, j), sample, lambda, 1.0);
             }

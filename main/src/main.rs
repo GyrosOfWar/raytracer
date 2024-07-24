@@ -60,7 +60,7 @@ fn main() -> color_eyre::Result<()> {
         .init();
 
     let event_loop = EventLoop::new();
-    let mut input = WinitInputHelper::new();
+    let input = WinitInputHelper::new();
 
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);

@@ -49,6 +49,19 @@ impl Bounds2i {
     pub fn p_max(&self) -> I64Vec2 {
         self.p_max
     }
+
+    pub fn area(&self) -> i64 {
+        let d = self.p_max - self.p_min;
+        d.x * d.y
+    }
+
+    pub fn x_extent(&self) -> i64 {
+        self.p_max.x - self.p_min.x
+    }
+
+    pub fn y_extent(&self) -> i64 {
+        self.p_max.y - self.p_max.y
+    }
 }
 
 pub struct CameraSample {

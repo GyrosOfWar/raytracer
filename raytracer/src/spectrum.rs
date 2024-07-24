@@ -7,7 +7,6 @@ use enum_dispatch::enum_dispatch;
 use once_cell::sync::Lazy;
 use ordered_float::OrderedFloat;
 
-use crate::color;
 use crate::color::colorspace::RgbColorSpace;
 use crate::color::rgb::{Rgb, RgbSigmoidPolynomial};
 use crate::color::xyz::{Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
