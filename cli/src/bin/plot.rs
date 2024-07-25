@@ -38,7 +38,7 @@ fn plot_rgb_albedo(r: f32, g: f32, b: f32) -> Result<()> {
 fn plot_wavelength_samples(r: f32, g: f32, b: f32) -> Result<()> {
     let spectrum: Spectrum = RgbAlbedo::with_color_space(S_RGB.as_ref(), Rgb::new(r, g, b)).into();
 
-    let n_samples = 10;
+    let n_samples = 15;
     let samples = (0..n_samples).map(|_| {
         let lambda = SampledWavelengths::sample_visible(random());
         let sample = spectrum.sample(&lambda);
@@ -75,6 +75,6 @@ fn plot_wavelength_samples(r: f32, g: f32, b: f32) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    plot_wavelength_samples(0.9, 0.1, 0.1)?;
+    plot_wavelength_samples(0.9, 0.0, 0.0)?;
     Ok(())
 }

@@ -240,7 +240,11 @@ mod tests {
     use super::{RgbToSpectrumTable, ACES2065_1, DCI_P3, REC_2020, S_RGB};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
-    use crate::spectrum::HasWavelength;
+    use crate::color::xyz::Xyz;
+    use crate::random::random;
+    use crate::spectrum::{
+        DenselySampled, HasWavelength, RgbAlbedo, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
+    };
     use crate::Result;
 
     fn for_each_color(func: impl Fn(f32, f32, f32)) {
@@ -315,6 +319,49 @@ mod tests {
                 let back_converted = color_space.to_rgb(xyz);
                 assert!(Vec3A::from(rgb).abs_diff_eq(Vec3A::from(back_converted), 0.001));
             })
+        }
+    }
+
+    #[test]
+    fn test_conversion_error() {
+        let color_space = &S_RGB;
+        for _ in 0..100 {
+            let rgb = Rgb::new(random(), random(), random());
+            let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, rgb).into();
+            let illum = DenselySampled::from_fn(|l| {
+                spectrum.evaluate(l) * color_space.illuminant.evaluate(l)
+            });
+            let xyz = Xyz::from(&Spectrum::DenselSampled(illum));
+            let rgb2 = color_space.to_rgb(xyz);
+
+            let eps = 0.01;
+            let r_diff = (rgb.r - rgb2.r).abs();
+            assert!(
+                r_diff < eps,
+                "{} > {} (original value: {}, converted value: {})",
+                r_diff,
+                eps,
+                rgb.r,
+                rgb2.r
+            );
+            let g_diff = (rgb.g - rgb2.g).abs();
+            assert!(
+                g_diff < eps,
+                "{} > {} (original value: {}, converted value: {})",
+                g_diff,
+                eps,
+                rgb.g,
+                rgb2.g
+            );
+            let b_diff = (rgb.b - rgb2.b).abs();
+            assert!(
+                b_diff < eps,
+                "{} > {} (original value: {}, converted value: {})",
+                b_diff,
+                eps,
+                rgb.b,
+                rgb2.b
+            );
         }
     }
 }

@@ -79,6 +79,24 @@ impl DenselySampled {
         }
     }
 
+    pub fn from_fn<F: Fn(f32) -> f32>(f: F) -> Self {
+        Self::from_fn_in_range(f, LAMBDA_MIN as usize, LAMBDA_MAX as usize)
+    }
+
+    pub fn from_fn_in_range<F: Fn(f32) -> f32>(f: F, min: usize, max: usize) -> Self {
+        let mut values = vec![0.0; (max - min) + 1];
+
+        for lambda in min..max {
+            values[lambda - min] = f(lambda as f32);
+        }
+
+        Self {
+            values,
+            lambda_max: max,
+            lambda_min: min,
+        }
+    }
+
     pub fn from_spectrum_in_range(spec: Spectrum, lambda_min: usize, lambda_max: usize) -> Self {
         let mut values = vec![0.0; (lambda_max - lambda_min) + 1];
         for lambda in lambda_min..=lambda_max {
