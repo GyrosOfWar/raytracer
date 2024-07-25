@@ -319,7 +319,7 @@ pub const N_SPECTRUM_SAMPLES: usize = 4;
 
 #[derive(Debug, Copy, Clone)]
 pub struct SampledSpectrum {
-    samples: [f32; N_SPECTRUM_SAMPLES],
+    pub samples: [f32; N_SPECTRUM_SAMPLES],
 }
 
 impl SampledSpectrum {
