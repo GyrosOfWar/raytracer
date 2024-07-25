@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use glam::{vec3, IVec2, Mat3A, UVec2, Vec2, Vec3A};
+use glam::{vec2, vec3, IVec2, Mat3A, UVec2, Vec2, Vec3A};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
@@ -125,7 +125,11 @@ impl Film for RgbFilm {
     }
 
     fn sample_bounds(&self) -> Bounds2f {
-        todo!()
+        let radius = self.filter.radius();
+        Bounds2f::new(
+            self.pixel_bounds.p_min().as_vec2() - radius + vec2(0.5, 0.5),
+            self.pixel_bounds.p_max().as_vec2() + radius - vec2(0.5, 0.5),
+        )
     }
 
     fn sample_wavelenghts(&self, u: f32) -> SampledWavelengths {

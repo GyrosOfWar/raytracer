@@ -78,7 +78,7 @@ fn main() -> color_eyre::Result<()> {
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |_, _, control_flow| {
         if input.key_pressed(VirtualKeyCode::Escape) || input.close_requested() {
             *control_flow = ControlFlow::Exit;
             return;
