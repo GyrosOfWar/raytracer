@@ -12,6 +12,7 @@ use crate::color::rgb::{Rgb, RgbSigmoidPolynomial};
 use crate::color::xyz::{Xyz, CIE_XYZ, CIE_Y_INTEGRAL};
 use crate::math::lerp;
 use crate::range::Range;
+use crate::sample::{sample_visible_wavelengths, visible_wavelengths_pdf};
 use crate::util::{self, is_sorted};
 
 pub const LAMBDA_MIN: f32 = 360.0;
@@ -410,6 +411,24 @@ impl SampledWavelengths {
         let pdf = [1.0 / (lambda_max - lambda_min); N_SPECTRUM_SAMPLES];
 
         Self { lambda, pdf }
+    }
+
+    pub fn sample_visible(u: f32) -> Self {
+        let mut lambda = [0.0; N_SPECTRUM_SAMPLES];
+        let mut pdf = [0.0; N_SPECTRUM_SAMPLES];
+
+        for i in 0..N_SPECTRUM_SAMPLES {
+            // Compute _up_ for $i$th wavelength sample
+            let mut up = u + i as f32 / N_SPECTRUM_SAMPLES as f32;
+            if up > 1.0 {
+                up -= 1.0;
+            }
+
+            lambda[i] = sample_visible_wavelengths(up);
+            pdf[i] = visible_wavelengths_pdf(lambda[i]);
+        }
+
+        SampledWavelengths { lambda, pdf }
     }
 
     pub fn pdf(&self) -> SampledSpectrum {

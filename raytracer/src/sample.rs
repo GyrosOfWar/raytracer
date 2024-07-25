@@ -2,7 +2,7 @@ use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4};
 
 use glam::{Vec2, Vec3A};
 
-use crate::math;
+use crate::math::{self, square};
 
 pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
     let u_offset = 2.0 * u - Vec2::ONE;
@@ -31,4 +31,16 @@ pub fn cosine_hemisphere(u: Vec2) -> Vec3A {
 
 pub fn cosine_hemisphere_pdf(cos_theta: f32) -> f32 {
     cos_theta * FRAC_1_PI
+}
+
+pub fn sample_visible_wavelengths(u: f32) -> f32 {
+    538.0 - 138.888889 * (0.85691062 - 1.82750197 * u).atanh()
+}
+
+pub fn visible_wavelengths_pdf(lambda: f32) -> f32 {
+    if lambda < 360.0 || lambda > 830.0 {
+        0.0
+    } else {
+        0.0039398042 / square((0.0072 * (lambda - 538.0)).cosh())
+    }
 }
