@@ -3,7 +3,7 @@ use std::ops::{Div, Mul, MulAssign};
 use glam::{Mat3A, Vec3A};
 
 use crate::assert_in_range;
-use crate::math::evaluate_polynomial;
+use crate::math::{evaluate_polynomial, square};
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
 
 #[derive(Debug, Clone, Copy)]
@@ -140,7 +140,7 @@ fn sigmoid(x: f32) -> f32 {
             0.0
         }
     } else {
-        0.5 + x / (2.0 * (1.0 + x * x).sqrt())
+        0.5 + x / (2.0 * (1.0 + square(x).sqrt()))
     }
 }
 

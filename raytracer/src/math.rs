@@ -53,6 +53,7 @@ pub fn linear_least_squares(a: &[Vec3A], b: &[Vec3A]) -> Mat3A {
     (at_a_i * at_b).transpose()
 }
 
+#[inline(always)]
 pub fn square(x: f32) -> f32 {
     x * x
 }

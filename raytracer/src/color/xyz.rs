@@ -33,6 +33,10 @@ impl From<Vec3A> for Xyz {
 }
 
 impl Xyz {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
+        Xyz { x, y, z }
+    }
+
     pub fn from_xy(xy: Vec2) -> Self {
         Self::from_xy_y(xy, 1.0)
     }
@@ -81,6 +85,16 @@ impl Div<f32> for Xyz {
             x: self.x / rhs,
             y: self.y / rhs,
             z: self.z / rhs,
+        }
+    }
+}
+
+impl From<Spectrum> for Xyz {
+    fn from(value: Spectrum) -> Self {
+        Xyz {
+            x: inner_product(&CIE_XYZ.x, &value),
+            y: inner_product(&CIE_XYZ.y, &value),
+            z: inner_product(&CIE_XYZ.z, &value),
         }
     }
 }
