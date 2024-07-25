@@ -316,23 +316,23 @@ fn project_reflectance(
 
 fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
     #[rustfmt::skip]
-    const LMS_FROM_XYZ: Mat3A = Mat3A::from_cols_array(&[
+    let lms_from_xyz: Mat3A = Mat3A::from_cols_array(&[
          0.8951,  0.2664, -0.1614,
         -0.7502,  1.7135,  0.0367,
          0.0389, -0.0685,  1.0296,
-    ]);
+    ]).transpose();
 
     #[rustfmt::skip]
-    const XYZ_FROM_LMS: Mat3A = Mat3A::from_cols_array(&[
+    let xyz_from_lms: Mat3A = Mat3A::from_cols_array(&[
          0.986993,  -0.147054,  0.159963,
          0.432305,   0.51836,   0.0492912,
         -0.00852866, 0.0400428, 0.968487,
-    ]);
+    ]).transpose();
 
     let src_xyz = Vec3A::from(Xyz::from_xy(source_white));
     let dest_xyz = Vec3A::from(Xyz::from_xy(target_white));
-    let src_lms = LMS_FROM_XYZ * src_xyz;
-    let dest_lms = LMS_FROM_XYZ * dest_xyz;
+    let src_lms = lms_from_xyz * src_xyz;
+    let dest_lms = lms_from_xyz * dest_xyz;
 
     let lms_correct = Mat3A::from_diagonal(vec3(
         dest_lms.x / src_lms.x,
@@ -340,7 +340,7 @@ fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
         dest_lms.z / src_lms.z,
     ));
 
-    XYZ_FROM_LMS * lms_correct * LMS_FROM_XYZ
+    xyz_from_lms * lms_correct * lms_from_xyz
 }
 
 fn load_swatch_reflectances() -> Vec<Spectrum> {

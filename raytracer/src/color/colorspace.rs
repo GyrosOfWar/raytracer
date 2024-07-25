@@ -190,11 +190,8 @@ impl RgbColorSpace {
         let xyz_r = Xyz::from_xy(r);
         let xyz_g = Xyz::from_xy(g);
         let xyz_b = Xyz::from_xy(b);
-        let rgb = Mat3A::from_cols(
-            Vec3A::new(xyz_r.x, xyz_g.x, xyz_b.x),
-            Vec3A::new(xyz_r.y, xyz_g.y, xyz_b.y),
-            Vec3A::new(xyz_r.z, xyz_g.z, xyz_b.z),
-        );
+        let rgb = Mat3A::from_cols(Vec3A::from(xyz_r), Vec3A::from(xyz_g), Vec3A::from(xyz_b))
+            .transpose();
         let c = rgb.inverse() * Vec3A::from(w_xyz);
         let xyz_from_rgb = rgb * Mat3A::from_diagonal(c.into());
         let rgb_from_xyz = xyz_from_rgb.inverse();
@@ -240,7 +237,7 @@ mod tests {
     use crate::color::xyz::Xyz;
     use crate::random::random;
     use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo, Spectrum};
-    use crate::Result;
+    use crate::{assert_approx_eq, Result};
 
     fn for_each_color(func: impl Fn(f32, f32, f32)) {
         for r in 0..100 {
@@ -294,22 +291,23 @@ mod tests {
         // basis vectors at it to pull out columns.
         let rgb = srgb.to_rgb(Xyz::new(1.0, 0.0, 0.0));
         dbg!(&rgb);
-        assert!((3.2406 - rgb.r).abs() < 1e-3);
-        assert!((-0.9689 - rgb.g).abs() < 1e-3);
-        assert!((0.0557 - rgb.b).abs() < 1e-3);
+        let eps = 1e-3;
+        assert_approx_eq!(3.2406, rgb.r, eps);
+        assert_approx_eq!(-0.9589, rgb.g, eps);
+        assert_approx_eq!(0.0557, rgb.b, eps);
 
         let rgb = srgb.to_rgb(Xyz::new(0.0, 1.0, 0.0));
         dbg!(&rgb);
 
-        assert!((-1.5372 - rgb.r).abs() < 1e-3);
-        assert!((1.8758 - rgb.g).abs() < 1e-3);
-        assert!((-0.2040 - rgb.b).abs() < 1e-3);
+        assert_approx_eq!(-1.5372, rgb.r, eps);
+        assert_approx_eq!(1.8758, rgb.g, eps);
+        assert_approx_eq!(-0.2040, rgb.b, eps);
 
         let rgb = srgb.to_rgb(Xyz::new(0.0, 0.0, 1.0));
         dbg!(&rgb);
-        assert!((-0.4986 - rgb.r).abs() < 1e-3);
-        assert!((0.0415 - rgb.g).abs() < 1e-3);
-        assert!((1.0570 - rgb.b).abs() < 1e-3);
+        assert_approx_eq!(-0.4986, rgb.r, eps);
+        assert_approx_eq!(0.0415, rgb.g, eps);
+        assert_approx_eq!(1.0570, rgb.b, eps);
     }
 
     #[test]
@@ -357,7 +355,7 @@ mod tests {
         }
     }
 
-    // #[test]
+    #[test]
     fn test_conversion_error() {
         let color_space = &S_RGB;
         for _ in 0..100 {
@@ -371,33 +369,10 @@ mod tests {
             let rgb2 = color_space.to_rgb(xyz);
 
             let eps = 0.01;
-            let r_diff = (rgb.r - rgb2.r).abs();
-            assert!(
-                r_diff < eps,
-                "{} > {} (original value: {}, converted value: {})",
-                r_diff,
-                eps,
-                rgb.r,
-                rgb2.r
-            );
-            let g_diff = (rgb.g - rgb2.g).abs();
-            assert!(
-                g_diff < eps,
-                "{} > {} (original value: {}, converted value: {})",
-                g_diff,
-                eps,
-                rgb.g,
-                rgb2.g
-            );
-            let b_diff = (rgb.b - rgb2.b).abs();
-            assert!(
-                b_diff < eps,
-                "{} > {} (original value: {}, converted value: {})",
-                b_diff,
-                eps,
-                rgb.b,
-                rgb2.b
-            );
+
+            assert_approx_eq!(rgb.r, rgb2.r, eps);
+            assert_approx_eq!(rgb.g, rgb2.g, eps);
+            assert_approx_eq!(rgb.b, rgb2.b, eps);
         }
     }
 }
