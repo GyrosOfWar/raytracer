@@ -1,7 +1,5 @@
-use std::{
-    ops::{Div, Mul},
-    sync::LazyLock,
-};
+use std::ops::{Div, Mul};
+use std::sync::LazyLock;
 
 use glam::{Vec2, Vec3A};
 use serde::Deserialize;

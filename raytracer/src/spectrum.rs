@@ -111,6 +111,14 @@ impl DenselySampled {
     pub fn from_spectrum(spec: Spectrum) -> Self {
         Self::from_spectrum_in_range(spec, LAMBDA_MIN as usize, LAMBDA_MAX as usize)
     }
+
+    pub fn values(&self) -> &[f32] {
+        &self.values
+    }
+
+    pub fn range(&self) -> std::ops::Range<usize> {
+        self.lambda_min..self.lambda_max
+    }
 }
 
 impl HasWavelength for DenselySampled {
@@ -478,8 +486,8 @@ impl SampledWavelengths {
 pub static NAMED_SPECTRA: LazyLock<NamedSpectra> = LazyLock::new(NamedSpectra::new);
 
 pub struct NamedSpectra {
-    pub std_illum_d65: Spectrum,
-    pub illum_aces_d60: Spectrum,
+    pub std_illum_d65: Arc<Spectrum>,
+    pub illum_aces_d60: Arc<Spectrum>,
     // todo
 }
 
@@ -537,8 +545,12 @@ impl NamedSpectra {
         ];
 
         NamedSpectra {
-            std_illum_d65: PiecewiseLinear::from_interleaved(CIE_ILLUM_D65.to_vec(), true).into(),
-            illum_aces_d60: PiecewiseLinear::from_interleaved(ILLUM_ACES_D60.to_vec(), true).into(),
+            std_illum_d65: Arc::new(
+                PiecewiseLinear::from_interleaved(CIE_ILLUM_D65.to_vec(), true).into(),
+            ),
+            illum_aces_d60: Arc::new(
+                PiecewiseLinear::from_interleaved(ILLUM_ACES_D60.to_vec(), true).into(),
+            ),
         }
     }
 

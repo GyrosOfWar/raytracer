@@ -2,7 +2,6 @@ use std::ops::{Div, Mul, MulAssign};
 
 use glam::{Mat3A, Vec3A};
 
-use crate::assert_in_range;
 use crate::math::{evaluate_polynomial, square};
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
 

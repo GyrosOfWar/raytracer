@@ -21,8 +21,8 @@ pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.64, 0.33),
         Vec2::new(0.3, 0.6),
         Vec2::new(0.15, 0.06),
-        Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
-        Arc::new(table),
+        NAMED_SPECTRA.std_illum_d65.clone(),
+        table,
     ))
 });
 
@@ -35,8 +35,8 @@ pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.68, 0.32),
         Vec2::new(0.265, 0.690),
         Vec2::new(0.15, 0.06),
-        Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
-        Arc::new(table),
+        NAMED_SPECTRA.std_illum_d65.clone(),
+        table,
     ))
 });
 
@@ -50,13 +50,13 @@ pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.708, 0.292),
         Vec2::new(0.170, 0.797),
         Vec2::new(0.131, 0.046),
-        Arc::new(NAMED_SPECTRA.std_illum_d65.clone()),
-        Arc::new(table),
+        NAMED_SPECTRA.std_illum_d65.clone(),
+        table,
     ))
 });
 
 pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
-    let aces_table = RgbToSpectrumTable::new(
+    let table = RgbToSpectrumTable::new(
         CoefficientsFile::load("./data/color-spaces/aces.bin")
             .expect("failed to load aces2065-1 table"),
     );
@@ -64,8 +64,8 @@ pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.7347, 0.2653),
         Vec2::new(0.0, 1.0),
         Vec2::new(0.0001, -0.077),
-        Arc::new(NAMED_SPECTRA.illum_aces_d60.clone()),
-        Arc::new(aces_table),
+        NAMED_SPECTRA.illum_aces_d60.clone(),
+        table,
     ))
 });
 
@@ -171,9 +171,9 @@ pub struct RgbColorSpace {
     pub b: Vec2,
     pub w: Vec2,
     pub illuminant: Arc<Spectrum>,
-    spectrum_table: Arc<RgbToSpectrumTable>,
     pub rgb_from_xyz: Mat3A,
     pub xyz_from_rgb: Mat3A,
+    spectrum_table: RgbToSpectrumTable,
 }
 
 impl RgbColorSpace {
@@ -182,7 +182,7 @@ impl RgbColorSpace {
         g: Vec2,
         b: Vec2,
         illuminant: Arc<Spectrum>,
-        spectrum_table: Arc<RgbToSpectrumTable>,
+        spectrum_table: RgbToSpectrumTable,
     ) -> Self {
         let w_xyz = Xyz::from(illuminant.as_ref());
         let w = w_xyz.xy();
