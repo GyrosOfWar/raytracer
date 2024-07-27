@@ -1,7 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use glam::{vec2, vec3, IVec2, Mat3A, UVec2, Vec2, Vec3A};
-use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
 use crate::camera::{Bounds2f, Bounds2i};
@@ -15,7 +14,7 @@ use crate::spectrum::{
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
 
-static SWATCH_REFLECTANCES: Lazy<Vec<Spectrum>> = Lazy::new(load_swatch_reflectances);
+static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
 pub trait Film {
     fn add_sample(

@@ -1,8 +1,7 @@
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use glam::{Mat3A, Vec2, Vec3A};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
@@ -14,7 +13,7 @@ use crate::Result;
 
 const RES: usize = 64;
 
-pub static S_RGB: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
+pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
         CoefficientsFile::load("./data/color-spaces/srgb.bin").expect("failed to load srgb table"),
     );
@@ -27,7 +26,7 @@ pub static S_RGB: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
     ))
 });
 
-pub static DCI_P3: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
+pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
         CoefficientsFile::load("./data/color-spaces/dci_p3.bin")
             .expect("failed to load dci_p3 table"),
@@ -41,7 +40,7 @@ pub static DCI_P3: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
     ))
 });
 
-pub static REC_2020: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
+pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
         CoefficientsFile::load("./data/color-spaces/rec2020.bin")
             .expect("failed to load rec2020 table"),
@@ -56,7 +55,7 @@ pub static REC_2020: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
     ))
 });
 
-pub static ACES2065_1: Lazy<Arc<RgbColorSpace>> = Lazy::new(|| {
+pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let aces_table = RgbToSpectrumTable::new(
         CoefficientsFile::load("./data/color-spaces/aces.bin")
             .expect("failed to load aces2065-1 table"),

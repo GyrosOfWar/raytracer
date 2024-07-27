@@ -1,10 +1,9 @@
 use std::fmt::Debug;
 use std::ops::Mul;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use color_eyre::Result;
 use enum_dispatch::enum_dispatch;
-use once_cell::sync::Lazy;
 use ordered_float::OrderedFloat;
 
 use crate::color::colorspace::RgbColorSpace;
@@ -476,7 +475,7 @@ impl SampledWavelengths {
     }
 }
 
-pub static NAMED_SPECTRA: Lazy<NamedSpectra> = Lazy::new(NamedSpectra::new);
+pub static NAMED_SPECTRA: LazyLock<NamedSpectra> = LazyLock::new(NamedSpectra::new);
 
 pub struct NamedSpectra {
     pub std_illum_d65: Spectrum,
