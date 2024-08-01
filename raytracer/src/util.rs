@@ -75,5 +75,8 @@ mod tests {
 
         let idx = find_interval(&values, -1.0);
         assert_eq!(idx, 0);
+
+        let idx = find_interval(&values, 2.5);
+        assert_eq!(idx, 2);
     }
 }

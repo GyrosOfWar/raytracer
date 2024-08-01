@@ -2,20 +2,22 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
 use glam::{Mat3A, Vec2, Vec3A};
+use ndarray::Array5;
 use serde::{Deserialize, Serialize};
 
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
 use crate::spectrum::{Spectrum, NAMED_SPECTRA};
-use crate::util::find_interval;
+use crate::util::{self, find_interval};
 use crate::Result;
 
 const RES: usize = 64;
 
 pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("./data/color-spaces/srgb.bin").expect("failed to load srgb table"),
+        CoefficientsFile::load("../data/color-spaces/srgb.json.bz2")
+            .expect("failed to load srgb table"),
     );
     Arc::new(RgbColorSpace::new(
         Vec2::new(0.64, 0.33),
@@ -28,7 +30,7 @@ pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("./data/color-spaces/dci_p3.bin")
+        CoefficientsFile::load("../data/color-spaces/dci_p3.json.bz2")
             .expect("failed to load dci_p3 table"),
     );
     Arc::new(RgbColorSpace::new(
@@ -42,7 +44,7 @@ pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("./data/color-spaces/rec2020.bin")
+        CoefficientsFile::load("../data/color-spaces/rec2020.json.bz2")
             .expect("failed to load rec2020 table"),
     );
 
@@ -57,7 +59,7 @@ pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("./data/color-spaces/aces.bin")
+        CoefficientsFile::load("../data/color-spaces/aces.json.bz2")
             .expect("failed to load aces2065-1 table"),
     );
     Arc::new(RgbColorSpace::new(
@@ -71,48 +73,39 @@ pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 #[derive(Serialize, Deserialize)]
 pub struct CoefficientsFile {
-    pub coefficients: Vec<f32>,
+    pub resolution: usize,
     pub scale: Vec<f32>,
+    pub data: Array5<f32>,
 }
 
 impl CoefficientsFile {
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
+        use bzip2::bufread::BzDecoder;
         use std::fs::File;
         use std::io::BufReader;
 
         let reader = BufReader::new(File::open(path)?);
-        let value = bincode::deserialize_from(reader)?;
-        Ok(value)
+        let decoder = BzDecoder::new(reader);
+        serde_json::from_reader(decoder).map_err(From::from)
     }
 }
 
 #[derive(Debug)]
 pub struct RgbToSpectrumTable {
     z_nodes: Box<[f32]>,
-    coefficients: Box<[f32]>,
+    coefficients: Array5<f32>,
 }
 
 impl RgbToSpectrumTable {
     pub fn new(file: CoefficientsFile) -> Self {
         RgbToSpectrumTable {
-            coefficients: file.coefficients.into_boxed_slice(),
+            coefficients: file.data,
             z_nodes: file.scale.into_boxed_slice(),
         }
     }
 
     fn coeff(&self, i1: usize, i2: usize, i3: usize, i4: usize, i5: usize) -> f32 {
-        const DIM_2: usize = RES;
-        const DIM_3: usize = RES;
-        const DIM_4: usize = RES;
-        const DIM_5: usize = 3;
-
-        let index = i1 * DIM_2 * DIM_3 * DIM_4 * DIM_5
-            + i2 * DIM_3 * DIM_4 * DIM_5
-            + i3 * DIM_4 * DIM_5
-            + i4 * DIM_5
-            + i5;
-
-        self.coefficients[index]
+        self.coefficients[(i1, i2, i3, i4, i5)]
     }
 
     pub fn evaluate(&self, rgb: Rgb) -> RgbSigmoidPolynomial {
@@ -254,15 +247,15 @@ mod tests {
     #[test]
     fn test_load_spectrum_file() -> Result<()> {
         let paths = &[
-            "./data/color-spaces/aces.bin",
-            "./data/color-spaces/dci_p3.bin",
-            "./data/color-spaces/rec2020.bin",
-            "./data/color-spaces/srgb.bin",
+            "../data/color-spaces/aces.json.bz2",
+            "../data/color-spaces/dci_p3.json.bz2",
+            "../data/color-spaces/rec2020.json.bz2",
+            "../data/color-spaces/srgb.json.bz2",
         ];
 
         for path in paths {
             let file = CoefficientsFile::load(path)?;
-            assert_eq!(file.coefficients.len(), 3 * 64 * 64 * 64 * 3);
+            assert_eq!(file.data.len(), 3 * 64 * 64 * 64 * 3);
             assert_eq!(file.scale.len(), 64);
         }
         Ok(())
@@ -311,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_create_spectrum_table() -> Result<()> {
-        let file = CoefficientsFile::load("./data/color-spaces/srgb.bin")?;
+        let file = CoefficientsFile::load("../data/color-spaces/srgb.json.bz2")?;
         let table = RgbToSpectrumTable::new(file);
         let sigmoid = table.evaluate(Rgb::new(0.0, 1.0, 0.0));
 
@@ -326,7 +319,7 @@ mod tests {
 
     #[test]
     fn test_evaluate_table() -> Result<()> {
-        let file = CoefficientsFile::load("./data/color-spaces/srgb.bin")?;
+        let file = CoefficientsFile::load("../data/color-spaces/srgb.json.bz2")?;
         let table = RgbToSpectrumTable::new(file);
 
         for_each_color(|r, g, b| {
@@ -359,13 +352,18 @@ mod tests {
         let color_space = &S_RGB;
         for _ in 0..100 {
             let rgb = Rgb::new(random(), random(), random());
+            dbg!(&rgb);
             let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, rgb).into();
+            dbg!(&spectrum);
             let spectrum: Spectrum = DenselySampled::from_fn(|l| {
                 spectrum.evaluate(l) * color_space.illuminant.evaluate(l)
             })
             .into();
+            dbg!(&spectrum);
             let xyz = Xyz::from(spectrum);
+            dbg!(&xyz);
             let rgb2 = color_space.to_rgb(xyz);
+            dbg!(&rgb2);
 
             let eps = 0.01;
 
