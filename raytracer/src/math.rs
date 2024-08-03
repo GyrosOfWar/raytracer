@@ -1,4 +1,4 @@
-use glam::{Mat3A, Vec3A};
+use glam::{Mat3, Vec3};
 
 use crate::vec::{MatExt, Vec3Ext};
 
@@ -6,7 +6,7 @@ pub fn safe_sqrt(u: f32) -> f32 {
     u.max(0.0).sqrt()
 }
 
-pub fn abs_cos_theta(v: Vec3A) -> f32 {
+pub fn abs_cos_theta(v: Vec3) -> f32 {
     v.z.abs()
 }
 
@@ -29,16 +29,16 @@ pub fn clamp<T: PartialOrd>(x: T, min: T, max: T) -> T {
 pub fn evaluate_polynomial(coefficients: &[f32], x: f32) -> f32 {
     let mut result = coefficients[0];
 
-    for coeff in coefficients.iter().skip(1) {
-        result = result.mul_add(x, *coeff);
+    for coeff in coefficients.iter().copied().skip(1) {
+        result = result.mul_add(x, coeff);
     }
 
     result
 }
 
-pub fn linear_least_squares(a: &[Vec3A], b: &[Vec3A]) -> Mat3A {
-    let mut at_a = Mat3A::ZERO;
-    let mut at_b = Mat3A::ZERO;
+pub fn linear_least_squares(a: &[Vec3], b: &[Vec3]) -> Mat3 {
+    let mut at_a = Mat3::ZERO;
+    let mut at_b = Mat3::ZERO;
 
     for i in 0..3 {
         for j in 0..3 {

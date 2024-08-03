@@ -1,7 +1,7 @@
-use glam::Mat3A;
+use glam::Mat3;
 
-pub type Point3 = glam::Vec3A;
-pub type Vec3 = glam::Vec3A;
+pub type Point3 = glam::Vec3;
+pub type Vec3 = glam::Vec3;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Axis {
@@ -56,7 +56,7 @@ pub trait MatExt {
     fn set(&mut self, i: usize, j: usize, value: f32);
 }
 
-impl MatExt for Mat3A {
+impl MatExt for Mat3 {
     fn get(&self, i: usize, j: usize) -> f32 {
         self.row(i).get(j)
     }
@@ -136,15 +136,14 @@ pub mod random {
 
 #[cfg(test)]
 mod tests {
-    use glam::Mat3A;
+    use glam::Mat3;
 
     use super::MatExt;
 
     #[test]
     fn mat_set_value() {
-        let mut mat = Mat3A::ZERO;
+        let mut mat = Mat3::ZERO;
         mat.set(0, 0, 5.0);
-        println!("{mat:?}");
         assert_eq!(mat.x_axis.x, 5.0);
         assert_eq!(mat.get(0, 0), 5.0);
     }

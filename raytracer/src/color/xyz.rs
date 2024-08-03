@@ -1,7 +1,7 @@
 use std::ops::{Div, Mul};
 use std::sync::LazyLock;
 
-use glam::{Vec2, Vec3A};
+use glam::{Vec2, Vec3};
 use serde::Deserialize;
 
 use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum};
@@ -16,14 +16,14 @@ pub struct Xyz {
     pub z: f32,
 }
 
-impl From<Xyz> for Vec3A {
+impl From<Xyz> for Vec3 {
     fn from(value: Xyz) -> Self {
-        Vec3A::new(value.x, value.y, value.z)
+        Vec3::new(value.x, value.y, value.z)
     }
 }
 
-impl From<Vec3A> for Xyz {
-    fn from(value: Vec3A) -> Self {
+impl From<Vec3> for Xyz {
+    fn from(value: Vec3) -> Self {
         Xyz {
             x: value.x,
             y: value.y,

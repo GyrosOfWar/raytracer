@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
-use glam::{Mat3A, Vec2, Vec3A};
+use glam::{Mat3, Vec2, Vec3};
 use ndarray::Array5;
 use serde::{Deserialize, Serialize};
 
@@ -9,8 +9,7 @@ use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
 use crate::spectrum::{Spectrum, NAMED_SPECTRA};
-use crate::util::{self, find_interval};
-use crate::Result;
+use crate::{util, Result};
 
 const RES: usize = 64;
 
@@ -125,7 +124,7 @@ impl RgbToSpectrumTable {
             let y = (rgb.component(y_index) * (RES as f32 - 1.0)) / z;
             let xi = (x as usize).min(RES - 2);
             let yi = (y as usize).min(RES - 2);
-            let zi = find_interval(&self.z_nodes, z);
+            let zi = util::find_interval(self.z_nodes.len(), |idx| self.z_nodes[idx] < z);
             let dx = x - xi as f32;
             let dy = y - yi as f32;
             let dz = (z - self.z_nodes[zi]) / (self.z_nodes[zi + 1] - self.z_nodes[zi]);
@@ -165,8 +164,8 @@ pub struct RgbColorSpace {
     pub b: Vec2,
     pub w: Vec2,
     pub illuminant: Arc<Spectrum>,
-    pub rgb_from_xyz: Mat3A,
-    pub xyz_from_rgb: Mat3A,
+    pub rgb_from_xyz: Mat3,
+    pub xyz_from_rgb: Mat3,
     spectrum_table: RgbToSpectrumTable,
 }
 
@@ -183,10 +182,10 @@ impl RgbColorSpace {
         let xyz_r = Xyz::from_xy(r);
         let xyz_g = Xyz::from_xy(g);
         let xyz_b = Xyz::from_xy(b);
-        let rgb = Mat3A::from_cols(Vec3A::from(xyz_r), Vec3A::from(xyz_g), Vec3A::from(xyz_b))
-            .transpose();
-        let c = rgb.inverse() * Vec3A::from(w_xyz);
-        let xyz_from_rgb = rgb * Mat3A::from_diagonal(c.into());
+        let rgb =
+            Mat3::from_cols(Vec3::from(xyz_r), Vec3::from(xyz_g), Vec3::from(xyz_b)).transpose();
+        let c = rgb.inverse() * Vec3::from(w_xyz);
+        let xyz_from_rgb = rgb * Mat3::from_diagonal(c.into());
         let rgb_from_xyz = xyz_from_rgb.inverse();
 
         Self {
@@ -202,12 +201,12 @@ impl RgbColorSpace {
     }
 
     pub fn to_rgb(&self, xyz: Xyz) -> Rgb {
-        let vec = self.rgb_from_xyz * Vec3A::from(xyz);
+        let vec = self.rgb_from_xyz * Vec3::from(xyz);
         vec.into()
     }
 
     pub fn to_xyz(&self, rgb: Rgb) -> Xyz {
-        let vec = self.xyz_from_rgb * Vec3A::from(rgb);
+        let vec = self.xyz_from_rgb * Vec3::from(rgb);
         vec.into()
     }
 
@@ -215,14 +214,14 @@ impl RgbColorSpace {
         self.spectrum_table.evaluate(rgb.clamp_zero())
     }
 
-    pub fn convert_color_space(from: &RgbColorSpace, to: &RgbColorSpace) -> Mat3A {
+    pub fn convert_color_space(from: &RgbColorSpace, to: &RgbColorSpace) -> Mat3 {
         to.rgb_from_xyz * from.xyz_from_rgb
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use glam::Vec3A;
+    use glam::Vec3;
 
     use super::{RgbToSpectrumTable, ACES2065_1, DCI_P3, REC_2020, S_RGB};
     use crate::color::colorspace::CoefficientsFile;
@@ -283,21 +282,17 @@ mod tests {
         // Make sure the matrix values are sensible by throwing the x, y, and z
         // basis vectors at it to pull out columns.
         let rgb = srgb.to_rgb(Xyz::new(1.0, 0.0, 0.0));
-        dbg!(&rgb);
         let eps = 1e-3;
         assert_approx_eq!(3.2406, rgb.r, eps);
         assert_approx_eq!(-0.9589, rgb.g, eps);
         assert_approx_eq!(0.0557, rgb.b, eps);
 
         let rgb = srgb.to_rgb(Xyz::new(0.0, 1.0, 0.0));
-        dbg!(&rgb);
-
         assert_approx_eq!(-1.5372, rgb.r, eps);
         assert_approx_eq!(1.8758, rgb.g, eps);
         assert_approx_eq!(-0.2040, rgb.b, eps);
 
         let rgb = srgb.to_rgb(Xyz::new(0.0, 0.0, 1.0));
-        dbg!(&rgb);
         assert_approx_eq!(-0.4986, rgb.r, eps);
         assert_approx_eq!(0.0415, rgb.g, eps);
         assert_approx_eq!(1.0570, rgb.b, eps);
@@ -343,7 +338,7 @@ mod tests {
                 let rgb = Rgb::new(r, g, b);
                 let xyz = color_space.to_xyz(rgb);
                 let back_converted = color_space.to_rgb(xyz);
-                assert!(Vec3A::from(rgb).abs_diff_eq(Vec3A::from(back_converted), 0.001));
+                assert!(Vec3::from(rgb).abs_diff_eq(Vec3::from(back_converted), 0.001));
             })
         }
     }
@@ -356,8 +351,19 @@ mod tests {
         let b = 0.0827126205;
         let rgb = Rgb::new(r, g, b);
         let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
-        let spectrum =
-            DenselySampled::from_fn(|l| spectrum.evaluate(l) * color_space.illuminant.evaluate(l));
+
+        let eps = f32::EPSILON;
+        assert_approx_eq!(spectrum.coefficients.c0, 0.000314787991, eps);
+        assert_approx_eq!(spectrum.coefficients.c1, -0.319274127, eps);
+        assert_approx_eq!(spectrum.coefficients.c2, 78.0749359, eps);
+
+        let spectrum = DenselySampled::from_fn(|l| {
+            let rgb = spectrum.evaluate(l);
+            let w = color_space.illuminant.evaluate(l);
+
+            rgb * w
+        });
+
         let xyz = Xyz::from(&spectrum);
         let rgb2 = color_space.to_rgb(xyz);
 

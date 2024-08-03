@@ -1,6 +1,6 @@
 use std::ops::{Div, Mul, MulAssign};
 
-use glam::{Mat3A, Vec3A};
+use glam::{Mat3, Vec3};
 
 use crate::math::{evaluate_polynomial, square};
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
@@ -12,8 +12,8 @@ pub struct Rgb {
     pub b: f32,
 }
 
-impl From<Vec3A> for Rgb {
-    fn from(value: Vec3A) -> Self {
+impl From<Vec3> for Rgb {
+    fn from(value: Vec3) -> Self {
         Rgb::new(value.x, value.y, value.z)
     }
 }
@@ -34,11 +34,11 @@ impl MulAssign<f32> for Rgb {
     }
 }
 
-impl Mul<Rgb> for Mat3A {
+impl Mul<Rgb> for Mat3 {
     type Output = Rgb;
 
     fn mul(self, rhs: Rgb) -> Self::Output {
-        Rgb::from(self * Vec3A::from(rhs))
+        Rgb::from(self * Vec3::from(rhs))
     }
 }
 
@@ -50,9 +50,9 @@ impl Div<f32> for Rgb {
     }
 }
 
-impl From<Rgb> for Vec3A {
+impl From<Rgb> for Vec3 {
     fn from(value: Rgb) -> Self {
-        Vec3A::new(value.r, value.g, value.b)
+        Vec3::new(value.r, value.g, value.b)
     }
 }
 
@@ -117,7 +117,9 @@ pub struct RgbSigmoidPolynomial {
 // but is itself not a spectrum, so left out of the Spectrum enum
 impl HasWavelength for RgbSigmoidPolynomial {
     fn evaluate(&self, lambda: f32) -> f32 {
-        sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda))
+        let result = sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda));
+
+        result
     }
 
     fn max_value(&self) -> f32 {
@@ -139,7 +141,7 @@ fn sigmoid(x: f32) -> f32 {
             0.0
         }
     } else {
-        0.5 + x / (2.0 * (1.0 + square(x).sqrt()))
+        0.5 + x / (2.0 * f32::sqrt(1.0 + square(x)))
     }
 }
 

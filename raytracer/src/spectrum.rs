@@ -85,7 +85,7 @@ impl DenselySampled {
     pub fn from_fn_in_range<F: Fn(f32) -> f32>(f: F, min: usize, max: usize) -> Self {
         let mut values = vec![0.0; (max - min) + 1];
 
-        for lambda in min..max {
+        for lambda in min..=max {
             values[lambda - min] = f(lambda as f32);
         }
 
@@ -200,7 +200,7 @@ impl HasWavelength for PiecewiseLinear {
         {
             0.0
         } else {
-            let o = util::find_interval(&self.lambdas, lambda);
+            let o = util::find_interval(self.lambdas.len(), |idx| self.lambdas[idx] <= lambda);
             let t = (lambda - self.lambdas[o]) / (self.lambdas[o + 1] - self.lambdas[o]);
             lerp(t, self.values[o], self.values[o + 1])
         }
@@ -253,7 +253,7 @@ fn blackbody(lambda: f32, kelvin: f32) -> f32 {
 
 #[derive(Debug, Clone)]
 pub struct RgbAlbedo {
-    coefficients: RgbSigmoidPolynomial,
+    pub coefficients: RgbSigmoidPolynomial,
 }
 
 impl RgbAlbedo {
@@ -263,7 +263,6 @@ impl RgbAlbedo {
 
     pub fn with_color_space(color_space: &RgbColorSpace, rgb: Rgb) -> Self {
         let coefficients = color_space.to_rgb_coefficients(rgb);
-        dbg!(&coefficients);
         RgbAlbedo { coefficients }
     }
 }

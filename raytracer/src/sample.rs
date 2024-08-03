@@ -1,6 +1,6 @@
 use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4};
 
-use glam::{Vec2, Vec3A};
+use glam::{Vec2, Vec3};
 
 use crate::math::{self, square};
 
@@ -22,11 +22,11 @@ pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
     r * Vec2::new(theta.cos(), theta.sin())
 }
 
-pub fn cosine_hemisphere(u: Vec2) -> Vec3A {
+pub fn cosine_hemisphere(u: Vec2) -> Vec3 {
     let d = sample_uniform_disk_concentric(u);
     let z = math::safe_sqrt(1.0 - (d.x * d.x) - (d.y * d.y));
 
-    Vec3A::new(d.x, d.y, z)
+    Vec3::new(d.x, d.y, z)
 }
 
 pub fn cosine_hemisphere_pdf(cos_theta: f32) -> f32 {

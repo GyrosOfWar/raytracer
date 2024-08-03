@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use glam::{vec3, IVec2, Mat4, Vec2, Vec3A};
+use glam::{vec3, IVec2, Mat4, Vec2, Vec3};
 
 use crate::film::RgbFilm;
 use crate::ray::{Ray, RayDifferential};
@@ -158,12 +158,12 @@ impl Transform {
         Transform::scale(s, s, s)
     }
 
-    pub fn apply(&self, point: Vec3A) -> Vec3A {
-        self.matrix.transform_point3a(point)
+    pub fn apply(&self, point: Vec3) -> Vec3 {
+        self.matrix.transform_point3(point)
     }
 
-    pub fn apply_inverse(&self, point: Vec3A) -> Vec3A {
-        self.inverse.transform_point3a(point)
+    pub fn apply_inverse(&self, point: Vec3) -> Vec3 {
+        self.inverse.transform_point3(point)
     }
 
     pub fn inverse(self) -> Transform {
@@ -193,7 +193,7 @@ pub struct CameraTransform {
 
 impl CameraTransform {
     pub fn new(world_from_camera: Mat4) -> Self {
-        let p_camera = world_from_camera.transform_vector3a(Vec3A::ZERO);
+        let p_camera = world_from_camera.transform_vector3(Vec3::ZERO);
         let world_from_render = Mat4::from_translation(p_camera.into());
         let render_from_world = world_from_render.inverse();
         let render_from_camera = render_from_world * world_from_camera;
@@ -203,15 +203,15 @@ impl CameraTransform {
         }
     }
 
-    pub fn render_from_camera(&self, p: Vec3A) -> Vec3A {
+    pub fn render_from_camera(&self, p: Vec3) -> Vec3 {
         self.render_from_camera.apply(p)
     }
 
-    pub fn camera_from_render(&self, p: Vec3A) -> Vec3A {
+    pub fn camera_from_render(&self, p: Vec3) -> Vec3 {
         self.render_from_camera.apply_inverse(p)
     }
 
-    pub fn render_from_world(&self, p: Vec3A) -> Vec3A {
+    pub fn render_from_world(&self, p: Vec3) -> Vec3 {
         self.world_from_render.apply_inverse(p)
     }
 
