@@ -1,10 +1,10 @@
 use std::ops::{Div, Mul};
 use std::sync::LazyLock;
 
-use glam::{Vec2, Vec3};
 use serde::Deserialize;
 
 use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear};
+use crate::vec2::{Vec2, Vec3};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: LazyLock<CieXyz> = LazyLock::new(CieXyz::load);

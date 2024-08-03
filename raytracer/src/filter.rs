@@ -1,9 +1,9 @@
 use std::f32::consts::PI;
 
 use enum_dispatch::enum_dispatch;
-use glam::Vec2;
 
 use crate::math::square;
+use crate::vec2::Vec2;
 
 #[enum_dispatch(Filter)]
 #[derive(Debug)]

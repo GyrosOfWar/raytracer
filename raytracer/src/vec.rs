@@ -1,5 +1,3 @@
-use glam::Mat3;
-
 pub type Point3 = crate::vec2::Point3;
 pub type Vec3 = crate::vec2::Vec3;
 

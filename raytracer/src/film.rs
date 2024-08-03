@@ -1,6 +1,6 @@
 use std::sync::{Arc, LazyLock};
 
-use glam::{vec2, vec3, IVec2, Mat3A, UVec2, Vec2, Vec3};
+use glam::{IVec2, UVec2};
 use parking_lot::Mutex;
 
 use crate::camera::{Bounds2f, Bounds2i};
@@ -13,6 +13,7 @@ use crate::spectrum::{
     inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
+use crate::vec2::{vec3, Mat3, Vec2, Vec3};
 
 static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
@@ -63,7 +64,7 @@ pub struct RgbFilm {
     color_space: Arc<RgbColorSpace>,
     max_component_value: f32,
     filter_integral: f32,
-    output_rgb_from_sensor_rgb: Mat3A,
+    output_rgb_from_sensor_rgb: Mat3,
     pixels: Mutex<Vec<Pixel>>,
     filter: ReconstructionFilter,
 }
@@ -125,10 +126,11 @@ impl Film for RgbFilm {
 
     fn sample_bounds(&self) -> Bounds2f {
         let radius = self.filter.radius();
-        Bounds2f::new(
-            self.pixel_bounds.p_min().as_vec2() - radius + vec2(0.5, 0.5),
-            self.pixel_bounds.p_max().as_vec2() + radius - vec2(0.5, 0.5),
-        )
+        todo!()
+        // Bounds2f::new(
+        //     self.pixel_bounds.p_min().as_vec2() - radius + vec2(0.5, 0.5),
+        //     self.pixel_bounds.p_max().as_vec2() + radius - vec2(0.5, 0.5),
+        //        )
     }
 
     fn sample_wavelenghts(&self, u: f32) -> SampledWavelengths {
@@ -187,7 +189,7 @@ pub struct PixelSensor {
     g_bar: Spectrum,
     b_bar: Spectrum,
     imaging_ratio: f32,
-    xyz_from_sensor_rgb: Mat3A,
+    xyz_from_sensor_rgb: Mat3,
 }
 
 impl Default for PixelSensor {
@@ -287,7 +289,7 @@ impl PixelSensor {
         ) * self.imaging_ratio
     }
 
-    pub fn xyz_from_sensor_rgb(&self) -> &Mat3A {
+    pub fn xyz_from_sensor_rgb(&self) -> &Mat3 {
         &self.xyz_from_sensor_rgb
     }
 }
@@ -313,27 +315,27 @@ fn project_reflectance(
     result / g_integral
 }
 
-fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
+fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3 {
     #[rustfmt::skip]
-    let lms_from_xyz: Mat3A = Mat3A::from_cols_array(&[
+    let lms_from_xyz: Mat3 = Mat3::new(
          0.8951,  0.2664, -0.1614,
         -0.7502,  1.7135,  0.0367,
          0.0389, -0.0685,  1.0296,
-    ]).transpose();
+    );
 
     #[rustfmt::skip]
-    let xyz_from_lms: Mat3A = Mat3A::from_cols_array(&[
+    let xyz_from_lms: Mat3 = Mat3::new(
          0.986993,  -0.147054,  0.159963,
          0.432305,   0.51836,   0.0492912,
         -0.00852866, 0.0400428, 0.968487,
-    ]).transpose();
+    );
 
     let src_xyz = Vec3::from(Xyz::from_xy(source_white));
     let dest_xyz = Vec3::from(Xyz::from_xy(target_white));
     let src_lms = lms_from_xyz * src_xyz;
     let dest_lms = lms_from_xyz * dest_xyz;
 
-    let lms_correct = Mat3A::from_diagonal(vec3(
+    let lms_correct = Mat3::from_diagonal(vec3(
         dest_lms.x / src_lms.x,
         dest_lms.y / src_lms.y,
         dest_lms.z / src_lms.z,
@@ -616,7 +618,7 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
-    use glam::{ivec2, uvec2, vec2};
+    use glam::{ivec2, uvec2};
 
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
     use crate::camera::Bounds2i;
@@ -628,6 +630,7 @@ mod test {
     use crate::spectrum::{
         HasWavelength, RgbAlbedo, SampledSpectrum, SampledWavelengths, Spectrum,
     };
+    use crate::vec2::vec2;
 
     fn get_rgb_sample(
         u: f32,

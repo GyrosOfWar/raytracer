@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
-use glam::{Mat3, Vec2, Vec3};
 use ndarray::Array5;
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +8,7 @@ use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
 use crate::spectrum::{Spectrum, NAMED_SPECTRA};
+use crate::vec2::{Mat3, Vec2, Vec3};
 use crate::{util, Result};
 
 const RES: usize = 64;
@@ -228,13 +228,12 @@ impl RgbColorSpace {
 
 #[cfg(test)]
 mod tests {
-    use glam::Vec3;
-
     use super::{RgbToSpectrumTable, ACES2065_1, DCI_P3, REC_2020, S_RGB};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
     use crate::color::xyz::Xyz;
     use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
+    use crate::vec2::Vec3;
     use crate::{assert_approx_eq, Result};
 
     fn for_each_color(func: impl Fn(f32, f32, f32)) {

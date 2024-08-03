@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::{Mul, Neg};
 
 use crate::vec::Axis;
@@ -8,10 +9,33 @@ pub struct Vec2 {
     pub y: f32,
 }
 
+impl Vec2 {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+}
+
+impl fmt::Display for Vec2 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}]", self.x, self.y)
+    }
+}
 #[derive(Debug, Copy, Clone)]
 pub struct Point2 {
     pub x: f32,
     pub y: f32,
+}
+
+impl Point2 {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+}
+
+impl fmt::Display for Point2 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}]", self.x, self.y)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -75,6 +99,31 @@ impl Vec3 {
 
     pub fn normalized(self) -> Vec3 {
         self * self.length().recip()
+    }
+
+    pub fn get(&self, i: usize) -> f32 {
+        assert!(i < 3, "index out of bounds");
+        match i {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn abs(&self) -> Vec3 {
+        Vec3::new(self.x.abs(), self.y.abs(), self.z.abs())
+    }
+
+    pub fn abs_diff_eq(&self, rhs: Vec3, eps: f32) -> bool {
+        let diff = (self - rhs).abs();
+        diff.x <= eps && diff.y <= eps && diff.z <= eps
+    }
+}
+
+impl fmt::Display for Vec3 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}, {}, {}]", self.x, self.y, self.z)
     }
 }
 
@@ -244,6 +293,7 @@ impl Neg for Vec3 {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Mat3 {
     data: [f32; 9],
 }
@@ -270,7 +320,7 @@ impl Mat3 {
         }
     }
 
-    pub fn from_columns(c0: Vec3, c1: Vec3, c2: Vec3) -> Self {
+    pub fn from_cols(c0: Vec3, c1: Vec3, c2: Vec3) -> Self {
         Self {
             data: [c0.x, c1.x, c2.x, c0.y, c1.y, c2.y, c0.z, c1.z, c2.z],
         }
@@ -279,6 +329,14 @@ impl Mat3 {
     pub fn from_rows(r0: Vec3, r1: Vec3, r2: Vec3) -> Self {
         Self {
             data: [r0.x, r0.y, r0.z, r1.x, r1.y, r1.z, r2.x, r2.y, r2.z],
+        }
+    }
+
+    pub fn from_diagonal(diagonal: Vec3) -> Self {
+        Self {
+            data: [
+                diagonal.x, 0.0, 0.0, 0.0, diagonal.y, 0.0, 0.0, 0.0, diagonal.z,
+            ],
         }
     }
 
@@ -349,6 +407,24 @@ impl Mat3 {
     }
 }
 
+impl fmt::Display for Mat3 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[[{}, {}, {}], [{}, {}, {}], [{}, {}, {}]]",
+            self.data[0],
+            self.data[1],
+            self.data[2],
+            self.data[3],
+            self.data[4],
+            self.data[5],
+            self.data[6],
+            self.data[7],
+            self.data[8]
+        )
+    }
+}
+
 impl Mul for Mat3 {
     type Output = Mat3;
 
@@ -363,4 +439,20 @@ impl Mul<Vec3> for Mat3 {
     fn mul(self, rhs: Vec3) -> Self::Output {
         self.vec_mul(rhs)
     }
+}
+
+pub fn vec2(x: f32, y: f32) -> Vec2 {
+    Vec2::new(x, y)
+}
+
+pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
+    Vec3::new(x, y, z)
+}
+
+pub fn point2(x: f32, y: f32) -> Point2 {
+    Point2::new(x, y)
+}
+
+pub fn point3(x: f32, y: f32, z: f32) -> Point3 {
+    Point3::new(x, y, z)
 }

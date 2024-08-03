@@ -1,9 +1,8 @@
 use std::ops::{Div, Mul, MulAssign};
 
-use glam::{Mat3, Vec3};
-
 use crate::math::{evaluate_polynomial, square};
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
+use crate::vec2::{Mat3, Vec3};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rgb {
