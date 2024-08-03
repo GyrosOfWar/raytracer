@@ -184,9 +184,16 @@ impl RgbColorSpace {
         let xyz_b = Xyz::from_xy(b);
         let rgb =
             Mat3::from_cols(Vec3::from(xyz_r), Vec3::from(xyz_g), Vec3::from(xyz_b)).transpose();
-        let c = rgb.inverse() * Vec3::from(w_xyz);
-        let xyz_from_rgb = rgb * Mat3::from_diagonal(c.into());
+        let rgb_inv = rgb.inverse().transpose();
+        let c = rgb_inv * Vec3::from(w_xyz);
+
+        let c_mat = Mat3::from_diagonal(c);
+
+        let xyz_from_rgb = rgb * c_mat;
+        println!("xyz_from_rgb = {} * {} = {}", rgb, c_mat, xyz_from_rgb);
+
         let rgb_from_xyz = xyz_from_rgb.inverse();
+        println!("rgb_from_xyz: {}", rgb_from_xyz);
 
         Self {
             r,

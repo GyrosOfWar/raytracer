@@ -1,6 +1,6 @@
 use crate::range::Range;
 use crate::ray::Ray;
-use crate::vec::{Axis, Point3, Vec3Ext};
+use crate::vec::{Axis, Point3};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Aabb {

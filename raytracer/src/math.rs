@@ -1,6 +1,4 @@
-use glam::{Mat3, Vec3};
-
-use crate::vec::{MatExt, Vec3Ext};
+use crate::vec2::{Mat3, Vec3};
 
 pub fn safe_sqrt(u: f32) -> f32 {
     u.max(0.0).sqrt()

@@ -1,6 +1,6 @@
 use std::sync::{Arc, LazyLock};
 
-use glam::{vec2, vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
+use glam::{vec2, vec3, IVec2, Mat3A, UVec2, Vec2, Vec3};
 use parking_lot::Mutex;
 
 use crate::camera::{Bounds2f, Bounds2i};
@@ -63,7 +63,7 @@ pub struct RgbFilm {
     color_space: Arc<RgbColorSpace>,
     max_component_value: f32,
     filter_integral: f32,
-    output_rgb_from_sensor_rgb: Mat3,
+    output_rgb_from_sensor_rgb: Mat3A,
     pixels: Mutex<Vec<Pixel>>,
     filter: ReconstructionFilter,
 }
@@ -187,7 +187,7 @@ pub struct PixelSensor {
     g_bar: Spectrum,
     b_bar: Spectrum,
     imaging_ratio: f32,
-    xyz_from_sensor_rgb: Mat3,
+    xyz_from_sensor_rgb: Mat3A,
 }
 
 impl Default for PixelSensor {
@@ -287,7 +287,7 @@ impl PixelSensor {
         ) * self.imaging_ratio
     }
 
-    pub fn xyz_from_sensor_rgb(&self) -> &Mat3 {
+    pub fn xyz_from_sensor_rgb(&self) -> &Mat3A {
         &self.xyz_from_sensor_rgb
     }
 }
@@ -313,16 +313,16 @@ fn project_reflectance(
     result / g_integral
 }
 
-fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3 {
+fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3A {
     #[rustfmt::skip]
-    let lms_from_xyz: Mat3 = Mat3::from_cols_array(&[
+    let lms_from_xyz: Mat3A = Mat3A::from_cols_array(&[
          0.8951,  0.2664, -0.1614,
         -0.7502,  1.7135,  0.0367,
          0.0389, -0.0685,  1.0296,
     ]).transpose();
 
     #[rustfmt::skip]
-    let xyz_from_lms: Mat3 = Mat3::from_cols_array(&[
+    let xyz_from_lms: Mat3A = Mat3A::from_cols_array(&[
          0.986993,  -0.147054,  0.159963,
          0.432305,   0.51836,   0.0492912,
         -0.00852866, 0.0400428, 0.968487,
@@ -333,7 +333,7 @@ fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3 {
     let src_lms = lms_from_xyz * src_xyz;
     let dest_lms = lms_from_xyz * dest_xyz;
 
-    let lms_correct = Mat3::from_diagonal(vec3(
+    let lms_correct = Mat3A::from_diagonal(vec3(
         dest_lms.x / src_lms.x,
         dest_lms.y / src_lms.y,
         dest_lms.z / src_lms.z,

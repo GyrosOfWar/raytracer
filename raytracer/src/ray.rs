@@ -15,10 +15,6 @@ impl Ray {
         self.origin + (self.direction * t)
     }
 
-    pub fn is_nan(&self) -> bool {
-        self.origin.is_nan() || self.direction.is_nan()
-    }
-
     pub fn with_differentials(self, differential: Differential) -> RayDifferential {
         RayDifferential {
             origin: self.origin,
@@ -31,22 +27,11 @@ impl Ray {
 #[derive(Debug, Clone)]
 pub struct RayDifferential {
     pub origin: Point3,
-    pub direction: Point3,
+    pub direction: Vec3,
     pub differential: Differential,
 }
 
-impl RayDifferential {
-    pub fn is_nan(&self) -> bool {
-        [
-            self.differential.rx_origin,
-            self.differential.ry_origin,
-            self.differential.rx_direction,
-            self.differential.ry_direction,
-        ]
-        .iter()
-        .any(|v| v.is_nan())
-    }
-}
+impl RayDifferential {}
 
 #[derive(Debug, Clone)]
 pub struct Differential {

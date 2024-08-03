@@ -15,5 +15,6 @@ pub mod sample;
 pub mod spectrum;
 pub mod util;
 pub mod vec;
+pub mod vec2;
 
 pub type Result<T> = color_eyre::Result<T>;
