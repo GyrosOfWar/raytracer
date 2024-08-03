@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use glam::{Vec2, Vec3};
 use serde::Deserialize;
 
-use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum};
+use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: LazyLock<CieXyz> = LazyLock::new(CieXyz::load);

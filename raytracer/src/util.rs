@@ -64,7 +64,6 @@ pub fn try_measure<T>(name: &str, f: impl FnOnce() -> Result<T>) -> Result<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::find_interval;
     use crate::util::{is_sorted, is_sorted_by};
 
     #[test]

@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_variables)]
+
 pub mod aabb;
 pub mod camera;
 pub mod color;

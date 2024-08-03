@@ -227,7 +227,6 @@ mod tests {
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
     use crate::color::xyz::Xyz;
-    use crate::random::random;
     use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
     use crate::{assert_approx_eq, Result};
 
