@@ -270,9 +270,9 @@ impl PixelSensor {
         let white_balance = white_balance(source_white, target_white);
 
         PixelSensor {
-            r_bar: CIE_XYZ.x.clone(),
-            g_bar: CIE_XYZ.y.clone(),
-            b_bar: CIE_XYZ.z.clone(),
+            r_bar: CIE_XYZ.x.clone().into(),
+            g_bar: CIE_XYZ.y.clone().into(),
+            b_bar: CIE_XYZ.z.clone().into(),
             imaging_ratio,
             xyz_from_sensor_rgb: white_balance,
         }
@@ -295,9 +295,9 @@ impl PixelSensor {
 fn project_reflectance(
     refl: &Spectrum,
     illum: &Spectrum,
-    b1: &Spectrum,
-    b2: &Spectrum,
-    b3: &Spectrum,
+    b1: &impl HasWavelength,
+    b2: &impl HasWavelength,
+    b3: &impl HasWavelength,
 ) -> Vec3A {
     let mut result = Vec3A::ZERO;
     let mut g_integral = 0.0;

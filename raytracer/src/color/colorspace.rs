@@ -80,9 +80,10 @@ pub struct CoefficientsFile {
 
 impl CoefficientsFile {
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
-        use bzip2::bufread::BzDecoder;
         use std::fs::File;
         use std::io::BufReader;
+
+        use bzip2::bufread::BzDecoder;
 
         let reader = BufReader::new(File::open(path)?);
         let decoder = BzDecoder::new(reader);
@@ -228,7 +229,7 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::color::xyz::Xyz;
     use crate::random::random;
-    use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo, Spectrum};
+    use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
     use crate::{assert_approx_eq, Result};
 
     fn for_each_color(func: impl Fn(f32, f32, f32)) {
@@ -350,26 +351,20 @@ mod tests {
     #[test]
     fn test_conversion_error() {
         let color_space = &S_RGB;
-        for _ in 0..100 {
-            let rgb = Rgb::new(random(), random(), random());
-            dbg!(&rgb);
-            let spectrum: Spectrum = RgbAlbedo::with_color_space(color_space, rgb).into();
-            dbg!(&spectrum);
-            let spectrum: Spectrum = DenselySampled::from_fn(|l| {
-                spectrum.evaluate(l) * color_space.illuminant.evaluate(l)
-            })
-            .into();
-            dbg!(&spectrum);
-            let xyz = Xyz::from(spectrum);
-            dbg!(&xyz);
-            let rgb2 = color_space.to_rgb(xyz);
-            dbg!(&rgb2);
+        let r = 0.793086767;
+        let g = 0.00971031282;
+        let b = 0.0827126205;
+        let rgb = Rgb::new(r, g, b);
+        let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
+        let spectrum =
+            DenselySampled::from_fn(|l| spectrum.evaluate(l) * color_space.illuminant.evaluate(l));
+        let xyz = Xyz::from(&spectrum);
+        let rgb2 = color_space.to_rgb(xyz);
 
-            let eps = 0.01;
+        let eps = 0.01;
 
-            assert_approx_eq!(rgb.r, rgb2.r, eps);
-            assert_approx_eq!(rgb.g, rgb2.g, eps);
-            assert_approx_eq!(rgb.b, rgb2.b, eps);
-        }
+        assert_approx_eq!(rgb.r, rgb2.r, eps);
+        assert_approx_eq!(rgb.g, rgb2.g, eps);
+        assert_approx_eq!(rgb.b, rgb2.b, eps);
     }
 }

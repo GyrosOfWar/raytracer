@@ -29,7 +29,7 @@ macro_rules! assert_approx_eq {
         let delta = ($left - $right).abs();
         assert!(
             delta < $eps,
-            "Values not approximately equal: left={}, right={} difference: {} > {}",
+            "Values not approximately equal:\n    left = {}\n    right = {}\n    difference: {} > {}",
             $left,
             $right,
             delta,

@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use glam::{Vec2, Vec3A};
 use serde::Deserialize;
 
-use crate::spectrum::{inner_product, DenselySampled, PiecewiseLinear, Spectrum};
+use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear, Spectrum};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: LazyLock<CieXyz> = LazyLock::new(CieXyz::load);
@@ -89,30 +89,22 @@ impl Div<f32> for Xyz {
     }
 }
 
-impl From<Spectrum> for Xyz {
-    fn from(value: Spectrum) -> Self {
-        Xyz {
-            x: inner_product(&CIE_XYZ.x, &value),
-            y: inner_product(&CIE_XYZ.y, &value),
-            z: inner_product(&CIE_XYZ.z, &value),
-        }
-    }
-}
-
-impl<'a> From<&'a Spectrum> for Xyz {
-    fn from(value: &'a Spectrum) -> Self {
-        Xyz {
+impl<'a, T: HasWavelength> From<&'a T> for Xyz {
+    fn from(value: &'a T) -> Self {
+        let integral = Xyz {
             x: inner_product(&CIE_XYZ.x, value),
             y: inner_product(&CIE_XYZ.y, value),
             z: inner_product(&CIE_XYZ.z, value),
-        }
+        };
+
+        integral / CIE_Y_INTEGRAL
     }
 }
 
 pub struct CieXyz {
-    pub x: Spectrum,
-    pub y: Spectrum,
-    pub z: Spectrum,
+    pub x: DenselySampled,
+    pub y: DenselySampled,
+    pub z: DenselySampled,
 }
 
 impl CieXyz {
@@ -132,9 +124,9 @@ impl CieXyz {
         let z = PiecewiseLinear::new(object.lambda, object.z);
 
         CieXyz {
-            x: DenselySampled::from_spectrum(x.into()).into(),
-            y: DenselySampled::from_spectrum(y.into()).into(),
-            z: DenselySampled::from_spectrum(z.into()).into(),
+            x: DenselySampled::from_spectrum(x),
+            y: DenselySampled::from_spectrum(y),
+            z: DenselySampled::from_spectrum(z),
         }
     }
 }

@@ -96,7 +96,11 @@ impl DenselySampled {
         }
     }
 
-    pub fn from_spectrum_in_range(spec: Spectrum, lambda_min: usize, lambda_max: usize) -> Self {
+    pub fn from_spectrum_in_range(
+        spec: impl HasWavelength,
+        lambda_min: usize,
+        lambda_max: usize,
+    ) -> Self {
         let mut values = vec![0.0; (lambda_max - lambda_min) + 1];
         for lambda in lambda_min..=lambda_max {
             values[lambda - lambda_min] = spec.evaluate(lambda as f32);
@@ -108,7 +112,7 @@ impl DenselySampled {
         }
     }
 
-    pub fn from_spectrum(spec: Spectrum) -> Self {
+    pub fn from_spectrum(spec: impl HasWavelength) -> Self {
         Self::from_spectrum_in_range(spec, LAMBDA_MIN as usize, LAMBDA_MAX as usize)
     }
 
@@ -259,6 +263,7 @@ impl RgbAlbedo {
 
     pub fn with_color_space(color_space: &RgbColorSpace, rgb: Rgb) -> Self {
         let coefficients = color_space.to_rgb_coefficients(rgb);
+        dbg!(&coefficients);
         RgbAlbedo { coefficients }
     }
 }
@@ -650,7 +655,7 @@ impl NamedSpectra {
             let values: Vec<_> = (0..107)
                 .map(|i| (CIE_S0[i] + CIE_S1[i] * m1 + CIE_S2[i] * m2) * 0.01)
                 .collect();
-            let spectrum = PiecewiseLinear::new(CIE_S_LAMBDA.to_vec(), values).into();
+            let spectrum = PiecewiseLinear::new(CIE_S_LAMBDA.to_vec(), values);
 
             DenselySampled::from_spectrum(spectrum).into()
         }

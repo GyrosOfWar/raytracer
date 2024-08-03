@@ -1,7 +1,10 @@
-use std::{fs::File, io::BufWriter, path::Path};
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 
 use ndarray::Array5;
-use raytracer::{color::colorspace::CoefficientsFile, Result};
+use raytracer::color::colorspace::CoefficientsFile;
+use raytracer::Result;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,8 +15,9 @@ struct JsonFile {
 }
 
 fn read_coefficients(path: impl AsRef<Path>) -> Result<JsonFile> {
-    use bzip2::bufread::BzDecoder;
     use std::io::BufReader;
+
+    use bzip2::bufread::BzDecoder;
 
     let file = BufReader::new(File::open(path)?);
     let reader = BzDecoder::new(file);

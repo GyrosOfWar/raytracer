@@ -1,10 +1,10 @@
 use plotters::prelude::*;
 use raytracer::color::xyz::CIE_XYZ;
-use raytracer::spectrum::{DenselySampled, Spectrum};
+use raytracer::spectrum::{DenselySampled, HasWavelength};
 use raytracer::Result;
 
-fn plot_spectrum(spectrum: &Spectrum, file_name: &str) -> Result<()> {
-    let sampled = DenselySampled::from_spectrum(spectrum.clone());
+fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
+    let sampled = DenselySampled::from_spectrum(spectrum);
     let to_plot: Vec<(f32, f32)> = sampled
         .range()
         .map(|i| i as f32)
@@ -32,7 +32,7 @@ fn plot_spectrum(spectrum: &Spectrum, file_name: &str) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let spectrum = &CIE_XYZ.z;
+    let spectrum = CIE_XYZ.z.clone();
     plot_spectrum(spectrum, "rgb.png")?;
 
     Ok(())
