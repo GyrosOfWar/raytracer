@@ -1,5 +1,37 @@
-pub type Point3 = crate::vec2::Point3;
-pub type Vec3 = crate::vec2::Vec3;
+mod macros;
+mod mat3;
+mod mat4;
+mod vec2;
+mod vec3;
+
+pub use mat3::*;
+pub use mat4::*;
+pub use vec2::*;
+pub use vec3::*;
+
+pub fn vec2(x: f32, y: f32) -> Vec2 {
+    Vec2::new(x, y)
+}
+
+pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
+    Vec3::new(x, y, z)
+}
+
+pub fn point2(x: f32, y: f32) -> Point2 {
+    Point2::new(x, y)
+}
+
+pub fn point3(x: f32, y: f32, z: f32) -> Point3 {
+    Point3::new(x, y, z)
+}
+
+pub fn ivec2(x: i32, y: i32) -> IVec2 {
+    IVec2::new(x, y)
+}
+
+pub fn uvec2(x: u32, y: u32) -> UVec2 {
+    UVec2::new(x, y)
+}
 
 #[derive(Debug, Copy, Clone)]
 pub enum Axis {
@@ -22,7 +54,7 @@ pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
 pub mod random {
     use super::Vec3;
     use crate::random::{random, random_range};
-    use crate::vec2::Vec2;
+    use crate::vec::Vec2;
 
     pub fn gen() -> Vec3 {
         Vec3::new(random(), random(), random())

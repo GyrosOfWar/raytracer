@@ -8,7 +8,7 @@ use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
 use crate::spectrum::{Spectrum, NAMED_SPECTRA};
-use crate::vec2::{Mat3, Vec2, Vec3};
+use crate::vec::{Mat3, Vec2, Vec3};
 use crate::{util, Result};
 
 const RES: usize = 64;
@@ -233,7 +233,7 @@ mod tests {
     use crate::color::rgb::Rgb;
     use crate::color::xyz::Xyz;
     use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
-    use crate::vec2::Vec3;
+    use crate::vec::Vec3;
     use crate::{assert_approx_eq, Result};
 
     fn for_each_color(func: impl Fn(f32, f32, f32)) {

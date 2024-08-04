@@ -12,7 +12,7 @@ use crate::spectrum::{
     inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
-use crate::vec2::{vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
+use crate::vec::{vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
 
 static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
@@ -627,7 +627,7 @@ mod test {
     use crate::spectrum::{
         HasWavelength, RgbAlbedo, SampledSpectrum, SampledWavelengths, Spectrum,
     };
-    use crate::vec2::{ivec2, uvec2, vec2};
+    use crate::vec::{ivec2, uvec2, vec2};
 
     fn get_rgb_sample(
         u: f32,
