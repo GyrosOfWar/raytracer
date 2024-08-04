@@ -20,10 +20,9 @@ pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
 }
 
 pub mod random {
-    use glam::Vec2;
-
     use super::Vec3;
     use crate::random::{random, random_range};
+    use crate::vec2::Vec2;
 
     pub fn gen() -> Vec3 {
         Vec3::new(random(), random(), random())

@@ -1,6 +1,5 @@
 use std::sync::{Arc, LazyLock};
 
-use glam::{IVec2, UVec2};
 use parking_lot::Mutex;
 
 use crate::camera::{Bounds2f, Bounds2i};
@@ -13,7 +12,7 @@ use crate::spectrum::{
     inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
-use crate::vec2::{vec3, Mat3, Vec2, Vec3};
+use crate::vec2::{vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
 
 static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
@@ -618,8 +617,6 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 
 #[cfg(test)]
 mod test {
-    use glam::{ivec2, uvec2};
-
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
     use crate::camera::Bounds2i;
     use crate::color::colorspace::{RgbColorSpace, S_RGB};

@@ -7,7 +7,6 @@ edition = "2021"
 bzip2 = "0.4.4"
 color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
-glam = { version = "0.28.0", features = ["glam-assert"] }
 libm = "0.2.8"
 ndarray = { version = "0.15.6", features = ["serde"] }
 ordered-float = "4.2.1"

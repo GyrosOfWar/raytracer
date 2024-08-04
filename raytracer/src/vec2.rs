@@ -3,6 +3,47 @@ use std::ops::{Mul, Neg};
 
 use crate::vec::Axis;
 
+macro_rules! impl_binary_op {
+    ($op:tt : $method:ident => (
+           $lhs_i:ident : $lhs_t:path,
+           $rhs_i:ident : $rhs_t:path
+        ) -> $return_t:path $body:block
+    ) => {
+        impl std::ops::$op<$rhs_t> for $lhs_t {
+            type Output = $return_t;
+
+            fn $method(self, $rhs_i: $rhs_t) -> $return_t {
+                let $lhs_i = self;
+                $body
+            }
+        }
+        impl std::ops::$op<&$rhs_t> for $lhs_t {
+            type Output = $return_t;
+
+            fn $method(self, $rhs_i: &$rhs_t) -> $return_t {
+                let $lhs_i = self;
+                $body
+            }
+        }
+        impl std::ops::$op<$rhs_t> for &$lhs_t {
+            type Output = $return_t;
+
+            fn $method(self, $rhs_i: $rhs_t) -> $return_t {
+                let $lhs_i = self;
+                $body
+            }
+        }
+        impl std::ops::$op<&$rhs_t> for &$lhs_t {
+            type Output = $return_t;
+
+            fn $method(self, $rhs_i: &$rhs_t) -> $return_t {
+                let $lhs_i = self;
+                $body
+            }
+        }
+    };
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Vec2 {
     pub x: f32,
@@ -10,8 +51,19 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
+    pub const ONE: Vec2 = Vec2 { x: 1.0, y: 1.0 };
+    pub const ZERO: Vec2 = Vec2 { x: 0.0, y: 0.0 };
+
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
+    }
+
+    pub fn min(&self, b: Vec2) -> Vec2 {
+        todo!()
+    }
+
+    pub fn max(&self, b: Vec2) -> Vec2 {
+        todo!()
     }
 }
 
@@ -20,6 +72,21 @@ impl fmt::Display for Vec2 {
         write!(f, "[{}, {}]", self.x, self.y)
     }
 }
+
+impl_binary_op!(Mul : mul => (lhs: Vec2, rhs: Vec2) -> Vec2 {
+    Vec2::new(
+        lhs.x * rhs.x,
+        lhs.y * rhs.y,
+    )
+});
+
+impl_binary_op!(Mul : mul => (lhs: Vec2, rhs: f32) -> Vec2 {
+    Vec2::new(
+        lhs.x * rhs,
+        lhs.y * rhs,
+    )
+});
+
 #[derive(Debug, Copy, Clone)]
 pub struct Point2 {
     pub x: f32,
@@ -150,47 +217,6 @@ impl Point3 {
             Axis::Z => self.z,
         }
     }
-}
-
-macro_rules! impl_binary_op {
-    ($op:tt : $method:ident => (
-           $lhs_i:ident : $lhs_t:path,
-           $rhs_i:ident : $rhs_t:path
-        ) -> $return_t:path $body:block
-    ) => {
-        impl std::ops::$op<$rhs_t> for $lhs_t {
-            type Output = $return_t;
-
-            fn $method(self, $rhs_i: $rhs_t) -> $return_t {
-                let $lhs_i = self;
-                $body
-            }
-        }
-        impl std::ops::$op<&$rhs_t> for $lhs_t {
-            type Output = $return_t;
-
-            fn $method(self, $rhs_i: &$rhs_t) -> $return_t {
-                let $lhs_i = self;
-                $body
-            }
-        }
-        impl std::ops::$op<$rhs_t> for &$lhs_t {
-            type Output = $return_t;
-
-            fn $method(self, $rhs_i: $rhs_t) -> $return_t {
-                let $lhs_i = self;
-                $body
-            }
-        }
-        impl std::ops::$op<&$rhs_t> for &$lhs_t {
-            type Output = $return_t;
-
-            fn $method(self, $rhs_i: &$rhs_t) -> $return_t {
-                let $lhs_i = self;
-                $body
-            }
-        }
-    };
 }
 
 impl_binary_op!(Add : add => (lhs: Vec3, rhs: Vec3) -> Vec3 {
@@ -441,6 +467,57 @@ impl Mul<Vec3> for Mat3 {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Mat4 {
+    data: [f32; 16],
+}
+
+impl Mat4 {
+    pub fn inverse(&self) -> Mat4 {
+        todo!()
+    }
+
+    pub fn from_translation(z: Vec3) -> Mat4 {
+        todo!()
+    }
+
+    pub fn from_rotation_x(angle: f32) -> Mat4 {
+        todo!()
+    }
+
+    pub fn from_rotation_y(angle: f32) -> Mat4 {
+        todo!()
+    }
+
+    pub fn from_rotation_z(angle: f32) -> Mat4 {
+        todo!()
+    }
+
+    pub fn from_scale(z: Vec3) -> Mat4 {
+        todo!()
+    }
+
+    pub fn transform_point3(&self, point: Vec3) -> Vec3 {
+        todo!()
+    }
+
+    pub fn transform_vector3(&self, vector: Vec3) -> Vec3 {
+        todo!()
+    }
+
+    pub fn mat_mul(&self, rhs: Mat4) -> Mat4 {
+        todo!()
+    }
+}
+
+impl Mul for Mat4 {
+    type Output = Mat4;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.mat_mul(rhs)
+    }
+}
+
 pub fn vec2(x: f32, y: f32) -> Vec2 {
     Vec2::new(x, y)
 }
@@ -456,3 +533,71 @@ pub fn point2(x: f32, y: f32) -> Point2 {
 pub fn point3(x: f32, y: f32, z: f32) -> Point3 {
     Point3::new(x, y, z)
 }
+
+pub fn ivec2(x: i32, y: i32) -> IVec2 {
+    IVec2::new(x, y)
+}
+
+pub fn uvec2(x: u32, y: u32) -> UVec2 {
+    UVec2::new(x, y)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IVec2 {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl IVec2 {
+    pub fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+
+    pub(crate) fn min(&self, b: IVec2) -> IVec2 {
+        todo!()
+    }
+
+    pub(crate) fn max(&self, b: IVec2) -> IVec2 {
+        todo!()
+    }
+}
+
+impl_binary_op!(Add : add => (lhs: IVec2, rhs: IVec2) -> IVec2 {
+    IVec2::new(
+        lhs.x + rhs.x,
+        lhs.y + rhs.y,
+    )
+});
+
+impl_binary_op!(Sub : sub => (lhs: IVec2, rhs: IVec2) -> IVec2 {
+    IVec2::new(
+        lhs.x - rhs.x,
+        lhs.y - rhs.y,
+    )
+});
+
+#[derive(Debug, Copy, Clone)]
+pub struct UVec2 {
+    pub x: u32,
+    pub y: u32,
+}
+
+impl UVec2 {
+    pub fn new(x: u32, y: u32) -> Self {
+        Self { x, y }
+    }
+}
+
+impl_binary_op!(Add : add => (lhs: UVec2, rhs: UVec2) -> UVec2 {
+    UVec2::new(
+        lhs.x + rhs.x,
+        lhs.y + rhs.y,
+    )
+});
+
+impl_binary_op!(Sub : sub => (lhs: UVec2, rhs: UVec2) -> UVec2 {
+    UVec2::new(
+        lhs.x - rhs.x,
+        lhs.y - rhs.y,
+    )
+});
