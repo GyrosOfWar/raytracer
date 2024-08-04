@@ -3,8 +3,7 @@ use std::ops::Mul;
 use crate::film::RgbFilm;
 use crate::ray::{Ray, RayDifferential};
 use crate::spectrum::SampledWavelengths;
-use crate::vec::Vec3;
-use crate::vec::{vec3, IVec2, Mat4, Vec2};
+use crate::vec::{vec3, IVec2, Mat4, Vec2, Vec3};
 
 pub struct Bounds2f {
     p_min: Vec2,

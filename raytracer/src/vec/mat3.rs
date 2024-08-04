@@ -64,7 +64,11 @@ impl Mat3 {
         for i in 0..3 {
             for j in 0..3 {
                 for k in 0..3 {
-                    result.data[i * 3 + j] += self.data[i * 3 + k] * rhs.data[k * 3 + j];
+                    result.data[i * 3 + j] = f32::mul_add(
+                        self.data[i * 3 + k],
+                        rhs.data[k * 3 + j],
+                        result.data[i * 3 + j],
+                    );
                 }
             }
         }

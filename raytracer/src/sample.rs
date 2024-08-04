@@ -1,8 +1,7 @@
 use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4};
 
 use crate::math::{self, square};
-use crate::vec::Vec2;
-use crate::vec::Vec3;
+use crate::vec::{Vec2, Vec3};
 
 pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
     let u_offset = 2.0 * u - Vec2::ONE;
