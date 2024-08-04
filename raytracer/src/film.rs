@@ -627,7 +627,7 @@ mod test {
     use crate::spectrum::{
         HasWavelength, RgbAlbedo, SampledSpectrum, SampledWavelengths, Spectrum,
     };
-    use crate::vec2::vec2;
+    use crate::vec2::{ivec2, uvec2, vec2};
 
     fn get_rgb_sample(
         u: f32,
