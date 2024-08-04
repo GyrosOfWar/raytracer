@@ -1,6 +1,8 @@
 use plotters::prelude::*;
+use raytracer::color::colorspace::S_RGB;
+use raytracer::color::rgb::Rgb;
 use raytracer::color::xyz::CIE_XYZ;
-use raytracer::spectrum::{DenselySampled, HasWavelength};
+use raytracer::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
 use raytracer::Result;
 
 fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
@@ -10,6 +12,16 @@ fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
         .map(|i| i as f32)
         .zip(sampled.values().iter().copied())
         .collect();
+    let min = sampled
+        .values()
+        .iter()
+        .copied()
+        .fold(f32::INFINITY, f32::min);
+    let max = sampled
+        .values()
+        .iter()
+        .copied()
+        .fold(f32::NEG_INFINITY, f32::max);
 
     let backend = BitMapBackend::new(file_name, (800, 800)).into_drawing_area();
     backend.fill(&WHITE)?;
@@ -17,7 +29,7 @@ fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
     let mut chart = ChartBuilder::on(&backend)
         .margin(10)
         .set_left_and_bottom_label_area_size(20)
-        .build_cartesian_2d(380.0f32..830.0, 0.0f32..1.0)?;
+        .build_cartesian_2d(380.0f32..830.0, min..max)?;
     chart.draw_series(LineSeries::new(to_plot, &BLUE))?;
     chart.configure_mesh().draw()?;
     chart
@@ -32,8 +44,9 @@ fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let spectrum = CIE_XYZ.z.clone();
-    plot_spectrum(spectrum, "rgb.png")?;
+    let sigmoid = S_RGB.to_rgb_coefficients(Rgb::new(1.0, 0.0, 0.0));
+    let rgb = RgbAlbedo::new(sigmoid);
+    plot_spectrum(rgb, "rgb.png")?;
 
     Ok(())
 }

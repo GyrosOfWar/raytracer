@@ -272,9 +272,11 @@ mod tests {
             let xyz = cs.to_xyz(Rgb::new(1.0, 1.0, 1.0));
             let rgb = cs.to_rgb(xyz);
 
-            assert!((1.0 - rgb.r).abs() < 1e-4);
-            assert!((1.0 - rgb.g).abs() < 1e-4);
-            assert!((1.0 - rgb.b).abs() < 1e-4);
+            let eps = 1e-4;
+
+            assert_approx_eq!(1.0, rgb.r, eps);
+            assert_approx_eq!(1.0, rgb.g, eps);
+            assert_approx_eq!(1.0, rgb.b, eps);
         }
     }
 

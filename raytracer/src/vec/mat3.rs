@@ -14,6 +14,7 @@ impl Mat3 {
     };
     pub const ZERO: Mat3 = Mat3 { data: [0.0; 9] };
 
+    /// Create a new matrix.
     pub fn new(
         m00: f32,
         m01: f32,
@@ -30,24 +31,27 @@ impl Mat3 {
         }
     }
 
+    /// Create a matrix from column vectors.
     pub fn from_cols(c0: Vec3, c1: Vec3, c2: Vec3) -> Self {
         Self {
             data: [c0.x, c1.x, c2.x, c0.y, c1.y, c2.y, c0.z, c1.z, c2.z],
         }
     }
 
+    /// Create a matrix from row vectors.
     pub fn from_rows(r0: Vec3, r1: Vec3, r2: Vec3) -> Self {
         Self {
             data: [r0.x, r0.y, r0.z, r1.x, r1.y, r1.z, r2.x, r2.y, r2.z],
         }
     }
 
+    /// Create a diagonal matrix.
     pub fn from_diagonal(diagonal: Vec3) -> Self {
-        Self {
-            data: [
-                diagonal.x, 0.0, 0.0, 0.0, diagonal.y, 0.0, 0.0, 0.0, diagonal.z,
-            ],
-        }
+        let mut mat = Mat3::ZERO;
+        mat.set(0, 0, diagonal.x);
+        mat.set(1, 1, diagonal.y);
+        mat.set(2, 2, diagonal.z);
+        mat
     }
 
     pub fn set(&mut self, i: usize, j: usize, value: f32) {
@@ -58,16 +62,24 @@ impl Mat3 {
         self.data[i * 3 + j]
     }
 
+    pub fn row(&self, i: usize) -> Vec3 {
+        Vec3::new(self.data[i * 3], self.data[i * 3 + 1], self.data[i * 3 + 2])
+    }
+
+    pub fn col(&self, j: usize) -> Vec3 {
+        Vec3::new(self.data[j], self.data[j + 3], self.data[j + 6])
+    }
+
     pub fn mat_mul(&self, rhs: &Mat3) -> Mat3 {
         let mut result = Mat3::ZERO;
 
         for i in 0..3 {
             for j in 0..3 {
                 for k in 0..3 {
-                    result.data[i * 3 + j] = f32::mul_add(
-                        self.data[i * 3 + k],
-                        rhs.data[k * 3 + j],
-                        result.data[i * 3 + j],
+                    result.set(
+                        i,
+                        j,
+                        f32::mul_add(self.get(i, k), rhs.get(k, j), result.get(i, j)),
                     );
                 }
             }
