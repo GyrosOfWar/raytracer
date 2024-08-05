@@ -81,10 +81,6 @@ impl Rgb {
     };
 
     pub fn new(r: f32, g: f32, b: f32) -> Rgb {
-        // assert_in_range!(r, 0.0, 1.0);
-        // assert_in_range!(g, 0.0, 1.0);
-        // assert_in_range!(b, 0.0, 1.0);
-
         Rgb { r, g, b }
     }
 

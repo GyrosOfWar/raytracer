@@ -17,13 +17,6 @@ macro_rules! assert_in_range {
 }
 
 #[macro_export]
-macro_rules! assert_lt {
-    ($value:expr, $lt:expr) => {
-        assert!($value < $lt, "Value {} not less than {}", $value, $lt);
-    };
-}
-
-#[macro_export]
 macro_rules! assert_approx_eq {
     ($left:expr,$right:expr,$eps:expr) => {
         let delta = ($left - $right).abs();

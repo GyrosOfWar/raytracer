@@ -226,6 +226,7 @@ mod tests {
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
     use crate::color::xyz::Xyz;
+    use crate::random::random;
     use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
     use crate::vec::Vec3;
     use crate::{assert_approx_eq, Result};
@@ -345,33 +346,85 @@ mod tests {
     }
 
     #[test]
-    fn test_conversion_error() {
+    fn round_trip_conversion_srgb() {
         let color_space = &S_RGB;
-        let r = 0.793086767;
-        let g = 0.00971031282;
-        let b = 0.0827126205;
-        let rgb = Rgb::new(r, g, b);
-        let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
 
-        let eps = f32::EPSILON;
-        assert_approx_eq!(spectrum.coefficients.c0, 0.000314787991, eps);
-        assert_approx_eq!(spectrum.coefficients.c1, -0.319274127, eps);
-        assert_approx_eq!(spectrum.coefficients.c2, 78.0749359, eps);
+        for _ in 0..100 {
+            let r = random();
+            let g = random();
+            let b = random();
+            let rgb = Rgb::new(r, g, b);
+            let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
 
-        let spectrum = DenselySampled::from_fn(|l| {
-            let rgb = spectrum.evaluate(l);
-            let w = color_space.illuminant.evaluate(l);
+            let spectrum = DenselySampled::from_fn(|l| {
+                let rgb = spectrum.evaluate(l);
+                let w = color_space.illuminant.evaluate(l);
 
-            rgb * w
-        });
+                rgb * w
+            });
 
-        let xyz = Xyz::from(&spectrum);
-        let rgb2 = color_space.to_rgb(xyz);
+            let xyz = Xyz::from(&spectrum);
+            let rgb2 = color_space.to_rgb(xyz);
 
-        let eps = 0.01;
+            let eps = 0.01;
+            assert_approx_eq!(rgb.r, rgb2.r, eps);
+            assert_approx_eq!(rgb.g, rgb2.g, eps);
+            assert_approx_eq!(rgb.b, rgb2.b, eps);
+        }
+    }
 
-        assert_approx_eq!(rgb.r, rgb2.r, eps);
-        assert_approx_eq!(rgb.g, rgb2.g, eps);
-        assert_approx_eq!(rgb.b, rgb2.b, eps);
+    #[test]
+    fn round_trip_conversion_dci_p3() {
+        let color_space = &DCI_P3;
+
+        for _ in 0..100 {
+            let r = random();
+            let g = random();
+            let b = random();
+            let rgb = Rgb::new(r, g, b);
+            let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
+
+            let spectrum = DenselySampled::from_fn(|l| {
+                let rgb = spectrum.evaluate(l);
+                let w = color_space.illuminant.evaluate(l);
+
+                rgb * w
+            });
+
+            let xyz = Xyz::from(&spectrum);
+            let rgb2 = color_space.to_rgb(xyz);
+
+            let eps = 0.01;
+            assert_approx_eq!(rgb.r, rgb2.r, eps);
+            assert_approx_eq!(rgb.g, rgb2.g, eps);
+            assert_approx_eq!(rgb.b, rgb2.b, eps);
+        }
+    }
+
+    #[test]
+    fn round_trip_conversion_rec_2020() {
+        let color_space = &REC_2020;
+        for _ in 0..100 {
+            let r = random();
+            let g = random();
+            let b = random();
+            let rgb = Rgb::new(r, g, b);
+            let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
+
+            let spectrum = DenselySampled::from_fn(|l| {
+                let rgb = spectrum.evaluate(l);
+                let w = color_space.illuminant.evaluate(l);
+
+                rgb * w
+            });
+
+            let xyz = Xyz::from(&spectrum);
+            let rgb2 = color_space.to_rgb(xyz);
+
+            let eps = 0.01;
+            assert_approx_eq!(rgb.r, rgb2.r, eps);
+            assert_approx_eq!(rgb.g, rgb2.g, eps);
+            assert_approx_eq!(rgb.b, rgb2.b, eps);
+        }
     }
 }
