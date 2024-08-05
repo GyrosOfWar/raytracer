@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Mul;
 
 use super::{Point3, VectorLike};
@@ -55,8 +56,64 @@ impl Mat4 {
         }
     }
 
+    pub fn try_inverse(&self) -> Option<Mat4> {
+        let a = self.data[0][0];
+        let b = self.data[0][1];
+        let c = self.data[0][2];
+        let d = self.data[0][3];
+        let e = self.data[1][0];
+        let f = self.data[1][1];
+        let g = self.data[1][2];
+        let h = self.data[1][3];
+        let i = self.data[2][0];
+        let j = self.data[2][1];
+        let k = self.data[2][2];
+        let l = self.data[2][3];
+        let m = self.data[3][0];
+        let n = self.data[3][1];
+        let o = self.data[3][2];
+        let p = self.data[3][3];
+
+        let q = f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n);
+        let r = e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m);
+        let s = e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m);
+        let t = e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m);
+
+        let u = b * (k * p - l * o) - c * (j * p - l * n) + d * (j * o - k * n);
+        let v = a * (k * p - l * o) - c * (i * p - l * m) + d * (i * o - k * m);
+        let w = a * (j * p - l * n) - b * (i * p - l * m) + d * (i * n - j * m);
+        let x = a * (j * o - k * n) - b * (i * o - k * m) + c * (i * n - j * m);
+
+        let y = b * (g * p - h * o) - c * (f * p - h * n) + d * (f * o - g * n);
+        let z = a * (g * p - h * o) - c * (e * p - h * m) + d * (e * o - g * m);
+        let aa = a * (f * p - h * n) - b * (e * p - h * m) + d * (e * n - f * m);
+        let ab = a * (f * o - g * n) - b * (e * o - g * m) + c * (e * n - f * m);
+
+        let ac = b * (g * l - h * k) - c * (f * l - h * j) + d * (f * k - g * j);
+        let ad = a * (g * l - h * k) - c * (e * l - h * i) + d * (e * k - g * i);
+        let ae = a * (f * l - h * j) - b * (e * l - h * i) + d * (e * j - f * i);
+        let af = a * (f * k - g * j) - b * (e * k - g * i) + c * (e * j - f * i);
+
+        let det = a * q - b * r + c * s - d * t;
+
+        if det == 0.0 {
+            None
+        } else {
+            let inv_det = 1.0 / det;
+
+            let data: [[f32; 4]; 4] = [
+                [q * inv_det, -u * inv_det, y * inv_det, -ac * inv_det],
+                [-r * inv_det, v * inv_det, -z * inv_det, ad * inv_det],
+                [s * inv_det, -w * inv_det, aa * inv_det, -ae * inv_det],
+                [-t * inv_det, x * inv_det, -ab * inv_det, af * inv_det],
+            ];
+
+            Some(Mat4 { data })
+        }
+    }
+
     pub fn inverse(&self) -> Mat4 {
-        todo!()
+        self.try_inverse().expect("Matrix is not invertible")
     }
 
     pub fn from_translation(z: Vec3) -> Mat4 {
@@ -182,5 +239,93 @@ impl Mul<Point3> for Mat4 {
 
     fn mul(self, rhs: Point3) -> Self::Output {
         self.vec_mul(rhs)
+    }
+}
+
+impl fmt::Display for Mat4 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[[{}, {}, {}, {}]\n [{}, {}, {}, {}]\n [{}, {}, {}, {}]\n [{}, {}, {}, {}]]",
+            self.data[0][0],
+            self.data[0][1],
+            self.data[0][2],
+            self.data[0][3],
+            self.data[1][0],
+            self.data[1][1],
+            self.data[1][2],
+            self.data[1][3],
+            self.data[2][0],
+            self.data[2][1],
+            self.data[2][2],
+            self.data[2][3],
+            self.data[3][0],
+            self.data[3][1],
+            self.data[3][2],
+            self.data[3][3]
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Mat4;
+    use crate::assert_approx_eq;
+    use crate::random::random;
+
+    fn random_mat4() -> Mat4 {
+        Mat4::new(
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+            random(),
+        )
+    }
+
+    #[test]
+    fn test_invert() {
+        let matrix = random_mat4();
+        let inverse = matrix.inverse();
+        let identity = matrix * inverse;
+
+        let eps = 1e-5;
+        assert_approx_eq!(identity.get(0, 0), 1.0, eps);
+        assert_approx_eq!(identity.get(0, 1), 0.0, eps);
+        assert_approx_eq!(identity.get(0, 2), 0.0, eps);
+        assert_approx_eq!(identity.get(0, 3), 0.0, eps);
+
+        assert_approx_eq!(identity.get(1, 0), 0.0, eps);
+        assert_approx_eq!(identity.get(1, 1), 1.0, eps);
+        assert_approx_eq!(identity.get(1, 2), 0.0, eps);
+        assert_approx_eq!(identity.get(1, 3), 0.0, eps);
+
+        assert_approx_eq!(identity.get(2, 0), 0.0, eps);
+        assert_approx_eq!(identity.get(2, 1), 0.0, eps);
+        assert_approx_eq!(identity.get(2, 2), 1.0, eps);
+        assert_approx_eq!(identity.get(2, 3), 0.0, eps);
+
+        assert_approx_eq!(identity.get(3, 0), 0.0, eps);
+        assert_approx_eq!(identity.get(3, 1), 0.0, eps);
+        assert_approx_eq!(identity.get(3, 2), 0.0, eps);
+        assert_approx_eq!(identity.get(3, 3), 1.0, eps);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invert_panic() {
+        let matrix = Mat4::ZERO;
+        matrix.inverse();
     }
 }

@@ -102,6 +102,10 @@ impl IVec2 {
     pub fn max(&self, b: IVec2) -> IVec2 {
         IVec2::new(self.x.max(b.x), self.y.max(b.y))
     }
+
+    pub fn as_vec2(&self) -> Vec2 {
+        Vec2::new(self.x as f32, self.y as f32)
+    }
 }
 
 impl_binary_op!(Add : add => (lhs: IVec2, rhs: IVec2) -> IVec2 {

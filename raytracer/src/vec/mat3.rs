@@ -96,7 +96,7 @@ impl Mat3 {
         )
     }
 
-    pub fn inverse(&self) -> Mat3 {
+    pub fn try_inverse(&self) -> Option<Mat3> {
         let det = self.data[0][0]
             * (self.data[1][1] * self.data[2][2] - self.data[1][2] * self.data[2][1])
             - self.data[0][1]
@@ -104,21 +104,27 @@ impl Mat3 {
             + self.data[0][2]
                 * (self.data[1][0] * self.data[2][1] - self.data[1][1] * self.data[2][0]);
 
-        assert!(det != 0.0, "Matrix is not invertible");
+        if det == 0.0 {
+            None
+        } else {
+            let inv_det = 1.0 / det;
 
-        let inv_det = 1.0 / det;
+            Some(Mat3::new(
+                (self.data[1][1] * self.data[2][2] - self.data[1][2] * self.data[2][1]) * inv_det,
+                (self.data[0][2] * self.data[2][1] - self.data[0][1] * self.data[2][2]) * inv_det,
+                (self.data[0][1] * self.data[1][2] - self.data[0][2] * self.data[1][1]) * inv_det,
+                (self.data[1][2] * self.data[2][0] - self.data[1][0] * self.data[2][2]) * inv_det,
+                (self.data[0][0] * self.data[2][2] - self.data[0][2] * self.data[2][0]) * inv_det,
+                (self.data[0][2] * self.data[1][0] - self.data[0][0] * self.data[1][2]) * inv_det,
+                (self.data[1][0] * self.data[2][1] - self.data[1][1] * self.data[2][0]) * inv_det,
+                (self.data[0][1] * self.data[2][0] - self.data[0][0] * self.data[2][1]) * inv_det,
+                (self.data[0][0] * self.data[1][1] - self.data[0][1] * self.data[1][0]) * inv_det,
+            ))
+        }
+    }
 
-        Mat3::new(
-            (self.data[1][1] * self.data[2][2] - self.data[1][2] * self.data[2][1]) * inv_det,
-            (self.data[0][2] * self.data[2][1] - self.data[0][1] * self.data[2][2]) * inv_det,
-            (self.data[0][1] * self.data[1][2] - self.data[0][2] * self.data[1][1]) * inv_det,
-            (self.data[1][2] * self.data[2][0] - self.data[1][0] * self.data[2][2]) * inv_det,
-            (self.data[0][0] * self.data[2][2] - self.data[0][2] * self.data[2][0]) * inv_det,
-            (self.data[0][2] * self.data[1][0] - self.data[0][0] * self.data[1][2]) * inv_det,
-            (self.data[1][0] * self.data[2][1] - self.data[1][1] * self.data[2][0]) * inv_det,
-            (self.data[0][1] * self.data[2][0] - self.data[0][0] * self.data[2][1]) * inv_det,
-            (self.data[0][0] * self.data[1][1] - self.data[0][1] * self.data[1][0]) * inv_det,
-        )
+    pub fn inverse(&self) -> Mat3 {
+        self.try_inverse().expect("Matrix is not invertible")
     }
 
     pub fn transpose(&self) -> Mat3 {

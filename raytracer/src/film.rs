@@ -12,7 +12,7 @@ use crate::spectrum::{
     inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
-use crate::vec::{vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
+use crate::vec::{vec2, vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
 
 static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
@@ -125,11 +125,10 @@ impl Film for RgbFilm {
 
     fn sample_bounds(&self) -> Bounds2f {
         let radius = self.filter.radius();
-        todo!()
-        // Bounds2f::new(
-        //     self.pixel_bounds.p_min().as_vec2() - radius + vec2(0.5, 0.5),
-        //     self.pixel_bounds.p_max().as_vec2() + radius - vec2(0.5, 0.5),
-        //        )
+        Bounds2f::new(
+            self.pixel_bounds.p_min().as_vec2() - radius + vec2(0.5, 0.5),
+            self.pixel_bounds.p_max().as_vec2() + radius - vec2(0.5, 0.5),
+        )
     }
 
     fn sample_wavelenghts(&self, u: f32) -> SampledWavelengths {
