@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
+use measure_time::info_time;
 use ndarray::Array5;
 use serde::{Deserialize, Serialize};
 
@@ -83,6 +84,7 @@ impl CoefficientsFile {
         use std::io::BufReader;
 
         use bzip2::bufread::BzDecoder;
+        info_time!("load coefficients file at {}", path.as_ref().display());
 
         let reader = BufReader::new(File::open(path)?);
         let decoder = BzDecoder::new(reader);

@@ -1,6 +1,4 @@
-use color_eyre::Result;
 use ordered_float::OrderedFloat;
-use tracing::info;
 
 use crate::math;
 
@@ -44,22 +42,6 @@ where
     F: FnMut(&T, &T) -> bool,
 {
     slice.windows(2).all(|w| compare(&w[0], &w[1]))
-}
-
-pub fn measure<T>(name: &str, f: impl FnOnce() -> T) -> T {
-    let start = std::time::Instant::now();
-    let value = f();
-    let elapsed = start.elapsed();
-    info!("{} took {:?}", name, elapsed);
-    value
-}
-
-pub fn try_measure<T>(name: &str, f: impl FnOnce() -> Result<T>) -> Result<T> {
-    let start = std::time::Instant::now();
-    let result = f()?;
-    let elapsed = start.elapsed();
-    info!("{} took {:?}", name, elapsed);
-    Ok(result)
 }
 
 #[cfg(test)]

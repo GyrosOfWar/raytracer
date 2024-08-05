@@ -8,6 +8,7 @@ bzip2 = "0.4.4"
 color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
 libm = "0.2.8"
+measure_time = "0.8.3"
 ndarray = { version = "0.15.6", features = ["serde"] }
 ordered-float = "4.2.1"
 parking_lot = "0.12.3"
@@ -15,3 +16,6 @@ rand = { version = "0.8.5", features = ["small_rng"] }
 serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.120"
 tracing = "0.1.40"
+
+[dev-dependencies]
+traced-test = "0.3.6"
