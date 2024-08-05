@@ -82,6 +82,6 @@ fn gaussian(x: f32, mu: f32, sigma: f32) -> f32 {
 }
 
 fn gaussian_integral(x0: f32, x1: f32, mu: f32, sigma: f32) -> f32 {
-    let sigma_root_2 = sigma * 1.414213562373095;
-    return 0.5 * (libm::erff((mu - x0) / sigma_root_2) - libm::erff((mu - x1) / sigma_root_2));
+    let sigma_root_2 = sigma * std::f32::consts::SQRT_2;
+    0.5 * (libm::erff((mu - x0) / sigma_root_2) - libm::erff((mu - x1) / sigma_root_2))
 }

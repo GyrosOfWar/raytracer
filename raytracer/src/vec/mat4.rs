@@ -22,6 +22,7 @@ impl Mat4 {
         data: [[0.0; 4]; 4],
     };
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         m00: f32,
         m01: f32,

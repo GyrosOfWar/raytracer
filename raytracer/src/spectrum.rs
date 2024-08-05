@@ -187,7 +187,7 @@ impl PiecewiseLinear {
 
     pub fn scale(&mut self, factor: f32) {
         for v in &mut self.values {
-            *v = *v * factor;
+            *v *= factor;
         }
     }
 }

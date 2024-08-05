@@ -37,7 +37,7 @@ pub fn sample_visible_wavelengths(u: f32) -> f32 {
 }
 
 pub fn visible_wavelengths_pdf(lambda: f32) -> f32 {
-    if lambda < 360.0 || lambda > 830.0 {
+    if !(360.0..=830.0).contains(&lambda) {
         0.0
     } else {
         0.0039398042 / square((0.0072 * (lambda - 538.0)).cosh())

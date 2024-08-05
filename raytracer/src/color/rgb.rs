@@ -130,9 +130,7 @@ pub struct RgbSigmoidPolynomial {
 // but is itself not a spectrum, so left out of the Spectrum enum
 impl HasWavelength for RgbSigmoidPolynomial {
     fn evaluate(&self, lambda: f32) -> f32 {
-        let result = sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda));
-
-        result
+        sigmoid(evaluate_polynomial(&[self.c0, self.c1, self.c2], lambda))
     }
 
     fn max_value(&self) -> f32 {

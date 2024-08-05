@@ -193,7 +193,7 @@ pub struct CameraTransform {
 impl CameraTransform {
     pub fn new(world_from_camera: Mat4) -> Self {
         let p_camera = world_from_camera.vec_mul(Vec3::ZERO);
-        let world_from_render = Mat4::from_translation(p_camera.into());
+        let world_from_render = Mat4::from_translation(p_camera);
         let render_from_world = world_from_render.inverse();
         let render_from_camera = render_from_world * world_from_camera;
         Self {

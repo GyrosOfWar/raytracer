@@ -3,7 +3,7 @@ use std::ops::Mul;
 
 use crate::vec::Vec3;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Mat3 {
     data: [[f32; 3]; 3],
 }
@@ -17,6 +17,7 @@ impl Mat3 {
     };
 
     /// Create a new matrix.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         m00: f32,
         m01: f32,

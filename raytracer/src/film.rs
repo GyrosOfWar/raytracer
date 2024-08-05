@@ -454,6 +454,7 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
             ],
             false,
         ),
+        #[allow(clippy::approx_constant)]
         PiecewiseLinear::from_interleaved(
             vec![
                 380.0, 0.061, 390.0, 0.061, 400.0, 0.062, 410.0, 0.063, 420.0, 0.064, 430.0, 0.066,
