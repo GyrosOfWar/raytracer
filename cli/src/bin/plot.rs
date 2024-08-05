@@ -1,7 +1,6 @@
 use plotters::prelude::*;
 use raytracer::color::colorspace::S_RGB;
 use raytracer::color::rgb::Rgb;
-use raytracer::color::xyz::CIE_XYZ;
 use raytracer::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
 use raytracer::Result;
 

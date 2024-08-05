@@ -4,7 +4,7 @@ use crate::vec::Vec3;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Mat4 {
-    data: [f32; 16],
+    data: [[f32; 4]; 4],
 }
 
 impl Mat4 {
