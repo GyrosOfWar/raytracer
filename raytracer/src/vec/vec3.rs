@@ -1,6 +1,7 @@
 use std::fmt;
 use std::ops::Neg;
 
+use super::VectorLike;
 use crate::impl_binary_op;
 use crate::vec::Axis;
 
@@ -52,7 +53,7 @@ impl Vec3 {
     }
 
     pub fn dot(&self, rhs: Vec3) -> f32 {
-        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
+        f32::mul_add(self.x, rhs.x, f32::mul_add(self.y, rhs.y, self.z * rhs.z))
     }
 
     pub fn cross(&self, rhs: &Vec3) -> Vec3 {
@@ -115,6 +116,30 @@ impl Point3 {
             Axis::Y => self.y,
             Axis::Z => self.z,
         }
+    }
+
+    pub fn get(&self, i: usize) -> f32 {
+        assert!(i < 3, "index out of bounds");
+        match i {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl VectorLike<3, f32> for Point3 {
+    fn component(&self, index: usize) -> f32 {
+        self.get(index)
+    }
+
+    fn data(&self) -> [f32; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    fn from_data(data: [f32; 3]) -> Self {
+        Point3::new(data[0], data[1], data[2])
     }
 }
 
@@ -215,5 +240,42 @@ impl Neg for Vec3 {
             y: -self.y,
             z: -self.z,
         }
+    }
+}
+
+impl VectorLike<3, f32> for Vec3 {
+    fn component(&self, index: usize) -> f32 {
+        self.get(index)
+    }
+
+    fn data(&self) -> [f32; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    fn from_data(data: [f32; 3]) -> Self {
+        Vec3::new(data[0], data[1], data[2])
+    }
+}
+
+pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+    v - n * Vec3::dot(&v, n) * 2.0
+}
+
+pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f32) -> Vec3 {
+    let cos_theta = (-uv).dot(n).min(1.0);
+    let r_out_perp = (uv + n * cos_theta) * etai_over_etat;
+    let r_out_parallel = n * -(1.0 - r_out_perp.length_squared()).abs().sqrt();
+    r_out_perp + r_out_parallel
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::vec::Vec3;
+
+    #[test]
+    fn test_vec3_dot() {
+        let a = Vec3::new(1.0, 2.0, 3.0);
+        let b = Vec3::new(4.0, 5.0, 6.0);
+        assert_eq!(a.dot(b), 4.0 + 10.0 + 18.0);
     }
 }

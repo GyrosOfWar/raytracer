@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use serde::Deserialize;
 
 use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear};
-use crate::vec::{Vec2, Vec3};
+use crate::vec::{Vec2, Vec3, VectorLike};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: LazyLock<CieXyz> = LazyLock::new(CieXyz::load);
@@ -98,6 +98,30 @@ impl<'a, T: HasWavelength> From<&'a T> for Xyz {
         };
 
         integral / CIE_Y_INTEGRAL
+    }
+}
+
+impl VectorLike<3, f32> for Xyz {
+    fn component(&self, index: usize) -> f32 {
+        assert!(index < 3, "Index out of bounds");
+        match index {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => unreachable!(),
+        }
+    }
+
+    fn data(&self) -> [f32; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    fn from_data(data: [f32; 3]) -> Self {
+        Xyz {
+            x: data[0],
+            y: data[1],
+            z: data[2],
+        }
     }
 }
 

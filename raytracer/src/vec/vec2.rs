@@ -17,11 +17,11 @@ impl Vec2 {
     }
 
     pub fn min(&self, b: Vec2) -> Vec2 {
-        todo!()
+        Vec2::new(self.x.min(b.x), self.y.min(b.y))
     }
 
     pub fn max(&self, b: Vec2) -> Vec2 {
-        todo!()
+        Vec2::new(self.x.max(b.x), self.y.max(b.y))
     }
 }
 
@@ -95,12 +95,12 @@ impl IVec2 {
         Self { x, y }
     }
 
-    pub(crate) fn min(&self, b: IVec2) -> IVec2 {
-        todo!()
+    pub fn min(&self, b: IVec2) -> IVec2 {
+        IVec2::new(self.x.min(b.x), self.y.min(b.y))
     }
 
-    pub(crate) fn max(&self, b: IVec2) -> IVec2 {
-        todo!()
+    pub fn max(&self, b: IVec2) -> IVec2 {
+        IVec2::new(self.x.max(b.x), self.y.max(b.y))
     }
 }
 

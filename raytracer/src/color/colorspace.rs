@@ -182,17 +182,13 @@ impl RgbColorSpace {
         let xyz_r = Xyz::from_xy(r);
         let xyz_g = Xyz::from_xy(g);
         let xyz_b = Xyz::from_xy(b);
-        let rgb = Mat3::from_rows(Vec3::from(xyz_r), Vec3::from(xyz_g), Vec3::from(xyz_b));
+        let rgb = Mat3::from_cols(Vec3::from(xyz_r), Vec3::from(xyz_g), Vec3::from(xyz_b));
         let rgb_inv = rgb.inverse();
         let c = rgb_inv * Vec3::from(w_xyz);
         let c_mat = Mat3::from_diagonal(c);
 
         let xyz_from_rgb = rgb * c_mat;
-        println!("xyz_from_rgb = {}", xyz_from_rgb);
-
         let rgb_from_xyz = xyz_from_rgb.inverse();
-        println!("rgb_from_xyz: {}", rgb_from_xyz);
-
         Self {
             r,
             g,
@@ -289,7 +285,7 @@ mod tests {
         let rgb = srgb.to_rgb(Xyz::new(1.0, 0.0, 0.0));
         let eps = 1e-3;
         assert_approx_eq!(3.2406, rgb.r, eps);
-        assert_approx_eq!(-0.9589, rgb.g, eps);
+        assert_approx_eq!(-0.9692676, rgb.g, eps);
         assert_approx_eq!(0.0557, rgb.b, eps);
 
         let rgb = srgb.to_rgb(Xyz::new(0.0, 1.0, 0.0));

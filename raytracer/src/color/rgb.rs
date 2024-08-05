@@ -2,7 +2,7 @@ use std::ops::{Div, Mul, MulAssign};
 
 use crate::math::{evaluate_polynomial, square};
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
-use crate::vec::{Mat3, Vec3};
+use crate::vec::{Mat3, Vec3, VectorLike};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Rgb {
@@ -52,6 +52,24 @@ impl Div<f32> for Rgb {
 impl From<Rgb> for Vec3 {
     fn from(value: Rgb) -> Self {
         Vec3::new(value.r, value.g, value.b)
+    }
+}
+
+impl VectorLike<3, f32> for Rgb {
+    fn component(&self, index: usize) -> f32 {
+        self.component(index as u8)
+    }
+
+    fn data(&self) -> [f32; 3] {
+        [self.r, self.g, self.b]
+    }
+
+    fn from_data(data: [f32; 3]) -> Self {
+        Rgb {
+            r: data[0],
+            g: data[1],
+            b: data[2],
+        }
     }
 }
 
