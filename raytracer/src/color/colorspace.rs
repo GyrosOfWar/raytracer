@@ -374,19 +374,19 @@ mod tests {
     }
 
     #[test]
-    fn round_trip_conversion_dci_p3() {
-        let color_space = &DCI_P3;
+    fn round_trip_conversion_rec_2020() {
+        let color_space = &REC_2020;
 
         for _ in 0..100 {
-            let r = random();
-            let g = random();
-            let b = random();
+            let r = 0.1 + 0.7 * random();
+            let g = 0.1 + 0.7 * random();
+            let b = 0.1 + 0.7 * random();
             let rgb = Rgb::new(r, g, b);
             let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
 
-            let spectrum = DenselySampled::from_fn(|l| {
-                let rgb = spectrum.evaluate(l);
-                let w = color_space.illuminant.evaluate(l);
+            let spectrum = DenselySampled::from_fn(|lambda| {
+                let rgb = spectrum.evaluate(lambda);
+                let w = color_space.illuminant.evaluate(lambda);
 
                 rgb * w
             });
@@ -402,18 +402,19 @@ mod tests {
     }
 
     #[test]
-    fn round_trip_conversion_rec_2020() {
-        let color_space = &REC_2020;
+    fn round_trip_conversion_aces() {
+        let color_space = &ACES2065_1;
+
         for _ in 0..100 {
-            let r = random();
-            let g = random();
-            let b = random();
+            let r = 0.3 + 0.4 * random();
+            let g = 0.3 + 0.4 * random();
+            let b = 0.3 + 0.4 * random();
             let rgb = Rgb::new(r, g, b);
             let spectrum = RgbAlbedo::with_color_space(color_space, rgb);
 
-            let spectrum = DenselySampled::from_fn(|l| {
-                let rgb = spectrum.evaluate(l);
-                let w = color_space.illuminant.evaluate(l);
+            let spectrum = DenselySampled::from_fn(|lambda| {
+                let rgb = spectrum.evaluate(lambda);
+                let w = color_space.illuminant.evaluate(lambda);
 
                 rgb * w
             });
