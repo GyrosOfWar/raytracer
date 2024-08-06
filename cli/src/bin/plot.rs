@@ -3,6 +3,8 @@ use raytracer::color::colorspace::S_RGB;
 use raytracer::color::rgb::Rgb;
 use raytracer::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
 use raytracer::Result;
+use tracing::Level;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
     let sampled = DenselySampled::from_spectrum(spectrum);
@@ -43,6 +45,11 @@ fn plot_spectrum(spectrum: impl HasWavelength, file_name: &str) -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    tracing_subscriber::fmt::fmt()
+        .with_span_events(FmtSpan::CLOSE)
+        .with_max_level(Level::INFO)
+        .init();
+
     let sigmoid = S_RGB.to_rgb_coefficients(Rgb::new(1.0, 0.0, 0.0));
     let rgb = RgbAlbedo::new(sigmoid);
     plot_spectrum(rgb, "rgb.png")?;

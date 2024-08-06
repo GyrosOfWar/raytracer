@@ -1,9 +1,9 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
-use measure_time::info_time;
 use ndarray::Array5;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
@@ -79,12 +79,12 @@ pub struct CoefficientsFile {
 }
 
 impl CoefficientsFile {
+    #[instrument(skip(path), name = "CoefficientsFile::load")]
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
         use std::fs::File;
         use std::io::BufReader;
 
         use bzip2::bufread::BzDecoder;
-        info_time!("load coefficients file at {}", path.as_ref().display());
 
         let reader = BufReader::new(File::open(path)?);
         let decoder = BzDecoder::new(reader);
@@ -224,6 +224,8 @@ impl RgbColorSpace {
 
 #[cfg(test)]
 mod tests {
+    use tracing_test::traced_test;
+
     use super::{RgbToSpectrumTable, ACES2065_1, DCI_P3, REC_2020, S_RGB};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
@@ -247,6 +249,7 @@ mod tests {
     }
 
     #[test]
+    #[traced_test]
     fn test_load_spectrum_file() -> Result<()> {
         let paths = &[
             "../data/color-spaces/aces.json.bz2",
