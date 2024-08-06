@@ -2,7 +2,7 @@ use std::sync::{Arc, LazyLock};
 
 use parking_lot::Mutex;
 
-use crate::camera::{Bounds2f, Bounds2i};
+use crate::bounds::{Bounds2f, Bounds2i};
 use crate::color::colorspace::{RgbColorSpace, S_RGB};
 use crate::color::rgb::Rgb;
 use crate::color::xyz::{Xyz, CIE_XYZ};
@@ -618,7 +618,7 @@ fn load_swatch_reflectances() -> Vec<Spectrum> {
 #[cfg(test)]
 mod test {
     use super::{FilmBaseParameters, PixelSensor, RgbFilm};
-    use crate::camera::Bounds2i;
+    use crate::bounds::Bounds2i;
     use crate::color::colorspace::{RgbColorSpace, S_RGB};
     use crate::color::rgb::Rgb;
     use crate::film::Film;

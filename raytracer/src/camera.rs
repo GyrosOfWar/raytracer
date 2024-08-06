@@ -1,67 +1,10 @@
 use std::ops::Mul;
 
+use crate::bounds::Bounds2f;
 use crate::film::RgbFilm;
 use crate::ray::{Ray, RayDifferential};
 use crate::spectrum::SampledWavelengths;
-use crate::vec::{vec3, IVec2, Mat4, Point3, Vec2, Vec3};
-
-pub struct Bounds2f {
-    p_min: Vec2,
-    p_max: Vec2,
-}
-
-impl Bounds2f {
-    pub fn new(a: Vec2, b: Vec2) -> Self {
-        Bounds2f {
-            p_min: a.min(b),
-            p_max: a.max(b),
-        }
-    }
-
-    pub fn p_min(&self) -> Vec2 {
-        self.p_min
-    }
-
-    pub fn p_max(&self) -> Vec2 {
-        self.p_max
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Bounds2i {
-    p_min: IVec2,
-    p_max: IVec2,
-}
-
-impl Bounds2i {
-    pub fn new(a: IVec2, b: IVec2) -> Self {
-        Bounds2i {
-            p_min: a.min(b),
-            p_max: a.max(b),
-        }
-    }
-
-    pub fn p_min(&self) -> IVec2 {
-        self.p_min
-    }
-
-    pub fn p_max(&self) -> IVec2 {
-        self.p_max
-    }
-
-    pub fn area(&self) -> i32 {
-        let d = self.p_max - self.p_min;
-        d.x * d.y
-    }
-
-    pub fn x_extent(&self) -> i32 {
-        self.p_max.x - self.p_min.x
-    }
-
-    pub fn y_extent(&self) -> i32 {
-        self.p_max.y - self.p_min.y
-    }
-}
+use crate::vec::{vec3, Mat4, Point3, Vec2, Vec3, VectorLike};
 
 pub struct CameraSample {
     pub p_film: Vec2,
@@ -126,43 +69,109 @@ pub struct Transform {
 }
 
 impl Transform {
-    pub fn new(matrix: Mat4) -> Self {
-        Transform {
-            inverse: matrix.inverse(),
-            matrix,
-        }
+    pub fn new(matrix: Mat4, inverse: Mat4) -> Self {
+        Transform { inverse, matrix }
+    }
+
+    pub fn identity() -> Self {
+        Transform::new(Mat4::IDENTITY, Mat4::IDENTITY)
+    }
+
+    pub fn from_matrix(matrix: Mat4) -> Self {
+        Transform::new(matrix, matrix.inverse())
     }
 
     pub fn translate(x: f32, y: f32, z: f32) -> Self {
-        Transform::new(Mat4::from_translation(vec3(x, y, z)))
+        Transform::new(
+            Mat4::from_translation(vec3(x, y, z)),
+            Mat4::from_translation(vec3(-x, -y, -z)),
+        )
     }
 
     pub fn rotate_x(angle: f32) -> Self {
-        Transform::new(Mat4::from_rotation_x(angle))
+        Transform::new(Mat4::from_rotation_x(angle), Mat4::from_rotation_x(-angle))
     }
 
     pub fn rotate_y(angle: f32) -> Self {
-        Transform::new(Mat4::from_rotation_y(angle))
+        Transform::new(Mat4::from_rotation_y(angle), Mat4::from_rotation_y(-angle))
     }
 
     pub fn rotate_z(angle: f32) -> Self {
-        Transform::new(Mat4::from_rotation_z(angle))
+        Transform::new(Mat4::from_rotation_z(angle), Mat4::from_rotation_z(-angle))
     }
 
     pub fn scale(x: f32, y: f32, z: f32) -> Self {
-        Transform::new(Mat4::from_scale(vec3(x, y, z)))
+        Transform::new(
+            Mat4::from_scale(vec3(x, y, z)),
+            Mat4::from_scale(vec3(1.0 / x, 1.0 / y, 1.0 / z)),
+        )
     }
 
     pub fn uniform_scale(s: f32) -> Self {
         Transform::scale(s, s, s)
     }
 
-    pub fn apply(&self, point: Point3) -> Point3 {
-        self.matrix.vec_mul(point)
+    pub fn look_at(pos: Point3, look: Point3, up: Vec3) -> Self {
+        let mut world_from_camera = Mat4::IDENTITY;
+        world_from_camera.set(0, 3, pos.x);
+        world_from_camera.set(1, 3, pos.y);
+        world_from_camera.set(2, 3, pos.z);
+        world_from_camera.set(3, 3, 1.0);
+
+        let dir = (look - pos).normalized();
+        let right = up.normalized().cross(&dir).normalized();
+        let new_up = dir.cross(&right).normalized();
+        world_from_camera.set(0, 0, right.x);
+        world_from_camera.set(1, 0, right.y);
+        world_from_camera.set(2, 0, right.z);
+        world_from_camera.set(3, 0, 0.);
+        world_from_camera.set(0, 1, new_up.x);
+        world_from_camera.set(1, 1, new_up.y);
+        world_from_camera.set(2, 1, new_up.z);
+        world_from_camera.set(3, 1, 0.);
+        world_from_camera.set(0, 2, dir.x);
+        world_from_camera.set(1, 2, dir.y);
+        world_from_camera.set(2, 2, dir.z);
+        world_from_camera.set(3, 2, 0.);
+
+        let camera_from_world = world_from_camera.inverse();
+
+        Transform::new(camera_from_world, world_from_camera)
     }
 
-    pub fn apply_inverse(&self, point: Point3) -> Point3 {
-        self.inverse.vec_mul(point)
+    pub fn transform_point(&self, p: Point3) -> Point3 {
+        let m = self.matrix;
+        let xp = m.get(0, 0) * p.x + m.get(0, 1) * p.y + m.get(0, 2) * p.z + m.get(0, 3);
+        let yp = m.get(1, 0) * p.x + m.get(1, 1) * p.y + m.get(1, 2) * p.z + m.get(1, 3);
+        let zp = m.get(2, 0) * p.x + m.get(2, 1) * p.y + m.get(2, 2) * p.z + m.get(2, 3);
+        let wp = m.get(3, 0) * p.x + m.get(3, 1) * p.y + m.get(3, 2) * p.z + m.get(3, 3);
+        if wp == 1.0 {
+            Point3::new(xp, yp, zp)
+        } else {
+            Point3::new(xp, yp, zp) / wp
+        }
+    }
+
+    pub fn transform_point_inverse(&self, p: Point3) -> Point3 {
+        let m = self.inverse;
+        let xp = m.get(0, 0) * p.x + m.get(0, 1) * p.y + m.get(0, 2) * p.z + m.get(0, 3);
+        let yp = m.get(1, 0) * p.x + m.get(1, 1) * p.y + m.get(1, 2) * p.z + m.get(1, 3);
+        let zp = m.get(2, 0) * p.x + m.get(2, 1) * p.y + m.get(2, 2) * p.z + m.get(2, 3);
+        let wp = m.get(3, 0) * p.x + m.get(3, 1) * p.y + m.get(3, 2) * p.z + m.get(3, 3);
+        if wp == 1.0 {
+            Point3::new(xp, yp, zp)
+        } else {
+            Point3::new(xp, yp, zp) / wp
+        }
+    }
+
+    pub fn transform_vector(&self, v: Vec3) -> Vec3 {
+        let m = self.matrix;
+        Vec3::new(
+            m.get(0, 0) * v.x + m.get(0, 1) * v.y + m.get(0, 2) * v.z,
+            m.get(1, 0) * v.x + m.get(1, 1) * v.y + m.get(1, 2) * v.z,
+            m.get(2, 0) * v.x + m.get(2, 1) * v.y + m.get(2, 2) * v.z,
+        )
     }
 
     pub fn inverse(self) -> Transform {
@@ -179,7 +188,7 @@ impl Mul for Transform {
     fn mul(self, rhs: Self) -> Self::Output {
         Transform {
             matrix: self.matrix * rhs.matrix,
-            inverse: self.inverse * rhs.inverse,
+            inverse: rhs.inverse * self.inverse,
         }
     }
 }
@@ -197,21 +206,21 @@ impl CameraTransform {
         let render_from_world = world_from_render.inverse();
         let render_from_camera = render_from_world * world_from_camera;
         Self {
-            world_from_render: Transform::new(world_from_render),
-            render_from_camera: Transform::new(render_from_camera),
+            world_from_render: Transform::new(world_from_render, render_from_world),
+            render_from_camera: Transform::new(render_from_camera, render_from_camera.inverse()),
         }
     }
 
     pub fn render_from_camera(&self, p: Point3) -> Point3 {
-        self.render_from_camera.apply(p)
+        self.render_from_camera.transform_point(p)
     }
 
     pub fn camera_from_render(&self, p: Point3) -> Point3 {
-        self.render_from_camera.apply_inverse(p)
+        self.render_from_camera.transform_point_inverse(p)
     }
 
     pub fn render_from_world(&self, p: Point3) -> Point3 {
-        self.world_from_render.apply_inverse(p)
+        self.world_from_render.transform_point_inverse(p)
     }
 
     pub fn camera_from_world(&self) -> Transform {

@@ -42,9 +42,12 @@ pub enum Axis {
 }
 
 pub trait VectorLike<const N: usize, T> {
+    /// Get the component at the given index. Panics if the index is out of bounds.
     fn component(&self, index: usize) -> T;
 
+    /// Get the data as an array.
     fn data(&self) -> [T; N];
 
+    /// Create a new instance from the given data.
     fn from_data(data: [T; N]) -> Self;
 }

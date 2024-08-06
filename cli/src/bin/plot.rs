@@ -50,7 +50,7 @@ fn main() -> Result<()> {
         .with_max_level(Level::INFO)
         .init();
 
-    let sigmoid = S_RGB.to_rgb_coefficients(Rgb::new(1.0, 0.0, 0.0));
+    let sigmoid = S_RGB.to_rgb_coefficients(Rgb::new(0.8, 0.8, 0.0));
     let rgb = RgbAlbedo::new(sigmoid);
     plot_spectrum(rgb, "rgb.png")?;
 

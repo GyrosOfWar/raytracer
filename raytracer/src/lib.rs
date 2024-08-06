@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables, clippy::excessive_precision)]
 
 pub mod aabb;
+pub mod bounds;
 pub mod camera;
 pub mod color;
 pub mod film;

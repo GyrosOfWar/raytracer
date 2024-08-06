@@ -113,9 +113,9 @@ impl RgbToSpectrumTable {
     pub fn evaluate(&self, rgb: Rgb) -> RgbSigmoidPolynomial {
         if rgb.r == rgb.g && rgb.g == rgb.b {
             RgbSigmoidPolynomial {
-                c0: 0.0,
+                c0: (rgb.r - 0.5) / (rgb.r * (1.0 - rgb.r)).sqrt(),
                 c1: 0.0,
-                c2: (rgb.r - 0.5) / (rgb.r * (1.0 - rgb.r)).sqrt(),
+                c2: 0.0,
             }
         } else {
             let max_c = rgb.max_component_index();

@@ -183,16 +183,16 @@ impl_binary_op!(Div : div => (lhs: Vec3, rhs: f32) -> Vec3 {
     )
 });
 
-impl_binary_op!(Add : add => (lhs: Point3, rhs: Point3) -> Point3 {
-    Point3::new(
+impl_binary_op!(Add : add => (lhs: Point3, rhs: Point3) -> Vec3 {
+    VEc3::new(
         lhs.x + rhs.x,
         lhs.y + rhs.y,
         lhs.z + rhs.z,
     )
 });
 
-impl_binary_op!(Sub : sub => (lhs: Point3, rhs: Point3) -> Point3 {
-    Point3::new(
+impl_binary_op!(Sub : sub => (lhs: Point3, rhs: Point3) -> Vec3 {
+    Vec3::new(
         lhs.x - rhs.x,
         lhs.y - rhs.y,
         lhs.z - rhs.z,
@@ -223,8 +223,8 @@ impl_binary_op!(Div : div => (lhs: Point3, rhs: f32) -> Point3 {
     )
 });
 
-impl_binary_op!(Add : add => (lhs: Point3, rhs: Vec3) -> Point3 {
-    Point3::new(
+impl_binary_op!(Add : add => (lhs: Point3, rhs: Vec3) -> Vec3 {
+    Vec3::new(
         lhs.x + rhs.x,
         lhs.y + rhs.y,
         lhs.z + rhs.z,
