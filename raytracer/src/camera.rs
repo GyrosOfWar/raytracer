@@ -4,7 +4,7 @@ use crate::bounds::Bounds2f;
 use crate::film::RgbFilm;
 use crate::ray::{Ray, RayDifferential};
 use crate::spectrum::SampledWavelengths;
-use crate::vec::{vec3, Mat4, Point3, Vec2, Vec3, VectorLike};
+use crate::vec::{vec3, Mat4, Point3, Vec2, Vec3};
 
 pub struct CameraSample {
     pub p_film: Vec2,
