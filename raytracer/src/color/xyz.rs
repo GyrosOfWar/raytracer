@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use serde::Deserialize;
 
 use crate::spectrum::{inner_product, DenselySampled, HasWavelength, PiecewiseLinear};
-use crate::vec::{Vec2, Vec3, VectorLike};
+use crate::vec::{Point2, Vec3, VectorLike};
 
 pub const CIE_Y_INTEGRAL: f32 = 106.856895;
 pub static CIE_XYZ: LazyLock<CieXyz> = LazyLock::new(CieXyz::load);
@@ -37,11 +37,11 @@ impl Xyz {
         Xyz { x, y, z }
     }
 
-    pub fn from_xy(xy: Vec2) -> Self {
+    pub fn from_xy(xy: Point2) -> Self {
         Self::from_xy_y(xy, 1.0)
     }
 
-    pub fn from_xy_y(xy: Vec2, y: f32) -> Self {
+    pub fn from_xy_y(xy: Point2, y: f32) -> Self {
         if xy.y == 0.0 {
             Xyz {
                 x: 0.0,
@@ -57,8 +57,8 @@ impl Xyz {
         }
     }
 
-    pub fn xy(&self) -> Vec2 {
-        Vec2::new(
+    pub fn xy(&self) -> Point2 {
+        Point2::new(
             self.x / (self.x + self.y + self.z),
             self.y / (self.x + self.y + self.z),
         )

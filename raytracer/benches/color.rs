@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use raytracer::{
-    color::{colorspace::S_RGB, rgb::Rgb, xyz::Xyz},
-    spectrum::{DenselySampled, HasWavelength, RgbAlbedo},
-};
+use raytracer::color::colorspace::S_RGB;
+use raytracer::color::rgb::Rgb;
+use raytracer::color::xyz::Xyz;
+use raytracer::spectrum::{DenselySampled, HasWavelength, RgbAlbedo};
 
 pub fn benchmark(c: &mut Criterion) {
     let color_space = &S_RGB;
@@ -23,6 +23,10 @@ pub fn benchmark(c: &mut Criterion) {
     let xyz = Xyz::from(&spectrum);
     c.bench_function("RgbColorSpace::to_rgb", |b| {
         b.iter(|| black_box(color_space.to_rgb(xyz)));
+    });
+
+    c.bench_function("RgbColorSpace::to_rgb_coefficients", |b| {
+        b.iter(|| black_box(color_space.to_rgb_coefficients(rgb)))
     });
 }
 

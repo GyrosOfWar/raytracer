@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# used for reading compressed JSON spectra files
 bzip2 = "0.4.4"
 color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
+# used for the erff function, require for the Gaussian distribution
 libm = "0.2.8"
-ndarray = { version = "0.15.6", features = ["serde"] }
+ndarray = { version = "0.16", features = ["serde"] }
 ordered-float = "4.2.1"
 parking_lot = "0.12.3"
 rand = { version = "0.8.5", features = ["small_rng"] }
@@ -20,7 +22,6 @@ tracing = "0.1.40"
 criterion = "0.5.1"
 tracing-subscriber = "0.3.18"
 tracing-test = "0.2.5"
-
 
 [[bench]]
 name = "color"

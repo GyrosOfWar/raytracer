@@ -4,7 +4,6 @@ use std::ops::Neg;
 use super::VectorLike;
 use crate::impl_binary_op;
 use crate::vec::Axis;
-
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
     pub x: f32,

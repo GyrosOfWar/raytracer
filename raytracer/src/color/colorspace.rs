@@ -9,7 +9,7 @@ use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
 use crate::spectrum::{Spectrum, ILLUM_ACES_D60, STD_ILLUM_D_65};
-use crate::vec::{Mat3, Vec2, Vec3};
+use crate::vec::{Mat3, Point2, Vec3};
 use crate::{util, Result};
 
 const RES: usize = 64;
@@ -20,9 +20,9 @@ pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
             .expect("failed to load srgb table"),
     );
     Arc::new(RgbColorSpace::new(
-        Vec2::new(0.64, 0.33),
-        Vec2::new(0.3, 0.6),
-        Vec2::new(0.15, 0.06),
+        Point2::new(0.64, 0.33),
+        Point2::new(0.3, 0.6),
+        Point2::new(0.15, 0.06),
         STD_ILLUM_D_65.clone(),
         table,
     ))
@@ -34,9 +34,9 @@ pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
             .expect("failed to load dci_p3 table"),
     );
     Arc::new(RgbColorSpace::new(
-        Vec2::new(0.68, 0.32),
-        Vec2::new(0.265, 0.690),
-        Vec2::new(0.15, 0.06),
+        Point2::new(0.68, 0.32),
+        Point2::new(0.265, 0.690),
+        Point2::new(0.15, 0.06),
         STD_ILLUM_D_65.clone(),
         table,
     ))
@@ -49,9 +49,9 @@ pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     );
 
     Arc::new(RgbColorSpace::new(
-        Vec2::new(0.708, 0.292),
-        Vec2::new(0.170, 0.797),
-        Vec2::new(0.131, 0.046),
+        Point2::new(0.708, 0.292),
+        Point2::new(0.170, 0.797),
+        Point2::new(0.131, 0.046),
         STD_ILLUM_D_65.clone(),
         table,
     ))
@@ -63,9 +63,9 @@ pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
             .expect("failed to load aces2065-1 table"),
     );
     Arc::new(RgbColorSpace::new(
-        Vec2::new(0.7347, 0.2653),
-        Vec2::new(0.0, 1.0),
-        Vec2::new(0.0001, -0.077),
+        Point2::new(0.7347, 0.2653),
+        Point2::new(0.0, 1.0),
+        Point2::new(0.0001, -0.077),
         ILLUM_ACES_D60.clone(),
         table,
     ))
@@ -113,9 +113,9 @@ impl RgbToSpectrumTable {
     pub fn evaluate(&self, rgb: Rgb) -> RgbSigmoidPolynomial {
         if rgb.r == rgb.g && rgb.g == rgb.b {
             RgbSigmoidPolynomial {
-                c0: (rgb.r - 0.5) / (rgb.r * (1.0 - rgb.r)).sqrt(),
+                c0: 0.0,
                 c1: 0.0,
-                c2: 0.0,
+                c2: (rgb.r - 0.5) / f32::sqrt(rgb.r * (1.0 - rgb.r)),
             }
         } else {
             let max_c = rgb.max_component_index();
@@ -161,10 +161,10 @@ impl RgbToSpectrumTable {
 
 #[derive(Debug)]
 pub struct RgbColorSpace {
-    pub r: Vec2,
-    pub g: Vec2,
-    pub b: Vec2,
-    pub w: Vec2,
+    pub r: Point2,
+    pub g: Point2,
+    pub b: Point2,
+    pub w: Point2,
     pub illuminant: Arc<Spectrum>,
     pub rgb_from_xyz: Mat3,
     pub xyz_from_rgb: Mat3,
@@ -173,9 +173,9 @@ pub struct RgbColorSpace {
 
 impl RgbColorSpace {
     pub fn new(
-        r: Vec2,
-        g: Vec2,
-        b: Vec2,
+        r: Point2,
+        g: Point2,
+        b: Point2,
         illuminant: Arc<Spectrum>,
         spectrum_table: RgbToSpectrumTable,
     ) -> Self {

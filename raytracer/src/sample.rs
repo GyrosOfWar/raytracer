@@ -45,6 +45,7 @@ pub fn visible_wavelengths_pdf(lambda: f32) -> f32 {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Stratified1D {
     count: usize,
     emitted: usize,
@@ -67,20 +68,26 @@ impl Iterator for Stratified1D {
 
         Some(u)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.count - self.emitted;
+        (remaining, Some(remaining))
+    }
+
+    fn count(self) -> usize {
+        self.count
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::sample::stratified_1d;
+    use crate::util::is_sorted;
 
     #[test]
     fn test_stratified_1d() {
-        let mut iter = stratified_1d(5);
-        assert!(iter.next().is_some());
-        assert!(iter.next().is_some());
-        assert!(iter.next().is_some());
-        assert!(iter.next().is_some());
-        assert!(iter.next().is_some());
-        assert!(iter.next().is_none());
+        let samples: Vec<f32> = stratified_1d(5).collect();
+        assert!(is_sorted(&samples));
+        assert_eq!(samples.len(), 5);
     }
 }

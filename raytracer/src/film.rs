@@ -12,7 +12,7 @@ use crate::spectrum::{
     d_illuminant, inner_product, HasWavelength, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
-use crate::vec::{vec2, vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
+use crate::vec::{vec2, vec3, IVec2, Mat3, Point2, UVec2, Vec3};
 
 static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
@@ -64,6 +64,7 @@ pub struct RgbFilm {
     max_component_value: f32,
     filter_integral: f32,
     output_rgb_from_sensor_rgb: Mat3,
+    // pbrt does not have a lock here but rust safety requires it (for now, might be a better way)
     pixels: Mutex<Vec<Pixel>>,
     filter: ReconstructionFilter,
 }
@@ -313,7 +314,7 @@ fn project_reflectance(
     result / g_integral
 }
 
-fn white_balance(source_white: Vec2, target_white: Vec2) -> Mat3 {
+fn white_balance(source_white: Point2, target_white: Point2) -> Mat3 {
     #[rustfmt::skip]
     let lms_from_xyz: Mat3 = Mat3::new(
          0.8951,  0.2664, -0.1614,
