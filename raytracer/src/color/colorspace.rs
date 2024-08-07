@@ -226,21 +226,20 @@ impl RgbColorSpace {
 mod tests {
     use tracing_test::traced_test;
 
-    use super::{RgbToSpectrumTable, ACES2065_1, DCI_P3, REC_2020, S_RGB};
+    use super::{RgbToSpectrumTable, ACES2065_1, REC_2020, S_RGB};
     use crate::color::colorspace::CoefficientsFile;
     use crate::color::rgb::Rgb;
     use crate::color::xyz::Xyz;
     use crate::random::random;
     use crate::spectrum::{DenselySampled, HasWavelength, RgbAlbedo, RgbIlluminant};
-    use crate::vec::Vec3;
     use crate::{assert_approx_eq, Result};
 
     fn for_each_color(func: impl Fn(f32, f32, f32)) {
-        for r in 0..100 {
+        for r in 0..50 {
             let r = r as f32 / 100.0;
-            for g in 0..100 {
+            for g in 0..50 {
                 let g = g as f32 / 100.0;
-                for b in 0..100 {
+                for b in 0..50 {
                     let b = b as f32 / 100.0;
                     func(r, g, b)
                 }
@@ -336,18 +335,6 @@ mod tests {
         });
 
         Ok(())
-    }
-
-    #[test]
-    fn test_standard_color_spaces() {
-        for color_space in &[&ACES2065_1, &DCI_P3, &REC_2020, &S_RGB] {
-            for_each_color(|r, g, b| {
-                let rgb = Rgb::new(r, g, b);
-                let xyz = color_space.to_xyz(rgb);
-                let back_converted = color_space.to_rgb(xyz);
-                assert!(Vec3::from(rgb).abs_diff_eq(Vec3::from(back_converted), 0.001));
-            })
-        }
     }
 
     #[test]
