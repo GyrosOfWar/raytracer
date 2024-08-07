@@ -1,6 +1,7 @@
 use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4};
 
 use crate::math::{self, square};
+use crate::random::random;
 use crate::vec::{Vec2, Vec3};
 
 pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
@@ -41,5 +42,45 @@ pub fn visible_wavelengths_pdf(lambda: f32) -> f32 {
         0.0
     } else {
         0.0039398042 / square((0.0072 * (lambda - 538.0)).cosh())
+    }
+}
+
+pub struct Stratified1D {
+    count: usize,
+    emitted: usize,
+}
+
+pub fn stratified_1d(count: usize) -> Stratified1D {
+    Stratified1D { count, emitted: 0 }
+}
+
+impl Iterator for Stratified1D {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.emitted == self.count {
+            return None;
+        }
+
+        let u = (self.emitted as f32 + random()) / self.count as f32;
+        self.emitted += 1;
+
+        Some(u)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sample::stratified_1d;
+
+    #[test]
+    fn test_stratified_1d() {
+        let mut iter = stratified_1d(5);
+        assert!(iter.next().is_some());
+        assert!(iter.next().is_some());
+        assert!(iter.next().is_some());
+        assert!(iter.next().is_some());
+        assert!(iter.next().is_some());
+        assert!(iter.next().is_none());
     }
 }

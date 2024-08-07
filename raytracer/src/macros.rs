@@ -30,3 +30,20 @@ macro_rules! assert_approx_eq {
         );
     };
 }
+
+#[macro_export]
+macro_rules! assert_relative_eq {
+    ($left:expr,$right:expr,$eps:expr) => {
+        let err = |val: f32, ref_val: f32| -> f32 { (val - ref_val).abs() / ref_val };
+
+        let rel_err = err($left, $right);
+        assert!(
+            rel_err < $eps,
+            "Values not approximately equal:\n    left = {}\n    right = {}\n    relative error: {} > {}",
+            $left,
+            $right,
+            rel_err,
+            $eps
+        );
+    }
+}

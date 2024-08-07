@@ -9,7 +9,7 @@ use crate::color::xyz::{Xyz, CIE_XYZ};
 use crate::filter::{Filter, ReconstructionFilter};
 use crate::math::linear_least_squares;
 use crate::spectrum::{
-    inner_product, HasWavelength, NamedSpectra, PiecewiseLinear, SampledSpectrum,
+    d_illuminant, inner_product, HasWavelength, PiecewiseLinear, SampledSpectrum,
     SampledWavelengths, Spectrum, LAMBDA_MAX, LAMBDA_MIN,
 };
 use crate::vec::{vec2, vec3, IVec2, Mat3, UVec2, Vec2, Vec3};
@@ -204,7 +204,7 @@ impl PixelSensor {
         exposure_time: f32,
     ) -> PixelSensor {
         let imaging_ratio = exposure_time * iso / 100.0;
-        let d_illum = NamedSpectra::d_illuminant(white_balance);
+        let d_illum = d_illuminant(white_balance);
 
         PixelSensor::with_xyz(color_space, d_illum, imaging_ratio)
     }
@@ -219,7 +219,7 @@ impl PixelSensor {
         exposure_time: f32,
     ) -> PixelSensor {
         let imaging_ratio = exposure_time * iso / 100.0;
-        let d_illum = NamedSpectra::d_illuminant(white_balance);
+        let d_illum = d_illuminant(white_balance);
 
         PixelSensor::new(r_bar, g_bar, b_bar, color_space, d_illum, imaging_ratio)
     }

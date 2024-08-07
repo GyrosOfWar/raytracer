@@ -8,7 +8,7 @@ use tracing::instrument;
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
 use crate::math::lerp;
-use crate::spectrum::{Spectrum, NAMED_SPECTRA};
+use crate::spectrum::{Spectrum, ILLUM_ACES_D60, STD_ILLUM_D_65};
 use crate::vec::{Mat3, Vec2, Vec3};
 use crate::{util, Result};
 
@@ -23,7 +23,7 @@ pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.64, 0.33),
         Vec2::new(0.3, 0.6),
         Vec2::new(0.15, 0.06),
-        NAMED_SPECTRA.std_illum_d65.clone(),
+        STD_ILLUM_D_65.clone(),
         table,
     ))
 });
@@ -37,7 +37,7 @@ pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.68, 0.32),
         Vec2::new(0.265, 0.690),
         Vec2::new(0.15, 0.06),
-        NAMED_SPECTRA.std_illum_d65.clone(),
+        STD_ILLUM_D_65.clone(),
         table,
     ))
 });
@@ -52,7 +52,7 @@ pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.708, 0.292),
         Vec2::new(0.170, 0.797),
         Vec2::new(0.131, 0.046),
-        NAMED_SPECTRA.std_illum_d65.clone(),
+        STD_ILLUM_D_65.clone(),
         table,
     ))
 });
@@ -66,7 +66,7 @@ pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
         Vec2::new(0.7347, 0.2653),
         Vec2::new(0.0, 1.0),
         Vec2::new(0.0001, -0.077),
-        NAMED_SPECTRA.illum_aces_d60.clone(),
+        ILLUM_ACES_D60.clone(),
         table,
     ))
 });
