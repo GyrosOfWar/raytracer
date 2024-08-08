@@ -13,6 +13,7 @@ pub mod random;
 pub mod range;
 pub mod ray;
 pub mod sample;
+pub mod shape;
 pub mod spectrum;
 pub mod transform;
 pub mod util;

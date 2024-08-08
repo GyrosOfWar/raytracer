@@ -79,8 +79,16 @@ impl Transform {
         Transform::new(camera_from_world, world_from_camera)
     }
 
-    pub fn orthographic(z_near: f32, z_far: f32) -> Self {
-        Transform::scale(1.0, 1.0, 1.0 / (z_far - z_near)) * Transform::translate(0.0, 0.0, -z_near)
+    pub fn perspective(fov: f32, n: f32, f: f32) -> Self {
+        let perspective = Mat4::from_rows(
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, f / (f - n), -f * n / (f - n)],
+            [0.0, 0.0, 1.0, 0.0],
+        );
+        let inv_tan_arg = 1.0 / f32::tan(fov.to_radians() / 2.0);
+
+        Transform::scale(inv_tan_arg, inv_tan_arg, 1.0) * Transform::from_matrix(perspective)
     }
 
     pub fn transform_point(&self, p: Point3) -> Point3 {

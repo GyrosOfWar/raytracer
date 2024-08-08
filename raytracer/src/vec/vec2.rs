@@ -25,6 +25,18 @@ impl Vec2 {
     }
 }
 
+impl From<Point2> for Vec2 {
+    fn from(value: Point2) -> Self {
+        Vec2::new(value.x, value.y)
+    }
+}
+
+impl From<Vec2> for Point2 {
+    fn from(value: Vec2) -> Self {
+        Point2::new(value.x, value.y)
+    }
+}
+
 impl fmt::Display for Vec2 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}, {}]", self.x, self.y)

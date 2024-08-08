@@ -4,7 +4,8 @@ use std::ops::Neg;
 use super::VectorLike;
 use crate::impl_binary_op;
 use crate::vec::Axis;
-#[derive(Debug, Copy, Clone)]
+
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -87,13 +88,25 @@ impl Vec3 {
     }
 }
 
+impl From<Point3> for Vec3 {
+    fn from(value: Point3) -> Self {
+        Vec3::new(value.x, value.y, value.z)
+    }
+}
+
+impl From<Vec3> for Point3 {
+    fn from(value: Vec3) -> Self {
+        Point3::new(value.x, value.y, value.z)
+    }
+}
+
 impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}, {}, {}]", self.x, self.y, self.z)
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Point3 {
     pub x: f32,
     pub y: f32,
@@ -101,6 +114,12 @@ pub struct Point3 {
 }
 
 impl Point3 {
+    pub const ZERO: Point3 = Point3 {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+
     pub fn new(x: f32, y: f32, z: f32) -> Self {
         assert!(!x.is_nan(), "x must be finite");
         assert!(!y.is_nan(), "y must be finite");

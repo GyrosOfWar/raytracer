@@ -73,7 +73,7 @@ impl Filter for Gaussian {
     }
 
     fn sample(&self, point: Vec2) -> FilterSample {
-        todo!()
+        todo!("Gaussian::sample")
     }
 }
 

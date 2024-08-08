@@ -1,5 +1,9 @@
 use crate::vec::{Point3, Vec3};
 
+pub trait RayLike {
+    fn evaluate(&self, t: f32) -> Point3;
+}
+
 #[derive(Debug, Clone)]
 pub struct Ray {
     pub origin: Point3,
@@ -11,16 +15,18 @@ impl Ray {
         Ray { origin, direction }
     }
 
-    pub fn evaluate(&self, t: f32) -> Point3 {
-        self.origin + (self.direction * t)
-    }
-
     pub fn with_differentials(self, differential: Differential) -> RayDifferential {
         RayDifferential {
             origin: self.origin,
             direction: self.direction,
             differential,
         }
+    }
+}
+
+impl RayLike for Ray {
+    fn evaluate(&self, t: f32) -> Point3 {
+        self.origin + (self.direction * t)
     }
 }
 
@@ -31,9 +37,32 @@ pub struct RayDifferential {
     pub differential: Differential,
 }
 
-impl RayDifferential {}
+impl RayLike for RayDifferential {
+    fn evaluate(&self, t: f32) -> Point3 {
+        self.origin + (self.direction * t)
+    }
+}
 
-#[derive(Debug, Clone)]
+impl RayDifferential {
+    pub fn new(origin: Point3, direction: Vec3) -> Self {
+        Self {
+            origin,
+            direction,
+            differential: Default::default(),
+        }
+    }
+
+    pub fn scale_differentials(&mut self, s: f32) {
+        self.differential.rx_origin = self.origin + (self.differential.rx_origin - self.origin) * s;
+        self.differential.ry_origin = self.origin + (self.differential.ry_origin - self.origin) * s;
+        self.differential.rx_direction =
+            self.direction + (self.differential.rx_direction - self.direction) * s;
+        self.differential.ry_direction =
+            self.direction + (self.differential.ry_direction - self.direction) * s;
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Differential {
     pub rx_origin: Point3,
     pub ry_origin: Point3,
