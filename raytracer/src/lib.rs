@@ -19,3 +19,9 @@ pub mod util;
 pub mod vec;
 
 pub type Result<T> = color_eyre::Result<T>;
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn foo(x: i32, y: i32) -> i32 {
+    x * y
+}
