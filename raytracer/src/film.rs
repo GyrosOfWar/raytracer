@@ -97,6 +97,10 @@ impl RgbFilm {
         let width = self.pixel_bounds.y_extent();
         (width * location.x + location.y) as usize
     }
+
+    pub fn full_resolution(&self) -> UVec2 {
+        self.full_resolution
+    }
 }
 
 impl Film for RgbFilm {
@@ -133,7 +137,7 @@ impl Film for RgbFilm {
     }
 
     fn sample_wavelenghts(&self, u: f32) -> SampledWavelengths {
-        todo!()
+        SampledWavelengths::sample_uniform(u)
     }
 
     fn pixel_bounds(&self) -> Bounds2i {
