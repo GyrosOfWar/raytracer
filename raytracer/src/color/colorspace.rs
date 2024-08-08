@@ -92,6 +92,13 @@ impl CoefficientsFile {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct CoefficientsFile2 {
+    pub resolution: usize,
+    pub scale: Vec<f32>,
+    pub data: Vec<f32>,
+}
+
 #[derive(Debug)]
 pub struct RgbToSpectrumTable {
     z_nodes: Box<[f32]>,
