@@ -5,13 +5,16 @@ edition = "2021"
 
 [dependencies]
 # used for reading compressed JSON spectra files
+# TOOO get rid of this for wasm compat
 bzip2 = "0.4.4"
 color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
+getrandom = { version = "0.2", features = ["js"], optional = true }
 # used for the erff function, require for the Gaussian distribution
 libm = "0.2.8"
 ndarray = { version = "0.16", features = ["serde"] }
 ordered-float = "4.2.1"
+# wasm?
 parking_lot = "0.12.3"
 rand = { version = "0.8.5", features = ["small_rng"] }
 serde = { version = "1.0.204", features = ["derive"] }
@@ -25,7 +28,7 @@ tracing-subscriber = "0.3.18"
 tracing-test = "0.2.5"
 
 [features]
-wasm = ["wasm-bindgen"]
+wasm = ["wasm-bindgen", "getrandom"]
 
 [[bench]]
 name = "color"
