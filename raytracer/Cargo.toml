@@ -4,9 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# used for reading compressed JSON spectra files
-# TOOO get rid of this for wasm compat
-bzip2 = "0.4.4"
 color-eyre = "0.6.3"
 enum_dispatch = "0.3.13"
 getrandom = { version = "0.2", features = ["js"], optional = true }
@@ -33,3 +30,6 @@ wasm = ["wasm-bindgen", "getrandom"]
 [[bench]]
 name = "color"
 harness = false
+
+[lib]
+crate-type = ["cdylib", "lib"]

@@ -16,7 +16,7 @@ const RES: usize = 64;
 
 pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("../data/color-spaces/srgb.json.bz2")
+        CoefficientsFile::load("../data/color-spaces/srgb.json")
             .expect("failed to load srgb table"),
     );
     Arc::new(RgbColorSpace::new(
@@ -30,7 +30,7 @@ pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("../data/color-spaces/dci_p3.json.bz2")
+        CoefficientsFile::load("../data/color-spaces/dci_p3.json")
             .expect("failed to load dci_p3 table"),
     );
     Arc::new(RgbColorSpace::new(
@@ -44,7 +44,7 @@ pub static DCI_P3: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("../data/color-spaces/rec2020.json.bz2")
+        CoefficientsFile::load("../data/color-spaces/rec2020.json")
             .expect("failed to load rec2020 table"),
     );
 
@@ -59,7 +59,7 @@ pub static REC_2020: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 
 pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
     let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("../data/color-spaces/aces.json.bz2")
+        CoefficientsFile::load("../data/color-spaces/aces.json")
             .expect("failed to load aces2065-1 table"),
     );
     Arc::new(RgbColorSpace::new(
@@ -84,11 +84,8 @@ impl CoefficientsFile {
         use std::fs::File;
         use std::io::BufReader;
 
-        use bzip2::bufread::BzDecoder;
-
         let reader = BufReader::new(File::open(path)?);
-        let decoder = BzDecoder::new(reader);
-        serde_json::from_reader(decoder).map_err(From::from)
+        serde_json::from_reader(reader).map_err(From::from)
     }
 }
 
@@ -258,10 +255,10 @@ mod tests {
     #[traced_test]
     fn test_load_spectrum_file() -> Result<()> {
         let paths = &[
-            "../data/color-spaces/aces.json.bz2",
-            "../data/color-spaces/dci_p3.json.bz2",
-            "../data/color-spaces/rec2020.json.bz2",
-            "../data/color-spaces/srgb.json.bz2",
+            "../data/color-spaces/aces.json",
+            "../data/color-spaces/dci_p3.json",
+            "../data/color-spaces/rec2020.json",
+            "../data/color-spaces/srgb.json",
         ];
 
         for path in paths {
@@ -313,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_create_spectrum_table() -> Result<()> {
-        let file = CoefficientsFile::load("../data/color-spaces/srgb.json.bz2")?;
+        let file = CoefficientsFile::load("../data/color-spaces/srgb.json")?;
         let table = RgbToSpectrumTable::new(file);
         let sigmoid = table.evaluate(Rgb::new(0.0, 1.0, 0.0));
 
@@ -328,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_evaluate_table() -> Result<()> {
-        let file = CoefficientsFile::load("../data/color-spaces/srgb.json.bz2")?;
+        let file = CoefficientsFile::load("../data/color-spaces/srgb.json")?;
         let table = RgbToSpectrumTable::new(file);
 
         for_each_color(|r, g, b| {

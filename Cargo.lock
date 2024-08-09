@@ -1908,7 +1908,6 @@ dependencies = [
 name = "raytracer"
 version = "0.1.0"
 dependencies = [
- "bzip2",
  "color-eyre",
  "criterion",
  "enum_dispatch",

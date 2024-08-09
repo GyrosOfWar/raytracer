@@ -1,3 +1,5 @@
+use core::f32;
+
 use crate::vec::{Mat3, Vec3};
 
 pub fn safe_sqrt(u: f32) -> f32 {
@@ -70,5 +72,49 @@ mod tests {
 
         let coefficients = &[2.0, -6.0, 2.0, -1.0];
         assert_eq!(evaluate_polynomial(coefficients, 3.0), 5.0);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DirectionCone {
+    w: Vec3,
+    cos_theta: f32,
+}
+
+impl Default for DirectionCone {
+    fn default() -> Self {
+        Self {
+            w: Default::default(),
+            cos_theta: f32::INFINITY,
+        }
+    }
+}
+
+impl DirectionCone {
+    pub fn new(w: Vec3, cos_theta: f32) -> Self {
+        DirectionCone {
+            w: w.normalized(),
+            cos_theta,
+        }
+    }
+
+    pub fn from_direction(w: Vec3) -> Self {
+        Self::new(w, 1.0)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cos_theta.is_infinite()
+    }
+
+    pub fn entire_sphere() -> Self {
+        DirectionCone {
+            w: Vec3::new(0.0, 0.0, 1.0),
+            cos_theta: -1.0,
+        }
+    }
+
+    pub fn is_inside(&self, vec: Vec3) -> bool {
+        // Note that for the angle to be smaller, the cosine must be larger.
+        !self.is_empty() && self.w.dot(vec.normalized()) >= self.cos_theta
     }
 }
