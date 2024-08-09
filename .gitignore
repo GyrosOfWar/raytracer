@@ -4,3 +4,5 @@
 *.png
 .DS_Store
 *.glb
+*.bin
+/data/color-spaces/*.json
