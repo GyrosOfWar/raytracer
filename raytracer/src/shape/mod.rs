@@ -1,9 +1,10 @@
-use crate::{
-    bounds::Bounds3,
-    math::DirectionCone,
-    ray::RayLike,
-    vec::{Point2, Point3, Vec3},
-};
+use enum_dispatch::enum_dispatch;
+use triangle_mesh::TriangleRef;
+
+use crate::bounds::Bounds3;
+use crate::math::DirectionCone;
+use crate::ray::RayLike;
+use crate::vec::{Point2, Point3, Vec3};
 
 pub mod triangle_mesh;
 
@@ -28,7 +29,8 @@ pub struct SurfaceInteraction {
     pub uv: Point2,
 }
 
-pub trait Shape {
+#[enum_dispatch]
+pub trait Shape: Send + Sync {
     /// Returns the bounds of the shape.
     fn bounds(&self) -> Bounds3;
 
@@ -49,4 +51,10 @@ pub trait Shape {
 
     /// Get the surface are of the shape
     fn area(&self) -> f32;
+}
+
+#[derive(Debug)]
+#[enum_dispatch(Shape)]
+pub enum Object {
+    TriangleRef(TriangleRef),
 }

@@ -10,6 +10,7 @@ pub mod integrator;
 pub mod js;
 pub mod macros;
 pub mod math;
+pub mod primitive;
 pub mod random;
 pub mod range;
 pub mod ray;

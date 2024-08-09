@@ -1,5 +1,10 @@
-use std::{fmt, sync::Arc};
+use std::fmt;
+use std::sync::Arc;
 
+use super::{Shape, ShapeIntersection, ShapeSample};
+use crate::bounds::Bounds3;
+use crate::math::DirectionCone;
+use crate::ray::RayLike;
 use crate::vec::{Point2, Point3, Vec3};
 
 struct TriangleMeshData {
@@ -121,5 +126,35 @@ impl TriangleRef {
             let uv2 = self.mesh.uv(v2);
             Point2::tri_lerp(uv0, uv1, uv2, a, b)
         }
+    }
+}
+
+impl Shape for TriangleRef {
+    fn bounds(&self) -> Bounds3 {
+        todo!()
+    }
+
+    fn normal_bounds(&self) -> DirectionCone {
+        todo!()
+    }
+
+    fn intersect(&self, ray: impl RayLike, t_max: f32) -> Option<ShapeIntersection> {
+        todo!()
+    }
+
+    fn intersect_p(&self, ray: impl RayLike, t_max: f32) -> bool {
+        todo!()
+    }
+
+    fn sample(&self, u: Point2) -> ShapeSample {
+        todo!()
+    }
+
+    fn pdf(&self) -> f32 {
+        todo!()
+    }
+
+    fn area(&self) -> f32 {
+        todo!()
     }
 }

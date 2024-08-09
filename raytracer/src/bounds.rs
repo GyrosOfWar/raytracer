@@ -1,7 +1,6 @@
 use crate::range::Range;
 use crate::ray::Ray;
-use crate::vec::{Axis, Point3};
-use crate::vec::{IVec2, Vec2};
+use crate::vec::{Axis, IVec2, Point3, Vec2};
 
 pub struct Bounds2f {
     p_min: Vec2,

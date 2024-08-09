@@ -97,7 +97,6 @@ impl Point2 {
     }
 }
 
-
 impl fmt::Display for Point2 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}, {}]", self.x, self.y)
