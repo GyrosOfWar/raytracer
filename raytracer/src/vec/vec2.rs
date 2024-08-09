@@ -78,7 +78,7 @@ impl_binary_op!(Div : div => (lhs: Vec2, rhs: f32) -> Vec2 {
     )
 });
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Point2 {
     pub x: f32,
     pub y: f32,
@@ -88,7 +88,15 @@ impl Point2 {
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
+
+    pub fn tri_lerp(uv0: Point2, uv1: Point2, uv2: Point2, a: f32, b: f32) -> Point2 {
+        Point2 {
+            x: uv0.x * (1.0 - a - b) + uv1.x * a + uv2.x * b,
+            y: uv0.y * (1.0 - a - b) + uv1.y * a + uv2.y * b,
+        }
+    }
 }
+
 
 impl fmt::Display for Point2 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
