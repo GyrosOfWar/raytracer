@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
-use ndarray::Array5;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
@@ -75,7 +74,7 @@ pub static ACES2065_1: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
 pub struct CoefficientsFile {
     pub resolution: usize,
     pub scale: Vec<f32>,
-    pub data: Array5<f32>,
+    pub data: Vec<f32>,
 }
 
 impl CoefficientsFile {
@@ -89,17 +88,10 @@ impl CoefficientsFile {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct CoefficientsFile2 {
-    pub resolution: usize,
-    pub scale: Vec<f32>,
-    pub data: Vec<f32>,
-}
-
 #[derive(Debug)]
 pub struct RgbToSpectrumTable {
     z_nodes: Box<[f32]>,
-    coefficients: Array5<f32>,
+    coefficients: Vec<f32>,
 }
 
 impl RgbToSpectrumTable {
@@ -111,7 +103,18 @@ impl RgbToSpectrumTable {
     }
 
     fn coeff(&self, i1: usize, i2: usize, i3: usize, i4: usize, i5: usize) -> f32 {
-        self.coefficients[(i1, i2, i3, i4, i5)]
+        const DIM_2: usize = RES;
+        const DIM_3: usize = RES;
+        const DIM_4: usize = RES;
+        const DIM_5: usize = 3;
+
+        let index = i1 * DIM_2 * DIM_3 * DIM_4 * DIM_5
+            + i2 * DIM_3 * DIM_4 * DIM_5
+            + i3 * DIM_4 * DIM_5
+            + i4 * DIM_5
+            + i5;
+
+        self.coefficients[index]
     }
 
     pub fn evaluate(&self, rgb: Rgb) -> RgbSigmoidPolynomial {
