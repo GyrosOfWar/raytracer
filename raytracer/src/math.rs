@@ -114,7 +114,7 @@ impl DirectionCone {
     }
 
     pub fn is_inside(&self, vec: Vec3) -> bool {
-        // Note that for the angle to be smaller, the cosine must be larger.
+        // for the angle to be smaller, the cosine must be larger.
         !self.is_empty() && self.w.dot(vec.normalized()) >= self.cos_theta
     }
 }
