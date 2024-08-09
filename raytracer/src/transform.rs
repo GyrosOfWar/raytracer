@@ -1,5 +1,6 @@
 use std::ops::Mul;
 
+use crate::ray::Ray;
 use crate::vec::{vec3, Mat4, Point3, Vec3};
 
 #[derive(Debug, Clone)]
@@ -123,6 +124,18 @@ impl Transform {
             m.get(0, 0) * v.x + m.get(0, 1) * v.y + m.get(0, 2) * v.z,
             m.get(1, 0) * v.x + m.get(1, 1) * v.y + m.get(1, 2) * v.z,
             m.get(2, 0) * v.x + m.get(2, 1) * v.y + m.get(2, 2) * v.z,
+        )
+    }
+
+    pub fn transform_normal(&self, v: Vec3) -> Vec3 {
+        todo!()
+    }
+
+    pub fn transform_ray(&self, ray: Ray) -> Ray {
+        // TODO check against the pbrt source
+        Ray::new(
+            self.transform_point(ray.origin),
+            self.transform_vector(ray.direction),
         )
     }
 

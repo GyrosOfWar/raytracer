@@ -2,6 +2,8 @@ use crate::vec::{Point3, Vec3};
 
 pub trait RayLike {
     fn evaluate(&self, t: f32) -> Point3;
+    fn direction(&self) -> Vec3;
+    fn origin(&self) -> Point3;
 }
 
 #[derive(Debug, Clone)]
@@ -28,6 +30,14 @@ impl RayLike for Ray {
     fn evaluate(&self, t: f32) -> Point3 {
         self.origin + (self.direction * t)
     }
+
+    fn direction(&self) -> Vec3 {
+        self.direction
+    }
+
+    fn origin(&self) -> Point3 {
+        self.origin
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +50,14 @@ pub struct RayDifferential {
 impl RayLike for RayDifferential {
     fn evaluate(&self, t: f32) -> Point3 {
         self.origin + (self.direction * t)
+    }
+
+    fn direction(&self) -> Vec3 {
+        self.direction
+    }
+
+    fn origin(&self) -> Point3 {
+        self.origin
     }
 }
 

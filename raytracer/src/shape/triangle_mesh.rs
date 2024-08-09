@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use super::{Shape, ShapeIntersection, ShapeSample};
+use super::{Shape, ShapeIntersection, ShapeSample, SurfaceInteraction};
 use crate::bounds::Bounds3;
 use crate::math::DirectionCone;
 use crate::ray::RayLike;
@@ -139,11 +139,91 @@ impl Shape for TriangleRef {
     }
 
     fn intersect(&self, ray: impl RayLike, t_max: f32) -> Option<ShapeIntersection> {
-        todo!()
+        let (v0, v1, v2) = self.vertices();
+
+        // Möller-Trumbore algorithm
+        let e1 = v1 - v0;
+        let e2 = v2 - v0;
+        let p = ray.direction().cross(&e2);
+        let det = e1.dot(p);
+
+        if det.abs() < f32::EPSILON {
+            return None;
+        }
+
+        let inv_det = 1.0 / det;
+        let t = ray.origin() - v0;
+        let u = t.dot(p) * inv_det;
+
+        if u < 0.0 || u > 1.0 {
+            return None;
+        }
+
+        let q = t.cross(&e1);
+        let v = ray.direction().dot(q) * inv_det;
+        if v < 0.0 || u + v > 1.0 {
+            return None;
+        }
+
+        let t = e2.dot(q) * inv_det;
+
+        if t >= t_max {
+            return None;
+        }
+
+        let normal = if let Some((n0, n1, n2)) = self.normals() {
+            // interpolate normals based on barycentric coordinates
+            n0 * (1.0 - u - v) + n1 * u + n2 * v
+        } else {
+            todo!()
+            // default_normal(v0, v1, v2)
+        };
+        let uv = self.uv(u, v);
+
+        Some(ShapeIntersection {
+            interaction: SurfaceInteraction {
+                point: ray.evaluate(t),
+                wo: -ray.direction(),
+                normal,
+                uv,
+            },
+            t_hit: t,
+        })
     }
 
     fn intersect_p(&self, ray: impl RayLike, t_max: f32) -> bool {
-        todo!()
+        let (v0, v1, v2) = self.vertices();
+
+        let e1 = v1 - v0;
+        let e2 = v2 - v0;
+        let p = ray.direction().cross(&e2);
+        let det = e1.dot(p);
+
+        if det.abs() < f32::EPSILON {
+            return false;
+        }
+
+        let inv_det = 1.0 / det;
+        let t = ray.origin() - v0;
+        let u = t.dot(p) * inv_det;
+
+        if u < 0.0 || u > 1.0 {
+            return false;
+        }
+
+        let q = t.cross(&e1);
+        let v = ray.direction().dot(q) * inv_det;
+        if v < 0.0 || u + v > 1.0 {
+            return false;
+        }
+
+        let t = e2.dot(q) * inv_det;
+
+        if t >= t_max {
+            return false;
+        }
+
+        true
     }
 
     fn sample(&self, u: Point2) -> ShapeSample {
