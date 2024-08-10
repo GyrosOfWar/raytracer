@@ -71,10 +71,53 @@ impl Transform {
     }
 
     pub fn rotate_from_to(from: Vec3, to: Vec3) -> Self {
-        todo!()
-        // let axis = from.cross(&to).normalized();
-        // let angle = from.dot(to).acos();
-        // Transform::new(Mat4::from_rotation(angle, axis), Mat4::from_rotation(-angle, axis))
+        /*
+        Vector3f refl;
+        if (std::abs(from.x) < 0.72f && std::abs(to.x) < 0.72f)
+            refl = Vector3f(1, 0, 0);
+        else if (std::abs(from.y) < 0.72f && std::abs(to.y) < 0.72f)
+            refl = Vector3f(0, 1, 0);
+        else
+            refl = Vector3f(0, 0, 1);
+
+        // Initialize matrix _r_ for rotation
+        Vector3f u = refl - from, v = refl - to;
+        SquareMatrix<4> r;
+        for (int i = 0; i < 3; ++i)
+            for (int j = 0; j < 3; ++j)
+                // Initialize matrix element _r[i][j]_
+                r[i][j] = ((i == j) ? 1 : 0) - 2 / Dot(u, u) * u[i] * u[j] -
+                          2 / Dot(v, v) * v[i] * v[j] +
+                          4 * Dot(u, v) / (Dot(u, u) * Dot(v, v)) * v[i] * u[j];
+
+        return Transform(r, Transpose(r));
+             */
+
+        let refl = if from.x.abs() < 0.72 && to.x < 0.72 {
+            Vec3::new(1.0, 0.0, 0.0)
+        } else if from.y < 0.72 && to.y < 0.72 {
+            Vec3::new(0.0, 1.0, 0.0)
+        } else {
+            Vec3::new(0.0, 0.0, 1.0)
+        };
+
+        let u = refl - from;
+        let v = refl - to;
+        let mut r = Mat4::IDENTITY;
+        for i in 0..3 {
+            for j in 0..3 {
+                let value = if i == j { 1.0 } else { 0.0 };
+                // uhhh
+                let value = value
+                    - 2.0 / u.dot(u) * u.get(i) * u.get(j)
+                    - 2.0 / v.dot(v) * v.get(i) * v.get(j)
+                    + 4.0 * u.dot(v) / (u.dot(u) * v.dot(v) * v.get(i) * u.get(j));
+
+                r.set(i, j, value);
+            }
+        }
+
+        Transform::new(r, r.transpose())
     }
 
     pub fn scale(x: f32, y: f32, z: f32) -> Self {
