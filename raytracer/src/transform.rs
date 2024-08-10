@@ -67,32 +67,12 @@ impl Transform {
     }
 
     pub fn rotate_on_axis(angle: f32, axis: Vec3) -> Self {
-        todo!()
+        let sin_theta = angle.to_radians().sin();
+        let cos_theta = angle.to_radians().cos();
+        return Self::rotate(sin_theta, cos_theta, axis);
     }
 
     pub fn rotate_from_to(from: Vec3, to: Vec3) -> Self {
-        /*
-        Vector3f refl;
-        if (std::abs(from.x) < 0.72f && std::abs(to.x) < 0.72f)
-            refl = Vector3f(1, 0, 0);
-        else if (std::abs(from.y) < 0.72f && std::abs(to.y) < 0.72f)
-            refl = Vector3f(0, 1, 0);
-        else
-            refl = Vector3f(0, 0, 1);
-
-        // Initialize matrix _r_ for rotation
-        Vector3f u = refl - from, v = refl - to;
-        SquareMatrix<4> r;
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
-                // Initialize matrix element _r[i][j]_
-                r[i][j] = ((i == j) ? 1 : 0) - 2 / Dot(u, u) * u[i] * u[j] -
-                          2 / Dot(v, v) * v[i] * v[j] +
-                          4 * Dot(u, v) / (Dot(u, u) * Dot(v, v)) * v[i] * u[j];
-
-        return Transform(r, Transpose(r));
-             */
-
         let refl = if from.x.abs() < 0.72 && to.x < 0.72 {
             Vec3::new(1.0, 0.0, 0.0)
         } else if from.y < 0.72 && to.y < 0.72 {
@@ -111,7 +91,7 @@ impl Transform {
                 let value = value
                     - 2.0 / u.dot(u) * u.get(i) * u.get(j)
                     - 2.0 / v.dot(v) * v.get(i) * v.get(j)
-                    + 4.0 * u.dot(v) / (u.dot(u) * v.dot(v) * v.get(i) * u.get(j));
+                    + 4.0 * u.dot(v) / (u.dot(u) * v.dot(v)) * v.get(i) * u.get(j);
 
                 r.set(i, j, value);
             }
@@ -206,16 +186,23 @@ impl Transform {
         )
     }
 
-    pub fn transform_normal(&self, v: Vec3) -> Vec3 {
-        todo!()
+    pub fn transform_normal(&self, n: Vec3) -> Vec3 {
+        let Vec3 { x, y, z } = n;
+
+        Vec3::new(
+            self.inverse.get(0, 0) * x + self.inverse.get(1, 0) * y + self.inverse.get(2, 0) * z,
+            self.inverse.get(0, 1) * x + self.inverse.get(1, 1) * y + self.inverse.get(2, 1) * z,
+            self.inverse.get(0, 2) * x + self.inverse.get(1, 2) * y + self.inverse.get(2, 2) * z,
+        )
     }
 
     pub fn transform_ray(&self, ray: Ray) -> Ray {
-        // TODO check against the pbrt source
-        Ray::new(
-            self.transform_point(ray.origin),
-            self.transform_vector(ray.direction),
-        )
+        let o = self.transform_point(ray.origin);
+        let d = self.transform_vector(ray.direction);
+
+        let len_squared = d.length_squared();
+
+        Ray::new(o.into(), d)
     }
 
     pub fn inverse(&self) -> Transform {

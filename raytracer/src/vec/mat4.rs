@@ -58,11 +58,23 @@ impl Mat4 {
     }
 
     pub fn from_cols(c0: [f32; 4], c1: [f32; 4], c2: [f32; 4], c3: [f32; 4]) -> Self {
-        todo!()
+        Self {
+            data: [
+                [c0[0], c1[0], c2[0], c3[0]],
+                [c0[1], c1[1], c2[1], c3[1]],
+                [c0[2], c1[2], c2[2], c3[2]],
+                [c0[3], c1[3], c2[3], c3[3]],
+            ],
+        }
     }
 
-    pub fn col(&self, idx: usize) -> [f32; 4] {
-        todo!()
+    pub fn col(&self, j: usize) -> [f32; 4] {
+        [
+            self.data[0][j],
+            self.data[1][j],
+            self.data[2][j],
+            self.data[3][j],
+        ]
     }
 
     pub fn try_inverse(&self) -> Option<Mat4> {
