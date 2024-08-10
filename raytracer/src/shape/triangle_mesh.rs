@@ -230,7 +230,7 @@ impl Shape for TriangleRef {
         todo!()
     }
 
-    fn pdf(&self) -> f32 {
+    fn pdf(&self, interaction: &SurfaceInteraction) -> f32 {
         todo!()
     }
 

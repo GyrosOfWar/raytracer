@@ -1,4 +1,5 @@
 use enum_dispatch::enum_dispatch;
+use sphere::Sphere;
 use triangle_mesh::TriangleRef;
 
 use crate::bounds::Bounds3;
@@ -6,6 +7,7 @@ use crate::math::DirectionCone;
 use crate::ray::RayLike;
 use crate::vec::{Point2, Point3, Vec3};
 
+pub mod sphere;
 pub mod triangle_mesh;
 
 #[derive(Debug)]
@@ -47,7 +49,7 @@ pub trait Shape: Send + Sync {
     fn sample(&self, u: Point2) -> ShapeSample;
 
     /// Compute the PDF of the shape.
-    fn pdf(&self) -> f32;
+    fn pdf(&self, interaction: &SurfaceInteraction) -> f32;
 
     /// Get the surface are of the shape
     fn area(&self) -> f32;
@@ -57,4 +59,5 @@ pub trait Shape: Send + Sync {
 #[enum_dispatch(Shape)]
 pub enum Object {
     TriangleRef(TriangleRef),
+    Sphere(Sphere),
 }

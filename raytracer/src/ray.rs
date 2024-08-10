@@ -4,6 +4,7 @@ pub trait RayLike: Send + Sync {
     fn evaluate(&self, t: f32) -> Point3;
     fn direction(&self) -> Vec3;
     fn origin(&self) -> Point3;
+    fn differentials(&self) -> Option<&Differential>;
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +39,10 @@ impl RayLike for Ray {
     fn origin(&self) -> Point3 {
         self.origin
     }
+
+    fn differentials(&self) -> Option<&Differential> {
+        None
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -58,6 +63,10 @@ impl RayLike for RayDifferential {
 
     fn origin(&self) -> Point3 {
         self.origin
+    }
+
+    fn differentials(&self) -> Option<&Differential> {
+        Some(&self.differential)
     }
 }
 
