@@ -1,8 +1,8 @@
-use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4};
+use std::f32::consts::{FRAC_1_PI, FRAC_PI_2, FRAC_PI_4, PI};
 
-use crate::math::{self, square};
+use crate::math::{self, safe_sqrt, square};
 use crate::random::random;
-use crate::vec::{Vec2, Vec3};
+use crate::vec::{Point2, Vec2, Vec3};
 
 pub fn sample_uniform_disk_concentric(u: Vec2) -> Vec2 {
     let u_offset = 2.0 * u - Vec2::ONE;
@@ -43,6 +43,13 @@ pub fn visible_wavelengths_pdf(lambda: f32) -> f32 {
     } else {
         0.0039398042 / square((0.0072 * (lambda - 538.0)).cosh())
     }
+}
+
+pub fn sample_uniform_sphere(u: Point2) -> Vec3 {
+    let z = 1.0 - 2.0 * u.x;
+    let r = safe_sqrt(1.0 - square(z));
+    let phi = 2.0 * PI * u.y;
+    Vec3::new(r * f32::cos(phi), r * f32::sin(phi), z)
 }
 
 #[derive(Clone, Debug)]

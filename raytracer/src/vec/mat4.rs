@@ -57,6 +57,14 @@ impl Mat4 {
         }
     }
 
+    pub fn from_cols(c0: [f32; 4], c1: [f32; 4], c2: [f32; 4], c3: [f32; 4]) -> Self {
+        todo!()
+    }
+
+    pub fn col(&self, idx: usize) -> [f32; 4] {
+        todo!()
+    }
+
     pub fn try_inverse(&self) -> Option<Mat4> {
         let a = self.data[0][0];
         let b = self.data[0][1];
@@ -115,6 +123,10 @@ impl Mat4 {
 
     pub fn inverse(&self) -> Mat4 {
         self.try_inverse().expect("Matrix is not invertible")
+    }
+
+    pub fn transpose(&self) -> Mat4 {
+        Mat4::from_cols(self.col(0), self.col(1), self.col(2), self.col(3))
     }
 
     pub fn from_translation(z: Vec3) -> Mat4 {
