@@ -10,7 +10,6 @@ getrandom = { version = "0.2", features = ["js"], optional = true }
 # used for the erff function, require for the Gaussian distribution
 libm = "0.2.8"
 ordered-float = "4.2.1"
-# wasm?
 parking_lot = "0.12.3"
 rand = { version = "0.8.5", features = ["small_rng"] }
 serde = { version = "1.0.204", features = ["derive"] }
