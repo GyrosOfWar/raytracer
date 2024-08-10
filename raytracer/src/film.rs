@@ -16,7 +16,7 @@ use crate::vec::{vec2, vec3, IVec2, Mat3, Point2, UVec2, Vec3};
 
 static SWATCH_REFLECTANCES: LazyLock<Vec<Spectrum>> = LazyLock::new(load_swatch_reflectances);
 
-pub trait Film {
+pub trait Film: Send + Sync {
     fn add_sample(
         &self,
         p_film: IVec2,

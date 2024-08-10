@@ -1,6 +1,6 @@
 use crate::vec::{Point3, Vec3};
 
-pub trait RayLike {
+pub trait RayLike: Send + Sync {
     fn evaluate(&self, t: f32) -> Point3;
     fn direction(&self) -> Vec3;
     fn origin(&self) -> Point3;

@@ -12,7 +12,7 @@ pub enum ReconstructionFilter {
 }
 
 #[enum_dispatch]
-pub trait Filter {
+pub trait Filter: Send + Sync {
     fn radius(&self) -> Vec2;
     fn evaluate(&self, point: Vec2) -> f32;
     fn integral(&self) -> f32;
