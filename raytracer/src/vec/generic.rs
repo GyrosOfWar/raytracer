@@ -2,6 +2,8 @@ use std::ops::Mul;
 
 use num_traits::Float;
 
+use crate::impl_generic_binary_op;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3<T> {
     pub x: T,
@@ -65,34 +67,28 @@ where
     }
 }
 
-impl<T> Mul for Vec3<T>
-where
-    T: Mul<Output = T>,
-{
-    type Output = Vec3<T>;
+impl_generic_binary_op!(Add : add => (lhs: Vec3<T>, rhs: Vec3<T>) -> Vec3<T> {
+    Vec3::new(
+        lhs.x + rhs.x,
+        lhs.y + rhs.y,
+        lhs.z + rhs.z,
+    )
+});
 
-    fn mul(self, rhs: Vec3<T>) -> Vec3<T> {
-        Vec3 {
-            x: self.x * rhs.x,
-            y: self.y * rhs.y,
-            z: self.z * rhs.z,
-        }
-    }
-}
+impl_generic_binary_op!(Mul : mul => (lhs: Vec3<T>, rhs: Vec3<T>) -> Vec3<T> {
+    Vec3::new(
+        lhs.x * rhs.x,
+        lhs.y * rhs.y,
+        lhs.z * rhs.z,
+    )
+});
 
-impl<T, F: Float> Mul<F> for Vec3<T>
-where
-    T: Mul<F, Output = T>,
-{
-    type Output = Vec3<T>;
-
-    fn mul(self, rhs: F) -> Vec3<T> {
-        Vec3 {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
-        }
-    }
-}
+impl_generic_binary_op!(Mul : mul => (lhs: Vec3<T>, rhs: T) -> Vec3<T> {
+    Vec3::new(
+        lhs.x * rhs,
+        lhs.y * rhs,
+        lhs.z * rhs,
+    )
+});
 
 pub type Vec3f = Vec3<f32>;
