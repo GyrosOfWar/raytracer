@@ -1,6 +1,13 @@
-use crate::math::{add_round_up, sub_round_down};
+use std::ops::{Add, Mul, Neg, Sub};
+
+use ordered_float::OrderedFloat;
+
+use crate::math::{
+    add_round_down, add_round_up, mul_round_down, mul_round_up, sub_round_down, sub_round_up,
+};
 use crate::range::Range;
 use crate::ray::Ray;
+use crate::util::{max_value, min_value};
 use crate::vec::{Axis, IVec2, Point3, Vec2};
 
 pub struct Bounds2f {
@@ -231,6 +238,75 @@ impl Interval {
 
     pub fn is_exactly_eq(&self, f: f32) -> bool {
         self.high == f && self.low == f
+    }
+}
+
+impl PartialEq<f32> for Interval {
+    fn eq(&self, other: &f32) -> bool {
+        self.is_exactly_eq(*other)
+    }
+}
+
+impl PartialEq<Interval> for Interval {
+    fn eq(&self, other: &Interval) -> bool {
+        self.low == other.low && self.high == other.high
+    }
+}
+
+impl Neg for Interval {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Interval {
+            high: -self.high,
+            low: -self.low,
+        }
+    }
+}
+
+impl Add for Interval {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            low: add_round_down(self.low, rhs.low),
+            high: add_round_up(self.high, rhs.high),
+        }
+    }
+}
+
+impl Sub for Interval {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            low: sub_round_down(self.low, rhs.low),
+            high: sub_round_up(self.high, rhs.high),
+        }
+    }
+}
+
+impl Mul for Interval {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let lp = [
+            mul_round_down(self.low, rhs.low),
+            mul_round_down(self.high, rhs.low),
+            mul_round_down(self.low, rhs.high),
+            mul_round_down(self.high, rhs.high),
+        ];
+        let hp = [
+            mul_round_up(self.low, rhs.low),
+            mul_round_up(self.high, rhs.low),
+            mul_round_up(self.low, rhs.high),
+            mul_round_up(self.high, rhs.high),
+        ];
+
+        Interval {
+            low: min_value(&lp),
+            high: max_value(&hp),
+        }
     }
 }
 

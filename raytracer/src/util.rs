@@ -33,6 +33,14 @@ pub fn max_value(values: &[f32]) -> f32 {
         .unwrap_or(0.0)
 }
 
+pub fn min_value(values: &[f32]) -> f32 {
+    values
+        .iter()
+        .copied()
+        .max_by_key(|v| OrderedFloat(*v))
+        .unwrap_or(0.0)
+}
+
 pub fn is_sorted<T: PartialOrd>(slice: &[T]) -> bool {
     is_sorted_by(slice, |a, b| a < b)
 }

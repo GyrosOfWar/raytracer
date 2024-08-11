@@ -114,11 +114,24 @@ pub fn sub_round_down(a: f32, b: f32) -> f32 {
     add_round_down(a, -b)
 }
 
+pub fn sub_round_up(a: f32, b: f32) -> f32 {
+    add_round_up(a, -b)
+}
+
+pub fn mul_round_down(a: f32, b: f32) -> f32 {
+    next_float_down(a * b)
+}
+
+pub fn mul_round_up(a: f32, b: f32) -> f32 {
+    next_float_up(a * b)
+}
+
 pub fn next_float_up(mut f: f32) -> f32 {
     // Handle infinity and negative zero
     if f.is_infinite() && f > 0.0 {
         return f;
     }
+
     if f == -0.0 {
         f = 0.0;
     }
@@ -154,7 +167,7 @@ pub fn next_float_down(mut f: f32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::math::evaluate_polynomial;
+    use crate::math::{evaluate_polynomial, next_float_down, next_float_up};
 
     #[test]
     fn test_evaluate_polynomial() {
@@ -166,5 +179,15 @@ mod tests {
 
         let coefficients = &[2.0, -6.0, 2.0, -1.0];
         assert_eq!(evaluate_polynomial(coefficients, 3.0), 5.0);
+    }
+
+    #[test]
+    fn test_float_rounding() {
+        let n = 0.01;
+        let up = next_float_up(n);
+        assert!(up > n);
+
+        let down = next_float_down(n);
+        assert!(down < n);
     }
 }
