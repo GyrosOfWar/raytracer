@@ -11,14 +11,16 @@ pub struct Vec3<T> {
     pub z: T,
 }
 
+impl<T> Vec3<T> {
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { x, y, z }
+    }
+}
+
 impl<T> Vec3<T>
 where
     T: Copy,
 {
-    pub fn new(x: T, y: T, z: T) -> Self {
-        Self { x, y, z }
-    }
-
     pub fn all(v: T) -> Self {
         Vec3::new(v, v, v)
     }
