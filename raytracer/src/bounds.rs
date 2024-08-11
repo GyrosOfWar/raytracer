@@ -1,9 +1,11 @@
-use std::ops::{Add, Mul, Neg, Sub};
+use std::mem;
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use num_traits::{One, Zero};
 
 use crate::math::{
-    add_round_down, add_round_up, mul_round_down, mul_round_up, sub_round_down, sub_round_up,
+    add_round_down, add_round_up, div_round_down, div_round_up, mul_round_down, mul_round_up,
+    sub_round_down, sub_round_up,
 };
 use crate::range::Range;
 use crate::ray::Ray;
@@ -205,18 +207,22 @@ pub struct Interval {
 }
 
 impl Interval {
+    pub fn new(low: f32, high: f32) -> Self {
+        assert!(!low.is_nan(), "low bound must not be NaN");
+        assert!(!high.is_nan(), "high bound must not be NaN");
+
+        Interval { low, high }
+    }
+
     pub fn from_value(v: f32) -> Self {
-        Interval { low: v, high: v }
+        Interval::new(v, v)
     }
 
     pub fn from_value_and_error(v: f32, err: f32) -> Self {
         if err == 0.0 {
             Self::from_value(v)
         } else {
-            Self {
-                low: sub_round_down(v, err),
-                high: add_round_up(v, err),
-            }
+            Interval::new(sub_round_down(v, err), add_round_up(v, err))
         }
     }
 
@@ -238,6 +244,36 @@ impl Interval {
 
     pub fn is_exactly_eq(&self, f: f32) -> bool {
         self.high == f && self.low == f
+    }
+
+    pub fn contains(&self, f: f32) -> bool {
+        (self.low..self.high).contains(&f)
+    }
+
+    pub fn contains_range(&self, rhs: Interval) -> bool {
+        self.low <= rhs.low && self.high >= rhs.high
+    }
+
+    pub fn is_finite(&self) -> bool {
+        self.low.is_finite() && self.high.is_finite()
+    }
+
+    pub fn is_infinite(&self) -> bool {
+        self.low.is_infinite() || self.high.is_infinite()
+    }
+
+    pub fn square(&self) -> Interval {
+        let mut a_low = self.low.abs();
+        let mut a_high = self.high.abs();
+        if a_low > a_high {
+            mem::swap(&mut a_low, &mut a_high);
+        }
+
+        if self.contains(0.0) {
+            Interval::new(0.0, mul_round_up(a_high, a_high))
+        } else {
+            Interval::new(mul_round_down(a_low, a_low), mul_round_up(a_high, a_high))
+        }
     }
 }
 
@@ -319,6 +355,31 @@ impl Sub for Interval {
     }
 }
 
+impl Div for Interval {
+    type Output = Self;
+
+    fn div(self, i: Self) -> Self::Output {
+        if i.contains(0.0) {
+            Interval::new(f32::NEG_INFINITY, f32::INFINITY)
+        } else {
+            let low = [
+                div_round_down(self.low, i.low),
+                div_round_down(self.high, i.low),
+                div_round_down(self.low, i.high),
+                div_round_down(self.high, i.high),
+            ];
+            let high = [
+                div_round_up(self.low, i.low),
+                div_round_up(self.high, i.low),
+                div_round_up(self.low, i.high),
+                div_round_up(self.high, i.high),
+            ];
+
+            Interval::new(min_value(&low), max_value(&high))
+        }
+    }
+}
+
 impl Mul for Interval {
     type Output = Self;
 
@@ -342,5 +403,3 @@ impl Mul for Interval {
         }
     }
 }
-
-pub struct Point3fi {}

@@ -1,3 +1,4 @@
+mod generic;
 mod macros;
 mod mat3;
 mod mat4;

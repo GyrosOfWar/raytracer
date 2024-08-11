@@ -126,6 +126,14 @@ pub fn mul_round_up(a: f32, b: f32) -> f32 {
     next_float_up(a * b)
 }
 
+pub fn div_round_up(a: f32, b: f32) -> f32 {
+    next_float_up(a / b)
+}
+
+pub fn div_round_down(a: f32, b: f32) -> f32 {
+    next_float_down(a / b)
+}
+
 pub fn next_float_up(mut f: f32) -> f32 {
     // Handle infinity and negative zero
     if f.is_infinite() && f > 0.0 {
