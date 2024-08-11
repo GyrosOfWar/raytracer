@@ -58,23 +58,6 @@ pub fn square(x: f32) -> f32 {
     x * x
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::math::evaluate_polynomial;
-
-    #[test]
-    fn test_evaluate_polynomial() {
-        let coefficients = &[0.0, 0.0, 0.0];
-        assert_eq!(evaluate_polynomial(coefficients, 1.0), 0.0);
-
-        let coefficients = &[3.0, 2.0, 1.0];
-        assert_eq!(evaluate_polynomial(coefficients, 1.0), 6.0);
-
-        let coefficients = &[2.0, -6.0, 2.0, -1.0];
-        assert_eq!(evaluate_polynomial(coefficients, 3.0), 5.0);
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct DirectionCone {
     w: Vec3,
@@ -116,5 +99,72 @@ impl DirectionCone {
     pub fn is_inside(&self, vec: Vec3) -> bool {
         // for the angle to be smaller, the cosine must be larger.
         !self.is_empty() && self.w.dot(vec.normalized()) >= self.cos_theta
+    }
+}
+
+pub fn add_round_up(a: f32, b: f32) -> f32 {
+    next_float_up(a + b)
+}
+
+pub fn add_round_down(a: f32, b: f32) -> f32 {
+    next_float_up(a + b)
+}
+
+pub fn sub_round_down(a: f32, b: f32) -> f32 {
+    add_round_down(a, -b)
+}
+
+pub fn next_float_up(mut f: f32) -> f32 {
+    // Handle infinity and negative zero
+    if f.is_infinite() && f > 0.0 {
+        return f;
+    }
+    if f == -0.0 {
+        f = 0.0;
+    }
+
+    let mut bits = f.to_bits();
+    if f >= 0.0 {
+        bits += 1;
+    } else {
+        bits -= 1;
+    }
+
+    f32::from_bits(bits)
+}
+
+pub fn next_float_down(mut f: f32) -> f32 {
+    if f.is_infinite() && f < 0.0 {
+        return f;
+    }
+
+    if f == 0.0 {
+        f = -0.0
+    }
+
+    let mut bits = f.to_bits();
+    if f > 0.0 {
+        bits -= 1;
+    } else {
+        bits += 1;
+    }
+
+    f32::from_bits(bits)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::math::evaluate_polynomial;
+
+    #[test]
+    fn test_evaluate_polynomial() {
+        let coefficients = &[0.0, 0.0, 0.0];
+        assert_eq!(evaluate_polynomial(coefficients, 1.0), 0.0);
+
+        let coefficients = &[3.0, 2.0, 1.0];
+        assert_eq!(evaluate_polynomial(coefficients, 1.0), 6.0);
+
+        let coefficients = &[2.0, -6.0, 2.0, -1.0];
+        assert_eq!(evaluate_polynomial(coefficients, 3.0), 5.0);
     }
 }

@@ -1,3 +1,4 @@
+use crate::math::{add_round_up, sub_round_down};
 use crate::range::Range;
 use crate::ray::Ray;
 use crate::vec::{Axis, IVec2, Point3, Vec2};
@@ -189,3 +190,48 @@ impl Bounds3 {
             && self.z.contains_range(&rhs.z)
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct Interval {
+    low: f32,
+    high: f32,
+}
+
+impl Interval {
+    pub fn from_value(v: f32) -> Self {
+        Interval { low: v, high: v }
+    }
+
+    pub fn from_value_and_error(v: f32, err: f32) -> Self {
+        if err == 0.0 {
+            Self::from_value(v)
+        } else {
+            Self {
+                low: sub_round_down(v, err),
+                high: add_round_up(v, err),
+            }
+        }
+    }
+
+    pub fn upper_bound(&self) -> f32 {
+        self.high
+    }
+
+    pub fn lower_bound(&self) -> f32 {
+        self.low
+    }
+
+    pub fn mid_point(&self) -> f32 {
+        (self.high + self.low) / 2.0
+    }
+
+    pub fn width(&self) -> f32 {
+        self.high - self.low
+    }
+
+    pub fn is_exactly_eq(&self, f: f32) -> bool {
+        self.high == f && self.low == f
+    }
+}
+
+pub struct Point3fi {}
