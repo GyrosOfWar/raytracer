@@ -1,6 +1,6 @@
 use std::ops::{Add, Mul, Neg, Sub};
 
-use ordered_float::OrderedFloat;
+use num_traits::{One, Zero};
 
 use crate::math::{
     add_round_down, add_round_up, mul_round_down, mul_round_up, sub_round_down, sub_round_up,
@@ -250,6 +250,39 @@ impl PartialEq<f32> for Interval {
 impl PartialEq<Interval> for Interval {
     fn eq(&self, other: &Interval) -> bool {
         self.low == other.low && self.high == other.high
+    }
+}
+
+impl One for Interval {
+    fn one() -> Self {
+        Interval::from_value(1.0)
+    }
+}
+
+impl Zero for Interval {
+    fn zero() -> Self {
+        Interval::from_value(0.0)
+    }
+
+    fn is_zero(&self) -> bool {
+        self.is_exactly_eq(0.0)
+    }
+
+    fn set_zero(&mut self) {
+        self.high = 0.0;
+        self.low = 0.0;
+    }
+}
+
+impl From<f32> for Interval {
+    fn from(value: f32) -> Self {
+        Interval::from_value(value)
+    }
+}
+
+impl From<Interval> for f32 {
+    fn from(value: Interval) -> Self {
+        value.mid_point()
     }
 }
 
