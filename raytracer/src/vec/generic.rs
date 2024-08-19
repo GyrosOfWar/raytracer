@@ -2,7 +2,7 @@ use std::ops::Mul;
 
 use num_traits::Float;
 
-use crate::impl_generic_binary_op;
+use crate::{bounds::Interval, impl_generic_binary_op};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3<T> {
@@ -23,6 +23,16 @@ where
 {
     pub fn all(v: T) -> Self {
         Vec3::new(v, v, v)
+    }
+
+    pub fn get(&self, i: usize) -> T {
+        assert!(i < 3, "index out of bounds");
+        match i {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -54,16 +64,6 @@ where
         self * self.length().recip()
     }
 
-    pub fn get(&self, i: usize) -> T {
-        assert!(i < 3, "index out of bounds");
-        match i {
-            0 => self.x,
-            1 => self.y,
-            2 => self.z,
-            _ => unreachable!(),
-        }
-    }
-
     pub fn abs(&self) -> Self {
         Self::new(self.x.abs(), self.y.abs(), self.z.abs())
     }
@@ -85,12 +85,24 @@ impl_generic_binary_op!(Mul : mul => (lhs: Vec3<T>, rhs: Vec3<T>) -> Vec3<T> {
     )
 });
 
-impl_generic_binary_op!(Mul : mul => (lhs: Vec3<T>, rhs: T) -> Vec3<T> {
-    Vec3::new(
-        lhs.x * rhs,
-        lhs.y * rhs,
-        lhs.z * rhs,
-    )
-});
+impl<T> Mul<T> for Vec3<T>
+where
+    T: Copy + Float,
+{
+    type Output = Self;
+
+    fn mul(self, rhs: T) -> Self {
+        Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
 
 pub type Vec3f = Vec3<f32>;
+
+pub struct Point3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+pub type Point3f = Point3<f32>;
+pub type Point3fi = Point3<Interval>;

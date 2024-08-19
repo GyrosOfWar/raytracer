@@ -1,4 +1,4 @@
-use std::ops::{Div, Mul, MulAssign};
+use std::ops::{AddAssign, Div, Mul, MulAssign};
 
 use crate::math::{evaluate_polynomial, square};
 use crate::spectrum::{HasWavelength, LAMBDA_MAX, LAMBDA_MIN};
@@ -22,6 +22,14 @@ impl Mul<f32> for Rgb {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Rgb::new(self.r * rhs, self.g * rhs, self.b * rhs)
+    }
+}
+
+impl AddAssign for Rgb {
+    fn add_assign(&mut self, rhs: Self) {
+        self.r += rhs.r;
+        self.g += rhs.g;
+        self.b += rhs.b;
     }
 }
 
