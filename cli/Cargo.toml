@@ -7,6 +7,7 @@ default-run = "cli"
 [dependencies]
 clap = { version = "4.5.8", features = ["derive"] }
 color-eyre = "0.6.3"
+image = "0.25.2"
 mimalloc = "0.1.43"
 ordered-float = "4.2.1"
 pixels = "0.13.0"
