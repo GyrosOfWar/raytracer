@@ -1,19 +1,17 @@
 use std::path::PathBuf;
+use std::sync::mpsc::{channel, Receiver};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use clap::Parser;
-use image::{Pixel, Rgba};
+use color_eyre::Result;
+use image::{DynamicImage, Rgba32FImage, RgbaImage};
 use mimalloc::MiMalloc;
-use pixels::wgpu::Color;
 use pixels::{Pixels, SurfaceTexture};
-use raytracer::color::colorspace::{RgbColorSpace, S_RGB};
-use raytracer::color::rgb::Rgb;
+use raytracer::color::colorspace::{DCI_P3, S_RGB};
 use raytracer::math::lerp;
 use raytracer::random::random;
-use raytracer::sample::stratified_1d;
-use raytracer::spectrum::{
-    Blackbody, Constant, HasWavelength, RgbAlbedo, SampledWavelengths, Spectrum, LAMBDA_MAX,
-    LAMBDA_MIN,
-};
+use raytracer::spectrum::{Blackbody, HasWavelength, SampledWavelengths};
 use tracing::{error, info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use winit::dpi::LogicalSize;
@@ -57,57 +55,29 @@ pub struct Args {
     pub output: PathBuf,
 }
 
-fn color_to_slice(color: Rgb) -> [u8; 4] {
-    let r = (color.r * 255.0).round() as u8;
-    let g = (color.g * 255.0).round() as u8;
-    let b = (color.b * 255.0).round() as u8;
-    [r, g, b, 255]
-}
+fn create_spectrum_image(image: &mut Rgba32FImage) {
+    let cs = &DCI_P3;
+    let w = image.width();
 
-fn create_spectrum_image(w: u32, h: u32) -> Vec<u8> {
-    use image::RgbaImage;
-
-    let cs = &S_RGB;
-
-    let mut image = RgbaImage::new(w, h);
+    let start = Instant::now();
     for (x, _, pixel) in image.enumerate_pixels_mut() {
         let x_f = x as f32 / w as f32;
         let temp = lerp(x_f, 1500.0, 9000.0);
         let spectrum = Blackbody::new(temp);
-        let mut color = Rgb::ZERO;
-        for _ in 0..100 {
-            let u = random();
-            let wavelengths = SampledWavelengths::sample_visible(u);
-            let sample = spectrum.sample(&wavelengths);
-            color += sample.to_rgb(wavelengths, cs);
-        }
-
-        color = color / 100.0;
-
-        pixel.0 = [
-            (color.r * 255.0).round() as u8,
-            (color.g * 255.0).round() as u8,
-            (color.b * 255.0).round() as u8,
-            255,
-        ];
+        let u = random();
+        let wavelengths = SampledWavelengths::sample_visible(u);
+        let sample = spectrum.sample(&wavelengths);
+        let color = sample.to_rgb(wavelengths, cs);
+        pixel.0[0] += color.r;
+        pixel.0[1] += color.g;
+        pixel.0[2] += color.b;
+        pixel.0[3] = 1.0;
     }
-
-    image.into_vec()
+    let elapsed = start.elapsed();
+    info!("took {elapsed:?} to make image");
 }
 
-fn main() -> color_eyre::Result<()> {
-    color_eyre::install()?;
-
-    let args = Args::parse();
-    tracing_subscriber::fmt::fmt()
-        .with_span_events(FmtSpan::CLOSE)
-        .with_max_level(if args.debug {
-            Level::DEBUG
-        } else {
-            Level::INFO
-        })
-        .init();
-
+fn render_image(rx: Receiver<RgbaImage>) -> Result<()> {
     let event_loop = EventLoop::new();
     let input = WinitInputHelper::new();
 
@@ -127,13 +97,13 @@ fn main() -> color_eyre::Result<()> {
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
 
-    let image = create_spectrum_image(WIDTH, HEIGHT);
-
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
-            let frame = pixels.frame_mut();
-            frame.copy_from_slice(&image);
+            if let Ok(image) = rx.try_recv() {
+                let frame = pixels.frame_mut();
+                frame.copy_from_slice(&image);
+            }
 
             if let Err(err) = pixels.render() {
                 error!("failed to render frame: {err}");
@@ -158,4 +128,40 @@ fn main() -> color_eyre::Result<()> {
 
         window.request_redraw();
     });
+}
+
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+
+    let args = Args::parse();
+    tracing_subscriber::fmt::fmt()
+        .with_span_events(FmtSpan::CLOSE)
+        .with_max_level(if args.debug {
+            Level::DEBUG
+        } else {
+            Level::INFO
+        })
+        .init();
+
+    let (rx, tx) = channel();
+    thread::spawn(move || {
+        let mut buffer = Rgba32FImage::new(WIDTH, HEIGHT);
+        for sample in 0.. {
+            info!("sample: {sample}");
+            create_spectrum_image(&mut buffer);
+            let mut image = buffer.clone();
+            for (_, _, pixel) in image.enumerate_pixels_mut() {
+                let n = sample as f32;
+                pixel.0[0] /= n;
+                pixel.0[1] /= n;
+                pixel.0[2] /= n;
+            }
+
+            rx.send(DynamicImage::ImageRgba32F(image).into_rgba8())
+                .expect("can't send");
+        }
+    });
+    render_image(tx)?;
+
+    Ok(())
 }
