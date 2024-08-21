@@ -1,17 +1,17 @@
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use clap::Parser;
 use color_eyre::Result;
 use image::{DynamicImage, Rgba32FImage, RgbaImage};
 use mimalloc::MiMalloc;
 use pixels::{Pixels, SurfaceTexture};
-use raytracer::color::colorspace::{DCI_P3, S_RGB};
-use raytracer::math::lerp;
+use raytracer::color::colorspace::DCI_P3;
+use raytracer::color::rgb::Rgb;
 use raytracer::random::random;
-use raytracer::spectrum::{Blackbody, HasWavelength, SampledWavelengths};
+use raytracer::spectrum::{HasWavelength, RgbAlbedo, SampledWavelengths};
 use tracing::{error, info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use winit::dpi::LogicalSize;
@@ -62,8 +62,14 @@ fn create_spectrum_image(image: &mut Rgba32FImage) {
     let start = Instant::now();
     for (x, _, pixel) in image.enumerate_pixels_mut() {
         let x_f = x as f32 / w as f32;
-        let temp = lerp(x_f, 1500.0, 9000.0);
-        let spectrum = Blackbody::new(temp);
+        let spectrum = RgbAlbedo::with_color_space(
+            cs,
+            Rgb {
+                r: x_f,
+                g: 0.0,
+                b: 0.0,
+            },
+        );
         let u = random();
         let wavelengths = SampledWavelengths::sample_visible(u);
         let sample = spectrum.sample(&wavelengths);
@@ -146,7 +152,7 @@ fn main() -> color_eyre::Result<()> {
     let (rx, tx) = channel();
     thread::spawn(move || {
         let mut buffer = Rgba32FImage::new(WIDTH, HEIGHT);
-        for sample in 0.. {
+        for sample in 1.. {
             info!("sample: {sample}");
             create_spectrum_image(&mut buffer);
             let mut image = buffer.clone();

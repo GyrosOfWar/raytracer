@@ -2,7 +2,8 @@ use std::ops::Mul;
 
 use num_traits::Float;
 
-use crate::{bounds::Interval, impl_generic_binary_op};
+use crate::bounds::Interval;
+use crate::impl_generic_binary_op;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3<T> {
