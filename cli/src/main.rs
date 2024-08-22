@@ -57,20 +57,22 @@ pub struct Args {
 
 fn create_spectrum_image(image: &mut Rgba32FImage) {
     let cs = &DCI_P3;
-    let w = image.width();
+    let w = image.width() as f32;
+    let h = image.height() as f32;
 
     let start = Instant::now();
-    for (x, _, pixel) in image.enumerate_pixels_mut() {
-        let x_f = x as f32 / w as f32;
+    let u = random();
+    for (x, y, pixel) in image.enumerate_pixels_mut() {
+        let x_f = x as f32 / w;
+        let y_f = y as f32 / h;
         let spectrum = RgbAlbedo::with_color_space(
             cs,
             Rgb {
                 r: x_f,
                 g: 0.0,
-                b: 0.0,
+                b: y_f,
             },
         );
-        let u = random();
         let wavelengths = SampledWavelengths::sample_visible(u);
         let sample = spectrum.sample(&wavelengths);
         let color = sample.to_rgb(wavelengths, cs);
