@@ -85,6 +85,17 @@ fn create_spectrum_image(image: &mut Rgba32FImage) {
     info!("took {elapsed:?} to make image");
 }
 
+fn save_image(image: &Rgba32FImage) {
+    let image = DynamicImage::ImageRgba32F(image.clone());
+
+    rayon::spawn(move || {
+        let image = image.into_rgba8();
+        if let Err(e) = image.save("image.png") {
+            error!("failed to save image: {e}");
+        }
+    });
+}
+
 fn render_image(rx: Receiver<RgbaImage>) -> Result<()> {
     let event_loop = EventLoop::new();
     let input = WinitInputHelper::new();
@@ -163,6 +174,10 @@ fn main() -> color_eyre::Result<()> {
                 pixel.0[0] /= n;
                 pixel.0[1] /= n;
                 pixel.0[2] /= n;
+            }
+
+            if sample % 50 == 0 {
+                save_image(&image);
             }
 
             rx.send(DynamicImage::ImageRgba32F(image).into_rgba8())
