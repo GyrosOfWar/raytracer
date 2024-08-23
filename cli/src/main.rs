@@ -8,10 +8,10 @@ use color_eyre::Result;
 use image::{DynamicImage, Rgba32FImage, RgbaImage};
 use mimalloc::MiMalloc;
 use pixels::{Pixels, SurfaceTexture};
-use raytracer::color::colorspace::DCI_P3;
+use raytracer::color::colorspace::{DCI_P3, S_RGB};
 use raytracer::color::rgb::Rgb;
 use raytracer::random::random;
-use raytracer::spectrum::{HasWavelength, RgbAlbedo, SampledWavelengths};
+use raytracer::spectrum::{HasWavelength, RgbAlbedo, SampledWavelengths, Spectrum};
 use tracing::{error, info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use winit::dpi::LogicalSize;
@@ -55,7 +55,7 @@ pub struct Args {
     pub output: PathBuf,
 }
 
-fn create_spectrum_image(image: &mut Rgba32FImage) {
+fn create_spectrum_image(image: &mut Rgba32FImage, get_spectrum: impl Fn(f32, f32) -> Spectrum) {
     let cs = &DCI_P3;
     let w = image.width() as f32;
     let h = image.height() as f32;
@@ -65,14 +65,7 @@ fn create_spectrum_image(image: &mut Rgba32FImage) {
     for (x, y, pixel) in image.enumerate_pixels_mut() {
         let x_f = x as f32 / w;
         let y_f = y as f32 / h;
-        let spectrum = RgbAlbedo::with_color_space(
-            cs,
-            Rgb {
-                r: x_f,
-                g: 0.0,
-                b: y_f,
-            },
-        );
+        let spectrum = get_spectrum(x_f, y_f);
         let wavelengths = SampledWavelengths::sample_visible(u);
         let sample = spectrum.sample(&wavelengths);
         let color = sample.to_rgb(wavelengths, cs);
@@ -165,9 +158,14 @@ fn main() -> color_eyre::Result<()> {
     let (rx, tx) = channel();
     thread::spawn(move || {
         let mut buffer = Rgba32FImage::new(WIDTH, HEIGHT);
+        let cs = &S_RGB;
+        let get_rgb = |x: f32, y: f32| -> Spectrum {
+            RgbAlbedo::with_color_space(cs, Rgb { r: x, g: 0.0, b: y }).into()
+        };
+
         for sample in 1.. {
             info!("sample: {sample}");
-            create_spectrum_image(&mut buffer);
+            create_spectrum_image(&mut buffer, get_rgb);
             let mut image = buffer.clone();
             for (_, _, pixel) in image.enumerate_pixels_mut() {
                 let n = sample as f32;
