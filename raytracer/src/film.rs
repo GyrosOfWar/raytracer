@@ -1,5 +1,6 @@
 use std::sync::{Arc, LazyLock};
 
+use num_traits::Zero;
 use parking_lot::Mutex;
 
 use crate::bounds::{Bounds2f, Bounds2i};
@@ -304,7 +305,7 @@ fn project_reflectance(
     b2: &impl HasWavelength,
     b3: &impl HasWavelength,
 ) -> Vec3 {
-    let mut result = Vec3::ZERO;
+    let mut result = Vec3::zero();
     let mut g_integral = 0.0;
 
     for lambda in (LAMBDA_MIN as usize)..=(LAMBDA_MAX as usize) {

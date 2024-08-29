@@ -1,10 +1,11 @@
-use std::ops::{Add, Mul};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use num_traits::{Float, One, Zero};
 
+use super::{Axis, VectorLike};
 use crate::bounds::Interval;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Vec3<T> {
     pub x: T,
     pub y: T,
@@ -32,6 +33,14 @@ where
             1 => self.y,
             2 => self.z,
             _ => unreachable!(),
+        }
+    }
+
+    pub fn at(&self, axis: Axis) -> T {
+        match axis {
+            Axis::X => self.x,
+            Axis::Y => self.y,
+            Axis::Z => self.z,
         }
     }
 }
@@ -69,6 +78,20 @@ where
     }
 }
 
+impl<T: Copy> VectorLike<3, T> for Vec3<T> {
+    fn component(&self, index: usize) -> T {
+        self.get(index)
+    }
+
+    fn data(&self) -> [T; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    fn from_data(data: [T; 3]) -> Self {
+        Vec3::new(data[0], data[1], data[2])
+    }
+}
+
 impl<T> One for Vec3<T>
 where
     T: One + Copy,
@@ -91,17 +114,6 @@ where
     }
 }
 
-impl<T> Mul<T> for Vec3<T>
-where
-    T: Copy + Mul<Output = T>,
-{
-    type Output = Vec3<T>;
-
-    fn mul(self, rhs: T) -> Vec3<T> {
-        Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
-    }
-}
-
 impl<T> Add for Vec3<T>
 where
     T: Copy + Add<Output = T>,
@@ -110,6 +122,61 @@ where
 
     fn add(self, rhs: Self) -> Self::Output {
         Vec3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl<T> Add<T> for Vec3<T>
+where
+    T: Copy + Add<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn add(self, rhs: T) -> Vec3<T> {
+        Vec3::new(self.x + rhs, self.y + rhs, self.z + rhs)
+    }
+}
+
+impl<T> Sub for Vec3<T>
+where
+    T: Copy + Sub<Output = T>,
+{
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl<T> Sub for &Vec3<T>
+where
+    T: Copy + Sub<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl<T> Sub<T> for Vec3<T>
+where
+    T: Copy + Sub<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn sub(self, rhs: T) -> Vec3<T> {
+        Vec3::new(self.x - rhs, self.y - rhs, self.z - rhs)
+    }
+}
+
+impl<T> Neg for Vec3<T>
+where
+    T: Copy + Neg<Output = T>,
+{
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Vec3::new(-self.x, -self.y, -self.z)
     }
 }
 
@@ -124,6 +191,17 @@ where
     }
 }
 
+impl<T> Mul<T> for Vec3<T>
+where
+    T: Copy + Mul<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn mul(self, rhs: T) -> Vec3<T> {
+        Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
 impl<T> Mul<T> for &Vec3<T>
 where
     T: Copy + Mul<Output = T>,
@@ -135,7 +213,40 @@ where
     }
 }
 
-#[derive(Debug)]
+impl<T> Div for Vec3<T>
+where
+    T: Copy + Div<Output = T>,
+{
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        Vec3::new(self.x / rhs.x, self.y / rhs.y, self.z / rhs.z)
+    }
+}
+
+impl<T> Div<T> for Vec3<T>
+where
+    T: Copy + Div<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn div(self, rhs: T) -> Vec3<T> {
+        Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
+    }
+}
+
+impl<T> Div<T> for &Vec3<T>
+where
+    T: Copy + Div<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn div(self, rhs: T) -> Vec3<T> {
+        Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Point3<T> {
     pub x: T,
     pub y: T,
@@ -143,8 +254,57 @@ pub struct Point3<T> {
 }
 
 impl<T> Point3<T> {
-    fn new(x: T, y: T, z: T) -> Self {
+    pub fn new(x: T, y: T, z: T) -> Self {
         Self { x, y, z }
+    }
+}
+
+impl<T: Copy> VectorLike<3, T> for Point3<T> {
+    fn component(&self, index: usize) -> T {
+        self.get(index)
+    }
+
+    fn data(&self) -> [T; 3] {
+        [self.x, self.y, self.z]
+    }
+
+    fn from_data(data: [T; 3]) -> Self {
+        Point3::new(data[0], data[1], data[2])
+    }
+}
+
+impl<T: Copy> Point3<T> {
+    pub fn at(&self, axis: Axis) -> T {
+        match axis {
+            Axis::X => self.x,
+            Axis::Y => self.y,
+            Axis::Z => self.z,
+        }
+    }
+
+    pub fn get(&self, index: usize) -> T {
+        match index {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => panic!("index out of bounds"),
+        }
+    }
+
+    pub fn all(v: T) -> Self {
+        Point3::new(v, v, v)
+    }
+}
+
+impl<T: Zero + Copy> Point3<T> {
+    pub fn zero() -> Self {
+        Point3::all(T::zero())
+    }
+}
+
+impl<T: One + Copy> Point3<T> {
+    pub fn one() -> Self {
+        Point3::all(T::one())
     }
 }
 
@@ -157,6 +317,50 @@ impl<T> From<Vec3<T>> for Point3<T> {
 impl<T> From<Point3<T>> for Vec3<T> {
     fn from(value: Point3<T>) -> Self {
         Vec3::new(value.x, value.y, value.z)
+    }
+}
+
+impl<T> Add<T> for Point3<T>
+where
+    T: Copy + Add<Output = T>,
+{
+    type Output = Point3<T>;
+
+    fn add(self, rhs: T) -> Self::Output {
+        Point3::new(self.x + rhs, self.y + rhs, self.z + rhs)
+    }
+}
+
+impl<T> Add<Vec3<T>> for Point3<T>
+where
+    T: Copy + Add<Output = T>,
+{
+    type Output = Point3<T>;
+
+    fn add(self, rhs: Vec3<T>) -> Self::Output {
+        Point3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl<T> Sub for Point3<T>
+where
+    T: Copy + Sub<Output = T>,
+{
+    type Output = Vec3<T>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl<T> Div<T> for Point3<T>
+where
+    T: Copy + Div<Output = T>,
+{
+    type Output = Point3<T>;
+
+    fn div(self, rhs: T) -> Self::Output {
+        Point3::new(self.x / rhs, self.y / rhs, self.z / rhs)
     }
 }
 

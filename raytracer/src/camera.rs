@@ -1,3 +1,5 @@
+use num_traits::Zero;
+
 use crate::bounds::Bounds2f;
 use crate::film::{Film, RgbFilm};
 use crate::filter::Filter;
@@ -89,7 +91,7 @@ impl PerspectiveCamera {
     ) -> Option<Ray> {
         let p_film = Point3::new(sample.p_film.x, sample.p_film.y, 0.0);
         let p_camera = self.camera_from_raster.transform_point(p_film);
-        let mut ray = Ray::new(Point3::ZERO, Vec3::from(p_camera).normalized());
+        let mut ray = Ray::new(Point3::zero(), Vec3::from(p_camera).normalized());
         if self.lens_radius > 0.0 {
             let p_lens = self.lens_radius * sample_uniform_disk_concentric(sample.p_lens);
             let ft = self.focal_distance / ray.direction.z;
@@ -111,7 +113,7 @@ impl PerspectiveCamera {
         let p_film = Point3::new(sample.p_film.x, sample.p_film.y, 0.0);
         let p_camera = self.camera_from_raster.transform_point(p_film);
         let dir = Vec3::from(p_camera).normalized();
-        let mut ray = RayDifferential::new(Point3::ZERO, dir);
+        let mut ray = RayDifferential::new(Point3::zero(), dir);
         if self.lens_radius > 0.0 {
             let p_lens = self.lens_radius * sample_uniform_disk_concentric(sample.p_lens);
             let ft = self.focal_distance / ray.direction.z;
@@ -126,13 +128,13 @@ impl PerspectiveCamera {
 
             let dx = Vec3::from(p_camera + self.dx_camera).normalized();
             let ft = self.focal_distance / dx.z;
-            let p_focus = Point3::ZERO + (ft * dx);
+            let p_focus = Point3::zero() + (dx * ft);
             ray.differential.rx_origin = Point3::new(p_lens.x, p_lens.y, 0.0);
             ray.differential.rx_direction = (p_focus - ray.differential.rx_origin).normalized();
 
             let dy = Vec3::from(p_camera + self.dy_camera).normalized();
             let ft = self.focal_distance / dy.z;
-            let p_focus = Point3::ZERO + (ft * dy);
+            let p_focus = Point3::zero() + (dy * ft);
             ray.differential.ry_origin = Point3::new(p_lens.x, p_lens.y, 0.0);
             ray.differential.ry_direction = (p_focus - ray.differential.ry_origin).normalized();
         } else {
@@ -154,7 +156,7 @@ pub struct CameraTransform {
 
 impl CameraTransform {
     pub fn new(world_from_camera: Mat4) -> Self {
-        let p_camera = world_from_camera.vec_mul(Vec3::ZERO);
+        let p_camera = world_from_camera.vec_mul(Vec3::zero());
         let world_from_render = Mat4::from_translation(p_camera);
         let render_from_world = world_from_render.inverse();
         let render_from_camera = render_from_world * world_from_camera;
