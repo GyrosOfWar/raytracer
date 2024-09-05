@@ -69,7 +69,7 @@ impl Transform {
     pub fn rotate_on_axis(angle: f32, axis: Vec3) -> Self {
         let sin_theta = angle.to_radians().sin();
         let cos_theta = angle.to_radians().cos();
-        return Self::rotate(sin_theta, cos_theta, axis);
+        Self::rotate(sin_theta, cos_theta, axis)
     }
 
     pub fn rotate_from_to(from: Vec3, to: Vec3) -> Self {
@@ -202,7 +202,7 @@ impl Transform {
 
         let len_squared = d.length_squared();
 
-        Ray::new(o.into(), d)
+        Ray::new(o, d)
     }
 
     pub fn inverse(&self) -> Transform {

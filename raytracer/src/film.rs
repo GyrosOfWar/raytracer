@@ -79,7 +79,7 @@ impl RgbFilm {
         let filter_integral = parameters.filter.integral();
         let pixels = vec![Pixel::default(); parameters.pixel_bounds.area() as usize];
         let output_rgb_from_sensor_rgb =
-            color_space.rgb_from_xyz * parameters.sensor.xyz_from_sensor_rgb().clone();
+            color_space.rgb_from_xyz * *parameters.sensor.xyz_from_sensor_rgb();
         RgbFilm {
             full_resolution: parameters.full_resolution,
             pixel_bounds: parameters.pixel_bounds,

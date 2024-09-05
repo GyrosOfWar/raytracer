@@ -364,6 +364,33 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Vec2<T> {
+    pub x: T,
+    pub y: T,
+}
+
+impl<T> Vec2<T> {
+    pub fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+impl<T: Copy> Vec2<T> {
+    pub fn all(v: T) -> Self {
+        Vec2::new(v, v)
+    }
+
+    pub fn get(&self, i: usize) -> T {
+        assert!(i < 2, "index out of bounds");
+        match i {
+            0 => self.x,
+            1 => self.y,
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub type Vec3f = Vec3<f32>;
 pub type Point3f = Point3<f32>;
 pub type Point3fi = Point3<Interval>;

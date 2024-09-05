@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::Mul;
+use std::ops::{Index, Mul};
 
 use crate::vec::Vec3;
 
@@ -164,5 +164,13 @@ impl Mul<Vec3> for Mat3 {
 
     fn mul(self, rhs: Vec3) -> Self::Output {
         self.vec_mul(rhs)
+    }
+}
+
+impl Index<usize> for Mat3 {
+    type Output = [f32; 3];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
     }
 }
