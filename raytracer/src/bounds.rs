@@ -403,3 +403,35 @@ impl Mul for Interval {
         }
     }
 }
+
+impl Add<f32> for Interval {
+    type Output = Self;
+
+    fn add(self, rhs: f32) -> Self::Output {
+        self + Interval::from_value(rhs)
+    }
+}
+
+impl Sub<f32> for Interval {
+    type Output = Self;
+
+    fn sub(self, rhs: f32) -> Self::Output {
+        self - Interval::from_value(rhs)
+    }
+}
+
+impl Mul<f32> for Interval {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        self * Interval::from_value(rhs)
+    }
+}
+
+impl Div<f32> for Interval {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        self / Interval::from_value(rhs)
+    }
+}
