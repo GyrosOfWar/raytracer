@@ -2148,6 +2148,7 @@ dependencies = [
  "criterion",
  "enum_dispatch",
  "getrandom",
+ "js-sys",
  "libm",
  "num-traits",
  "ordered-float",
@@ -2159,6 +2160,7 @@ dependencies = [
  "tracing-subscriber",
  "tracing-test",
  "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
