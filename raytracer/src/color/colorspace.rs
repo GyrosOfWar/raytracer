@@ -2,7 +2,6 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
 
 use super::rgb::{Rgb, RgbSigmoidPolynomial};
 use super::xyz::Xyz;
@@ -14,10 +13,16 @@ use crate::{util, Result};
 const RES: usize = 64;
 
 pub static S_RGB: LazyLock<Arc<RgbColorSpace>> = LazyLock::new(|| {
-    let table = RgbToSpectrumTable::new(
-        CoefficientsFile::load("../data/color-spaces/srgb.json")
-            .expect("failed to load srgb table"),
-    );
+    let table = if cfg!(feature = "wasm") {
+        let bytes = include_bytes!("../../../data/color-spaces/srgb.json");
+        let file = serde_json::from_slice(bytes).expect("failed to load srgb table");
+        RgbToSpectrumTable::new(file)
+    } else {
+        RgbToSpectrumTable::new(
+            CoefficientsFile::load("../data/color-spaces/srgb.json")
+                .expect("failed to load srgb table"),
+        )
+    };
     Arc::new(RgbColorSpace::new(
         Point2::new(0.64, 0.33),
         Point2::new(0.3, 0.6),
@@ -78,7 +83,6 @@ pub struct CoefficientsFile {
 }
 
 impl CoefficientsFile {
-    #[instrument(skip(path), name = "CoefficientsFile::load")]
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
         use std::fs::File;
         use std::io::BufReader;

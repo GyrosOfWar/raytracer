@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use web_sys::HtmlCanvasElement;
 
 use crate::{
     color::colorspace::S_RGB,
@@ -9,19 +8,8 @@ use crate::{
 };
 
 #[wasm_bindgen]
-pub fn create_spectrum_image(element_id: &str) {
-    let document = web_sys::window().unwrap().document().unwrap();
-    let canvas = document.get_element_by_id(element_id).unwrap();
-    let canvas: HtmlCanvasElement = canvas.dyn_into().unwrap();
-    let context = canvas
-        .get_context("2d")
-        .unwrap()
-        .unwrap()
-        .dyn_into::<web_sys::CanvasRenderingContext2d>()
-        .unwrap();
-
-    let width = canvas.width();
-    let height = canvas.height();
+pub fn create_spectrum_image(width: u32, height: u32) -> Vec<u8> {
+    console_error_panic_hook::set_once();
 
     let w = width as f32;
     let h = height as f32;
@@ -29,8 +17,9 @@ pub fn create_spectrum_image(element_id: &str) {
 
     let u = random();
 
+    let mut pixels = Vec::new();
     for x in 0..width {
-        for _ in 0..height {
+        for y in 0..height {
             let x_f = x as f32 / w;
             // let y_f = y as f32 / h;
 
@@ -40,10 +29,12 @@ pub fn create_spectrum_image(element_id: &str) {
             let sample = spectrum.sample(&wavelengths);
             let color = sample.to_rgb(wavelengths, color_space);
 
-            // pixels.push((color.r * 255.0) as u8);
-            // pixels.push((color.g * 255.0) as u8);
-            // pixels.push((color.b * 255.0) as u8);
-            // pixels.push(255);
+            pixels.push((color.r * 255.0) as u8);
+            pixels.push((color.g * 255.0) as u8);
+            pixels.push((color.b * 255.0) as u8);
+            pixels.push(255);
         }
     }
+
+    pixels
 }
