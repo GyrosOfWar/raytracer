@@ -1,5 +1,5 @@
 use std::mem;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use num_traits::{One, Zero};
 
@@ -341,6 +341,12 @@ impl Add for Interval {
             low: add_round_down(self.low, rhs.low),
             high: add_round_up(self.high, rhs.high),
         }
+    }
+}
+
+impl AddAssign for Interval {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 

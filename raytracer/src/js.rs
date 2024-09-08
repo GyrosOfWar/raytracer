@@ -1,11 +1,9 @@
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    color::colorspace::S_RGB,
-    math::lerp,
-    random::random,
-    spectrum::{Blackbody, HasWavelength, SampledWavelengths},
-};
+use crate::color::colorspace::S_RGB;
+use crate::math::lerp;
+use crate::random::random;
+use crate::spectrum::{Blackbody, HasWavelength, SampledWavelengths};
 
 #[wasm_bindgen]
 pub fn create_spectrum_image(width: u32, height: u32) -> Vec<f32> {

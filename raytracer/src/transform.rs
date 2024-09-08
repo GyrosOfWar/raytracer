@@ -1,7 +1,8 @@
 use std::ops::Mul;
 
+use crate::math::gamma;
 use crate::ray::Ray;
-use crate::vec::{vec3, Mat4, Point3, Vec3};
+use crate::vec::{vec3, Mat4, Point3, Point3fi, Vec3};
 
 #[derive(Debug, Clone)]
 pub struct Transform {
@@ -196,13 +197,89 @@ impl Transform {
         )
     }
 
-    pub fn transform_ray(&self, ray: Ray) -> Ray {
-        let o = self.transform_point(ray.origin);
+    pub fn transform_ray(&self, ray: Ray, t_max: Option<&mut f32>) -> Ray {
+        let mut o = self.transform_point_interval(Point3fi::from(ray.origin));
         let d = self.transform_vector(ray.direction);
 
         let len_squared = d.length_squared();
+        if len_squared > 0.0 {
+            let dt = d.abs().dot(o.error()) / len_squared;
 
-        Ray::new(o, d)
+            o += (d * dt).into();
+            if let Some(t_max) = t_max {
+                *t_max -= dt;
+            }
+        }
+
+        Ray::new(o.into(), d)
+    }
+
+    pub fn transform_point_interval(&self, p: Point3fi) -> Point3fi {
+        let x: f32 = p.x.into();
+        let y: f32 = p.y.into();
+        let z: f32 = p.z.into();
+
+        let m = self.matrix;
+
+        let xp = (m[0][0] * x + m[0][1] * y) + (m[0][2] * z + m[0][3]);
+        let yp = (m[1][0] * x + m[1][1] * y) + (m[1][2] * z + m[1][3]);
+        let zp = (m[2][0] * x + m[2][1] * y) + (m[2][2] * z + m[2][3]);
+        let wp = (m[3][0] * x + m[3][1] * y) + (m[3][2] * z + m[3][3]);
+        let error = if p.is_exact() {
+            Vec3::new(
+                gamma(3)
+                    * (f32::abs(m[0][0] * x)
+                        + f32::abs(m[0][1] * y)
+                        + f32::abs(m[0][2] * z)
+                        + f32::abs(m[0][3])),
+                gamma(3)
+                    * (f32::abs(m[1][0] * x)
+                        + f32::abs(m[1][1] * y)
+                        + f32::abs(m[1][2] * z)
+                        + f32::abs(m[1][3])),
+                gamma(3)
+                    * (f32::abs(m[2][0] * x)
+                        + f32::abs(m[2][1] * y)
+                        + f32::abs(m[2][2] * z)
+                        + f32::abs(m[2][3])),
+            )
+        } else {
+            let p_in_error = p.error();
+            Vec3::new(
+                (gamma(3) + 1.0)
+                    * (f32::abs(m[0][0]) * p_in_error.x
+                        + f32::abs(m[0][1]) * p_in_error.y
+                        + f32::abs(m[0][2]) * p_in_error.z)
+                    + gamma(3)
+                        * (f32::abs(m[0][0] * x)
+                            + f32::abs(m[0][1] * y)
+                            + f32::abs(m[0][2] * z)
+                            + f32::abs(m[0][3])),
+                (gamma(3) + 1.0)
+                    * (f32::abs(m[1][0]) * p_in_error.x
+                        + f32::abs(m[1][1]) * p_in_error.y
+                        + f32::abs(m[1][2]) * p_in_error.z)
+                    + gamma(3)
+                        * (f32::abs(m[1][0] * x)
+                            + f32::abs(m[1][1] * y)
+                            + f32::abs(m[1][2] * z)
+                            + f32::abs(m[1][3])),
+                (gamma(3) + 1.0)
+                    * (f32::abs(m[2][0]) * p_in_error.x
+                        + f32::abs(m[2][1]) * p_in_error.y
+                        + f32::abs(m[2][2]) * p_in_error.z)
+                    + gamma(3)
+                        * (f32::abs(m[2][0] * x)
+                            + f32::abs(m[2][1] * y)
+                            + f32::abs(m[2][2] * z)
+                            + f32::abs(m[2][3])),
+            )
+        };
+        if wp == 1.0 {
+            Point3fi::from_value_and_error(Point3::new(xp, yp, zp), error)
+        } else {
+            Point3fi::from_value_and_error(Point3::new(xp, yp, zp), error) / wp.into()
+        }
     }
 
     pub fn inverse(&self) -> Transform {

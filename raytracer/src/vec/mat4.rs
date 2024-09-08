@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::Mul;
+use std::ops::{Index, Mul};
 
 use super::{Point3, VectorLike};
 use crate::vec::Vec3;
@@ -289,6 +289,14 @@ impl fmt::Display for Mat4 {
             self.data[3][2],
             self.data[3][3]
         )
+    }
+}
+
+impl<'a> Index<usize> for Mat4 {
+    type Output = [f32; 4];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
     }
 }
 

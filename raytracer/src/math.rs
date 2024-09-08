@@ -173,6 +173,14 @@ pub fn next_float_down(mut f: f32) -> f32 {
     f32::from_bits(bits)
 }
 
+pub fn gamma(n: u32) -> f32 {
+    const MACHINE_EPS: f32 = 5.9604645e-8;
+
+    let n = n as f32;
+
+    (n * MACHINE_EPS) / (1.0 - n * MACHINE_EPS)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::math::{evaluate_polynomial, next_float_down, next_float_up};

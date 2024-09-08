@@ -1,8 +1,11 @@
 use super::generic::{Point3f, Vec3f};
+use crate::bounds::Interval;
 
 pub type Vec3 = Vec3f;
 
 pub type Point3 = Point3f;
+
+pub type Point3fi = super::generic::Point3<Interval>;
 
 pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
     v - n * Vec3::dot(&v, n) * 2.0

@@ -1,8 +1,8 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use num_traits::{Float, One, Zero};
 
-use super::{Axis, VectorLike};
+use super::{Axis, Point3fi, VectorLike};
 use crate::bounds::Interval;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -364,6 +364,17 @@ where
     }
 }
 
+impl<T> AddAssign<Vec3<T>> for Point3<T>
+where
+    T: Copy + AddAssign,
+{
+    fn add_assign(&mut self, rhs: Vec3<T>) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Vec2<T> {
     pub x: T,
@@ -391,6 +402,47 @@ impl<T: Copy> Vec2<T> {
     }
 }
 
+impl Point3<Interval> {
+    pub fn from_value_and_error(p: Point3<f32>, e: Vec3<f32>) -> Self {
+        Point3 {
+            x: Interval::from_value_and_error(p.x, e.x),
+            y: Interval::from_value_and_error(p.y, e.y),
+            z: Interval::from_value_and_error(p.z, e.z),
+        }
+    }
+
+    pub fn is_exact(&self) -> bool {
+        self.x.width() == 0.0 && self.y.width() == 0.0 && self.z.width() == 0.0
+    }
+
+    pub fn error(&self) -> Vec3f {
+        Vec3::new(
+            self.x.width() / 2.0,
+            self.y.width() / 2.0,
+            self.z.width() / 2.0,
+        )
+    }
+}
+
+impl From<Point3f> for Point3fi {
+    fn from(value: Point3f) -> Self {
+        Point3 {
+            x: value.x.into(),
+            y: value.y.into(),
+            z: value.z.into(),
+        }
+    }
+}
+
+impl From<Point3fi> for Point3f {
+    fn from(value: Point3fi) -> Self {
+        Point3 {
+            x: value.x.into(),
+            y: value.y.into(),
+            z: value.z.into(),
+        }
+    }
+}
+
 pub type Vec3f = Vec3<f32>;
 pub type Point3f = Point3<f32>;
-pub type Point3fi = Point3<Interval>;
