@@ -7,6 +7,7 @@ self.onmessage = (event: MessageEvent<[number, number]>) => {
   const [w, h] = event.data;
   const image = renderImage(w, h);
   self.postMessage(image);
+  console.log("worker sent message");
 };
 
 export {};
