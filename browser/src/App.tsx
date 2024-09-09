@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { create_spectrum_image } from "../../raytracer/pkg/raytracer";
+import Worker from "./worker?worker";
 
 type State = "initializing" | "rendering" | "done";
 
@@ -16,6 +16,16 @@ function toImageBuffer(
   );
 }
 
+function callWorker(width: number, height: number) {
+  const worker = new Worker();
+
+  worker.postMessage([width, height]);
+
+  worker.addEventListener("message", (event) => {
+    console.log(event);
+  });
+}
+
 function App() {
   const width = 1280;
   const height = 720;
@@ -26,26 +36,12 @@ function App() {
 
   useEffect(() => {
     setState("rendering");
-    const newSamples = create_spectrum_image(width, height);
-    setNumSamples((n) => n + 1);
-    buffer.current = add(buffer.current, newSamples);
-
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const imageData = ctx.createImageData(width, height);
-        const data = toImageBuffer(buffer.current, numSamples);
-        imageData.data.set(data);
-        ctx.putImageData(imageData, 0, 0);
-        setState("done");
-      }
-    }
+    callWorker(width, height);
   }, []);
 
   return (
     <main className="container mx-auto">
-      <p className="my-4">{state}</p>
+      <p className="my-4">Samples: {numSamples}</p>
 
       <canvas ref={canvasRef} width={width} height={height} />
     </main>
