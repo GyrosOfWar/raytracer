@@ -444,5 +444,25 @@ impl From<Point3fi> for Point3f {
     }
 }
 
+impl From<Vec3<Interval>> for Vec3f {
+    fn from(value: Vec3<Interval>) -> Self {
+        Vec3 {
+            x: value.x.into(),
+            y: value.y.into(),
+            z: value.z.into(),
+        }
+    }
+}
+
+impl From<Vec3f> for Vec3<Interval> {
+    fn from(value: Vec3f) -> Self {
+        Vec3 {
+            x: value.x.into(),
+            y: value.y.into(),
+            z: value.z.into(),
+        }
+    }
+}
+
 pub type Vec3f = Vec3<f32>;
 pub type Point3f = Point3<f32>;
