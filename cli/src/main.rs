@@ -8,7 +8,7 @@ use color_eyre::Result;
 use image::{DynamicImage, Rgba32FImage, RgbaImage};
 use mimalloc::MiMalloc;
 use pixels::{Pixels, SurfaceTexture};
-use raytracer::color::colorspace::{RgbColorSpace, DCI_P3, S_RGB};
+use raytracer::color::colorspace::{RgbColorSpace, S_RGB};
 use raytracer::color::rgb::Rgb;
 use raytracer::math::lerp;
 use raytracer::random::random;
@@ -50,7 +50,7 @@ pub struct Args {
     #[clap(short, long, default_value = "0")]
     pub camera: usize,
 
-    pub input: PathBuf,
+    // pub input: PathBuf,
 
     #[clap(default_value = "image.jpeg")]
     pub output: PathBuf,
@@ -165,7 +165,7 @@ fn main() -> color_eyre::Result<()> {
     let (rx, tx) = channel();
     thread::spawn(move || {
         let mut buffer = Rgba32FImage::new(WIDTH, HEIGHT);
-        let cs = &DCI_P3;
+        let cs = &S_RGB;
         let _get_rgb = |x: f32, y: f32| -> Spectrum {
             RgbAlbedo::with_color_space(cs, Rgb { r: x, g: 0.0, b: y }).into()
         };

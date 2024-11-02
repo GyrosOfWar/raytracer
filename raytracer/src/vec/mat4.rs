@@ -292,7 +292,7 @@ impl fmt::Display for Mat4 {
     }
 }
 
-impl<'a> Index<usize> for Mat4 {
+impl Index<usize> for Mat4 {
     type Output = [f32; 4];
 
     fn index(&self, index: usize) -> &Self::Output {
