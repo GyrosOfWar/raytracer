@@ -7,28 +7,95 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'raytracer'",
+      "name": "Debug unit tests in library 'raytracer'",
       "cargo": {
-        "args": ["build", "--bin=raytracer", "--package=raytracer"],
+        "args": ["test", "--no-run", "--lib", "--package=raytracer"],
         "filter": {
           "name": "raytracer",
-          "kind": "bin"
+          "kind": "lib"
         }
       },
-      "args": ["-W", "500", "-H", "500", "assets/cornell.gltf"],
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "RT_SEQUENTIAL": "1"
-      }
+      "args": [],
+      "cwd": "${workspaceFolder}"
     },
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'raytracer'",
+      "name": "Debug executable 'arrays'",
       "cargo": {
-        "args": ["test", "--no-run", "--bin=raytracer", "--package=raytracer"],
+        "args": ["build", "--bin=arrays", "--package=main"],
         "filter": {
-          "name": "raytracer",
+          "name": "arrays",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'arrays'",
+      "cargo": {
+        "args": ["test", "--no-run", "--bin=arrays", "--package=main"],
+        "filter": {
+          "name": "arrays",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'main'",
+      "cargo": {
+        "args": ["build", "--bin=main", "--package=main"],
+        "filter": {
+          "name": "main",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'main'",
+      "cargo": {
+        "args": ["test", "--no-run", "--bin=main", "--package=main"],
+        "filter": {
+          "name": "main",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'plot'",
+      "cargo": {
+        "args": ["build", "--bin=plot", "--package=main"],
+        "filter": {
+          "name": "plot",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug unit tests in executable 'plot'",
+      "cargo": {
+        "args": ["test", "--no-run", "--bin=plot", "--package=main"],
+        "filter": {
+          "name": "plot",
           "kind": "bin"
         }
       },
