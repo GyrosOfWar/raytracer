@@ -10,7 +10,7 @@ color-eyre = "0.6.3"
 image = "0.25.2"
 mimalloc = "0.1.43"
 ordered-float = "4.2.1"
-pixels = "0.13.0"
+pixels = "0.14"
 plotters = "0.3.6"
 rayon = "1.10.0"
 raytracer = { path = "../raytracer" }

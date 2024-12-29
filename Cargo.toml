@@ -1,5 +1,5 @@
 [workspace]
-members = ["raytracer", "cli"]
+members = ["raytracer", "gui"]
 resolver = "2"
 
 [profile.release]
