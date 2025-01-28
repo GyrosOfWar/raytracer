@@ -95,13 +95,13 @@ impl CoefficientsFile {
 #[derive(Debug)]
 pub struct RgbToSpectrumTable {
     z_nodes: Box<[f32]>,
-    coefficients: Vec<f32>,
+    coefficients: Box<[f32]>,
 }
 
 impl RgbToSpectrumTable {
     pub fn new(file: CoefficientsFile) -> Self {
         RgbToSpectrumTable {
-            coefficients: file.data,
+            coefficients: file.data.into_boxed_slice(),
             z_nodes: file.scale.into_boxed_slice(),
         }
     }
