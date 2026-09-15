@@ -1,34 +1,6 @@
-[package]
-name = "raytracer"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-clap = { version = "4.5.8", features = ["derive"] }
-color-eyre = "0.6.3"
-enum_dispatch = "0.3.13"
-glam = "0.28.0"
-gltf = { version = "1.4.1", features = [
-    "KHR_texture_transform",
-    "KHR_materials_emissive_strength",
-] }
-image = { version = "0.25.1", default-features = false, features = [
-    "jpeg",
-    "png",
-] }
-indicatif = { version = "0.17.8", features = ["rayon"] }
-libc = "0.2.155"
-mimalloc = "0.1.43"
-num-traits = "0.2.19"
-ordered-float = "4.2.0"
-rand = { version = "0.8.5", features = ["small_rng"] }
-rayon = "1.10.0"
-tev_client = "0.5.2"
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+[workspace]
+members = ["raytracer", "gui"]
+resolver = "2"
 
 [profile.release]
 debug = true
-
-[dev-dependencies]
-tracing-test = "0.2.5"
