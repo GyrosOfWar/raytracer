@@ -1,6 +1,56 @@
 use core::f32;
+use std::ops;
 
 use crate::vec::{Mat3, Vec3};
+
+#[derive(PartialOrd, PartialEq, Clone, Copy)]
+pub struct Algebraic<T>(pub T);
+
+impl<T> ops::Add<Algebraic<T>> for Algebraic<T>
+where
+    T: ops::Add<Output = T> + Copy,
+{
+    type Output = Algebraic<T>;
+
+    fn add(self, rhs: Algebraic<T>) -> Self::Output {
+        Algebraic(self.0 + rhs.0)
+    }
+}
+
+impl<T> ops::Sub<Algebraic<T>> for Algebraic<T>
+where
+    T: ops::Sub<Output = T> + Copy,
+{
+    type Output = Algebraic<T>;
+
+    fn sub(self, rhs: Algebraic<T>) -> Self::Output {
+        Algebraic(self.0 - rhs.0)
+    }
+}
+
+impl<T> ops::Mul<Algebraic<T>> for Algebraic<T>
+where
+    T: ops::Mul<Output = T> + Copy,
+{
+    type Output = Algebraic<T>;
+
+    fn mul(self, rhs: Algebraic<T>) -> Self::Output {
+        Algebraic(self.0 * rhs.0)
+    }
+}
+
+impl<T> ops::Neg for Algebraic<T>
+where
+    T: ops::Neg<Output = T> + Copy,
+{
+    type Output = Algebraic<T>;
+
+    fn neg(self) -> Self::Output {
+        Algebraic(-self.0)
+    }
+}
+
+pub type Float = f32;
 
 pub fn safe_sqrt(u: f32) -> f32 {
     u.max(0.0).sqrt()

@@ -4,6 +4,7 @@ use num_traits::{Float, One, Zero};
 
 use super::{Axis, Point3fi, VectorLike};
 use crate::bounds::Interval;
+use crate::math;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Vec3<T> {
@@ -464,5 +465,5 @@ impl From<Vec3f> for Vec3<Interval> {
     }
 }
 
-pub type Vec3f = Vec3<f32>;
-pub type Point3f = Point3<f32>;
+pub type Vec3f = Vec3<math::Float>;
+pub type Point3f = Point3<math::Float>;

@@ -1,5 +1,6 @@
 #![expect(clippy::excessive_precision, dead_code)]
 #![deny(rust_2018_idioms)]
+
 pub mod bounds;
 pub mod camera;
 pub mod color;

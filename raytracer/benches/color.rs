@@ -1,4 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
+
+use criterion::{criterion_group, criterion_main, Criterion};
 use raytracer::color::colorspace::S_RGB;
 use raytracer::color::rgb::Rgb;
 use raytracer::color::xyz::Xyz;
