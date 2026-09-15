@@ -1,13 +1,13 @@
 import { renderImage } from "./render";
+import initRaytracer from "raytracer";
 
-console.log("worker loaded");
+const wasmReady = initRaytracer();
 
-self.onmessage = (event: MessageEvent<[number, number]>) => {
-  console.log("worker received message");
-  const [w, h] = event.data;
-  const image = renderImage(w, h);
-  self.postMessage(image);
-  console.log("worker sent message");
+self.onmessage = async (event: MessageEvent<[number, number]>) => {
+	await wasmReady;
+	const [w, h] = event.data;
+	const image = renderImage(w, h);
+	self.postMessage(image);
 };
 
 export {};
